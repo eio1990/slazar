@@ -89,7 +89,7 @@ def seed_recipes():
             (3, 'wash', N'Промивка', 0.125, json.dumps({'water_usage': '1500L per 80kg', 'duration_hours': 3})),
             (4, 'dry', N'Сушка 1', 1, json.dumps({'type': 'initial'})),
             (5, 'sugar', N'Масажер з цукром', 0.083, json.dumps({'sugar_per_kg': 20, 'duration_hours': 2})),
-            (6, 'dry', N'В'ялення', 1, json.dumps({'type': 'curing'})),
+            (6, 'dry', N'В\'ялення', 1, json.dumps({'type': 'curing'})),
             (7, 'press', N'Прес 1', 1, json.dumps({'press_number': 1})),
             (8, 'dry', N'Сушка 2', 4, json.dumps({'type': 'before_marinade', 'days_min': 3, 'days_max': 4})),
             (9, 'mix', N'Нанесення маринаду', 0, json.dumps({'mix_type': 'marinade_horse', 'weight_before_required': True})),
