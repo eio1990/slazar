@@ -641,4 +641,95 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     flex: 1,
   },
+  progressCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      },
+    }),
+  },
+  progressStep: {
+    position: 'relative',
+  },
+  progressStepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressStepIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  progressStepIconCompleted: {
+    backgroundColor: '#4CAF50',
+  },
+  progressStepIconCurrent: {
+    backgroundColor: '#2196F3',
+  },
+  progressStepNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#999',
+  },
+  progressStepNumberCurrent: {
+    color: '#fff',
+  },
+  progressStepInfo: {
+    flex: 1,
+  },
+  progressStepName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  progressStepNameCompleted: {
+    color: '#4CAF50',
+  },
+  progressStepDuration: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  progressStepButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 16,
+  },
+  progressStepButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4CAF50',
+    marginLeft: 4,
+  },
+  progressStepLine: {
+    position: 'absolute',
+    left: 17,
+    top: 36,
+    bottom: -8,
+    width: 2,
+    backgroundColor: '#e0e0e0',
+  },
+  progressStepLineCompleted: {
+    backgroundColor: '#4CAF50',
+  },
 });
