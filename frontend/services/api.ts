@@ -1,13 +1,29 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
 import NetInfo from '@react-native-community/netinfo';
-import { MMKV } from 'react-native-mmkv';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 // Configure API URL from environment
 const API_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
-// Initialize MMKV for offline storage
-export const storage = new MMKV();
+// Storage adapter for cross-platform compatibility
+export const storage = {
+  getString: async (key: string): Promise<string | undefined> => {
+    try {
+      const value = await AsyncStorage.getItem(key);
+      return value || undefined;
+    } catch (e) {
+      return undefined;
+    }
+  },
+  set: async (key: string, value: string): Promise<void> => {
+    await AsyncStorage.setItem(key, value);
+  },
+  delete: async (key: string): Promise<void> => {
+    await AsyncStorage.removeItem(key);
+  },
+};
 
 // Axios instance
 export const api = axios.create({
