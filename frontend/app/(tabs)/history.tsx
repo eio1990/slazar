@@ -45,14 +45,14 @@ export default function HistoryScreen() {
     }
   };
 
-  const checkPendingOperations = () => {
-    const queue = getOfflineQueue();
+  const checkPendingOperations = async () => {
+    const queue = await getOfflineQueue();
     setPendingOps(queue.length);
     setPendingOperationsCount(queue.length);
   };
 
   const syncPendingOperations = async () => {
-    const queue = getOfflineQueue();
+    const queue = await getOfflineQueue();
     if (queue.length === 0) {
       Alert.alert('Інформація', 'Немає операцій для синхронізації');
       return;
