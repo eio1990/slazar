@@ -30,14 +30,14 @@ def seed_recipes():
         
         # Steps for Basturma classic
         steps_basturma = [
-            (1, 'trim', N'Обрізка та підготовка', 0, json.dumps({'trim_percent_min': 0, 'trim_percent_max': 0})),
-            (2, 'salt', N'Засолка', 3, json.dumps({'salt_per_100kg': 20.67, 'water_per_100kg': 66.67, 'massager_minutes': 40})),
-            (3, 'wash', N'Промивка', 0.125, json.dumps({'water_usage': '1500L per 80kg', 'duration_hours': 3})),
-            (4, 'dry', N'Сушка 1', 1, json.dumps({'type': 'initial'})),
-            (5, 'press', N'Прес 1', 1, json.dumps({'press_number': 1})),
-            (6, 'dry', N'Сушка 2', 4, json.dumps({'type': 'before_chaman', 'days_min': 3, 'days_max': 4})),
-            (7, 'mix', N'Нанесення чаману', 0, json.dumps({'mix_type': 'chaman', 'weight_before_required': True})),
-            (8, 'dry', N'Сушка фінальна', 4, json.dumps({'type': 'final', 'days_min': 3, 'days_max': 4}))
+            (1, 'trim', 'Обрізка та підготовка', 0, json.dumps({'trim_percent_min': 0, 'trim_percent_max': 0})),
+            (2, 'salt', 'Засолка', 3, json.dumps({'salt_per_100kg': 20.67, 'water_per_100kg': 66.67, 'massager_minutes': 40})),
+            (3, 'wash', 'Промивка', 0.125, json.dumps({'water_usage': '1500L per 80kg', 'duration_hours': 3})),
+            (4, 'dry', 'Сушка 1', 1, json.dumps({'type': 'initial'})),
+            (5, 'press', 'Прес 1', 1, json.dumps({'press_number': 1})),
+            (6, 'dry', 'Сушка 2', 4, json.dumps({'type': 'before_chaman', 'days_min': 3, 'days_max': 4})),
+            (7, 'mix', 'Нанесення чаману', 0, json.dumps({'mix_type': 'chaman', 'weight_before_required': True})),
+            (8, 'dry', 'Сушка фінальна', 4, json.dumps({'type': 'final', 'days_min': 3, 'days_max': 4}))
         ]
         
         for step_order, step_type, step_name, duration, params in steps_basturma:
