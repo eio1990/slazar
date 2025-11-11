@@ -81,3 +81,30 @@ class SyncOperation(BaseModel):
 
 class SyncBatch(BaseModel):
     operations: List[SyncOperation]
+
+class BatchOperationItem(BaseModel):
+    nomenclature_id: int
+    quantity: float
+    price_per_unit: Optional[float] = None
+    metadata: Optional[dict] = None
+
+class BatchStockOperation(BaseModel):
+    operations: List[BatchOperationItem]
+    source_operation_type: Optional[str] = None
+    source_operation_id: Optional[str] = None
+    idempotency_key: str
+    all_or_nothing: bool = True
+
+class BatchOperationResult(BaseModel):
+    nomenclature_id: int
+    status: str  # 'success' or 'error'
+    message: str
+    balance_after: Optional[float] = None
+
+class BatchResponse(BaseModel):
+    status: str  # 'success', 'partial_success', or 'error'
+    total_operations: int
+    successful: int
+    failed: int
+    results: List[BatchOperationResult]
+    message: str
