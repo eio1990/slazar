@@ -33,6 +33,7 @@ class StockMovement(BaseModel):
     operation_type: str
     quantity: float
     balance_after: float
+    price_per_unit: Optional[float] = None
     idempotency_key: str
     metadata: Optional[str] = None
     operation_date: datetime
