@@ -26,20 +26,32 @@ import { useStore } from '../../stores/useStore';
 type OperationType = 'receipt' | 'withdrawal';
 
 export default function OperationsScreen() {
-  const { setPendingOperationsCount } = useStore();
+  const { balances, setPendingOperationsCount } = useStore();
   const [operationType, setOperationType] = useState<OperationType>('receipt');
   const [selectedItem, setSelectedItem] = useState<Nomenclature | null>(null);
   const [quantity, setQuantity] = useState('');
+  const [pricePerUnit, setPricePerUnit] = useState('');
   const [notes, setNotes] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [nomenclature, setNomenclature] = useState<Nomenclature[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [availableBalance, setAvailableBalance] = useState<number | null>(null);
 
   useEffect(() => {
     loadNomenclature();
   }, []);
+
+  useEffect(() => {
+    if (selectedItem && operationType === 'withdrawal') {
+      // Get available balance for selected item
+      const balance = balances.find(b => b.nomenclature_id === selectedItem.id);
+      setAvailableBalance(balance ? balance.quantity : 0);
+    } else {
+      setAvailableBalance(null);
+    }
+  }, [selectedItem, operationType, balances]);
 
   const loadNomenclature = async () => {
     try {
@@ -77,6 +89,25 @@ export default function OperationsScreen() {
       return;
     }
 
+    // Validate price for receipt
+    if (operationType === 'receipt' && pricePerUnit) {
+      const price = parseFloat(pricePerUnit);
+      if (isNaN(price) || price < 0) {
+        Alert.alert('Помилка', 'Введіть коректну ціну');
+        return;
+      }
+    }
+
+    // Check available balance for withdrawal
+    if (operationType === 'withdrawal' && availableBalance !== null && qty > availableBalance) {
+      Alert.alert(
+        'Недостатньо товару',
+        `Доступно: ${availableBalance} ${selectedItem.unit}\nЗапитано: ${qty} ${selectedItem.unit}\n\nНа складі недостатньо товару для списання.`,
+        [{ text: 'Зрозуміло' }]
+      );
+      return;
+    }
+
     try {
       setSubmitting(true);
       const isOnline = await checkNetworkConnectivity();
@@ -84,6 +115,7 @@ export default function OperationsScreen() {
       const operation = {
         nomenclature_id: selectedItem.id,
         quantity: qty,
+        price_per_unit: operationType === 'receipt' && pricePerUnit ? parseFloat(pricePerUnit) : undefined,
         idempotency_key: generateIdempotencyKey(),
         metadata: notes ? { notes } : undefined,
       };
@@ -101,7 +133,7 @@ export default function OperationsScreen() {
         );
       } else {
         // Queue for offline processing
-        addToOfflineQueue({
+        await addToOfflineQueue({
           type: operationType,
           data: operation,
         });
@@ -117,7 +149,9 @@ export default function OperationsScreen() {
       // Reset form
       setSelectedItem(null);
       setQuantity('');
+      setPricePerUnit('');
       setNotes('');
+      setAvailableBalance(null);
     } catch (error: any) {
       console.error('Error submitting operation:', error);
       Alert.alert(
@@ -214,6 +248,16 @@ export default function OperationsScreen() {
           )}
         </View>
 
+        {/* Available balance (for withdrawal) */}
+        {operationType === 'withdrawal' && selectedItem && availableBalance !== null && (
+          <View style={styles.balanceInfo}>
+            <MaterialCommunityIcons name="information" size={20} color="#2196F3" />
+            <Text style={styles.balanceText}>
+              Доступно на складі: <Text style={styles.balanceValue}>{availableBalance} {selectedItem.unit}</Text>
+            </Text>
+          </View>
+        )}
+
         {/* Quantity input */}
         <View style={styles.formSection}>
           <Text style={styles.label}>Кількість *</Text>
@@ -225,6 +269,20 @@ export default function OperationsScreen() {
             keyboardType="decimal-pad"
           />
         </View>
+
+        {/* Price per unit (only for receipt) */}
+        {operationType === 'receipt' && (
+          <View style={styles.formSection}>
+            <Text style={styles.label}>Ціна за одиницю (необов'язково)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={`Ціна за ${selectedItem?.unit || 'одиницю'} (грн)`}
+              value={pricePerUnit}
+              onChangeText={setPricePerUnit}
+              keyboardType="decimal-pad"
+            />
+          </View>
+        )}
 
         {/* Notes */}
         <View style={styles.formSection}>
@@ -379,6 +437,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 4,
+  },
+  balanceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    gap: 8,
+  },
+  balanceText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1976D2',
+  },
+  balanceValue: {
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   input: {
     backgroundColor: '#fff',
