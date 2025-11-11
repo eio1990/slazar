@@ -23,6 +23,7 @@ class Nomenclature(NomenclatureBase):
 class StockOperation(BaseModel):
     nomenclature_id: int
     quantity: float
+    price_per_unit: Optional[float] = None
     idempotency_key: str
     metadata: Optional[dict] = None
 
