@@ -271,7 +271,7 @@ async def complete_batch(batch_id: int, completion: BatchComplete):
         """, completion.final_weight, completion.notes, batch_id)
         
         # Calculate yield percentage
-        yield_percent = (completion.final_weight / batch.initial_weight) * 100
+        yield_percent = (completion.final_weight / float(batch.initial_weight)) * 100
         
         # Check if idempotency key already exists
         cursor.execute(
