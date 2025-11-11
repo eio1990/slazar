@@ -823,7 +823,7 @@ async def complete_batch(batch_id: int, completion: BatchComplete):
             "batch_id": batch_id,
             "yield_percent": round(yield_percent, 2),
             "expected_range": f"{batch.expected_yield_min}-{batch.expected_yield_max}%"
-
+        }
 
 @router.get("/batches/analytics")
 async def get_batches_analytics(
