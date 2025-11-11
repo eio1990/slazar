@@ -299,43 +299,52 @@ export default function BatchDetailScreen() {
                         <TouchableOpacity
                           style={styles.progressStepButton}
                           onPress={() => {
-                            Alert.prompt(
-                              'Завершити крок',
-                              `Введіть вагу після "${step.step_name}"`,
-                              [
-                                { text: 'Скасувати', style: 'cancel' },
-                                {
-                                  text: 'OK',
-                                  onPress: (weight) => {
-                                    if (weight && parseFloat(weight) > 0) {
-                                      // Add operation
-                                      fetch(`${API_URL}/api/production/batches/${id}/operations`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                          step_id: step.id,
-                                          weight_after: parseFloat(weight),
-                                          notes: `Крок ${step.step_order} завершено`,
-                                          idempotency_key: `step-${id}-${step.id}-${Date.now()}`,
-                                        }),
-                                      })
-                                        .then(() => {
-                                          refetch();
-                                          queryClient.invalidateQueries({ queryKey: ['batch-operations', id] });
+                            // Special handling for mix step
+                            if (step.step_type === 'mix') {
+                              const mixParams = step.parameters || {};
+                              const mixId = mixParams.mix_id || (batch.recipe_name?.includes('конини') ? 135 : 134);
+                              router.push(`/batches/mix-form?batchId=${id}&stepId=${step.id}&recipeId=${batch.recipe_id}&mixId=${mixId}` as any);
+                            } else {
+                              // Regular step - simple weight input
+                              Alert.prompt(
+                                'Завершити крок',
+                                `Введіть вагу після "${step.step_name}"`,
+                                [
+                                  { text: 'Скасувати', style: 'cancel' },
+                                  {
+                                    text: 'OK',
+                                    onPress: (weight) => {
+                                      if (weight && parseFloat(weight) > 0) {
+                                        fetch(`${API_URL}/api/production/batches/${id}/operations`, {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            step_id: step.id,
+                                            weight_after: parseFloat(weight),
+                                            notes: `Крок ${step.step_order} завершено`,
+                                            idempotency_key: `step-${id}-${step.id}-${Date.now()}`,
+                                          }),
                                         })
-                                        .catch((err) => Alert.alert('Помилка', 'Не вдалося додати операцію'));
-                                    }
+                                          .then(() => {
+                                            refetch();
+                                            queryClient.invalidateQueries({ queryKey: ['batch-operations', id] });
+                                          })
+                                          .catch((err) => Alert.alert('Помилка', 'Не вдалося додати операцію'));
+                                      }
+                                    },
                                   },
-                                },
-                              ],
-                              'plain-text',
-                              '',
-                              'decimal-pad'
-                            );
+                                ],
+                                'plain-text',
+                                '',
+                                'decimal-pad'
+                              );
+                            }
                           }}
                         >
                           <MaterialCommunityIcons name="play-circle" size={20} color="#4CAF50" />
-                          <Text style={styles.progressStepButtonText}>Почати</Text>
+                          <Text style={styles.progressStepButtonText}>
+                            {step.step_type === 'mix' ? 'Відкрити форму' : 'Почати'}
+                          </Text>
                         </TouchableOpacity>
                       )}
                       {isCompleted && (
