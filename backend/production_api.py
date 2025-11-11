@@ -238,6 +238,111 @@ async def get_batch(batch_id: int):
             operator_notes=row.operator_notes
         )
 
+
+@router.post("/batches/{batch_id}/operations")
+async def add_batch_operation(batch_id: int, operation: BatchOperationCreate):
+    """Add an operation to a batch (step completion)"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Get batch and current step
+        cursor.execute("""
+            SELECT b.*, rs.step_order, rs.step_type, rs.step_name
+            FROM batches b
+            LEFT JOIN recipe_steps rs ON b.recipe_id = rs.recipe_id AND rs.id = ?
+            WHERE b.id = ?
+        """, operation.step_id, batch_id)
+        
+        batch = cursor.fetchone()
+        if not batch:
+            raise HTTPException(status_code=404, detail="Batch not found")
+        
+        if batch.status == 'completed':
+            raise HTTPException(status_code=400, detail="Batch already completed")
+        
+        # Check idempotency
+        cursor.execute(
+            "SELECT id FROM batch_operations WHERE idempotency_key = ?",
+            operation.idempotency_key
+        )
+        if cursor.fetchone():
+            return {"message": "Operation already recorded", "batch_id": batch_id}
+        
+        # Insert operation
+        cursor.execute("""
+            INSERT INTO batch_operations (
+                batch_id, step_id, operation_type, status,
+                weight_before, weight_after, parameters, notes, idempotency_key
+            )
+            VALUES (?, ?, ?, 'completed', ?, ?, ?, ?, ?)
+        """, batch_id, operation.step_id, batch.step_type,
+            operation.weight_before, operation.weight_after,
+            json.dumps(operation.parameters) if operation.parameters else None,
+            operation.notes, operation.idempotency_key)
+        
+        # Update batch status and current step
+        new_status = 'in_progress' if batch.status == 'created' else batch.status
+        cursor.execute("""
+            UPDATE batches
+            SET status = ?,
+                current_step = ?,
+                updated_at = GETDATE()
+            WHERE id = ?
+        """, new_status, batch.step_order, batch_id)
+        
+        conn.commit()
+        
+        return {
+            "message": "Operation added successfully",
+            "batch_id": batch_id,
+            "step_completed": batch.step_name,
+            "current_step": batch.step_order
+        }
+
+@router.get("/batches/{batch_id}/operations")
+async def get_batch_operations(batch_id: int):
+    """Get all operations for a batch"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT bo.id, bo.batch_id, bo.step_id, bo.operation_type, bo.status,
+                   bo.started_at, bo.completed_at, bo.weight_before, bo.weight_after,
+                   bo.parameters, bo.notes, rs.step_name, rs.step_order
+            FROM batch_operations bo
+            JOIN recipe_steps rs ON bo.step_id = rs.id
+            WHERE bo.batch_id = ?
+            ORDER BY rs.step_order, bo.started_at
+        """, batch_id)
+        
+        operations = []
+        for row in cursor.fetchall():
+            params = None
+            if row.parameters:
+                try:
+                    params = json.loads(row.parameters)
+                except:
+                    params = None
+            
+            operations.append({
+                'id': row.id,
+                'batch_id': row.batch_id,
+                'step_id': row.step_id,
+                'operation_type': row.operation_type,
+                'status': row.status,
+                'started_at': row.started_at.isoformat() if row.started_at else None,
+                'completed_at': row.completed_at.isoformat() if row.completed_at else None,
+                'weight_before': float(row.weight_before) if row.weight_before else None,
+                'weight_after': float(row.weight_after) if row.weight_after else None,
+                'parameters': params,
+                'notes': row.notes,
+                'step_name': row.step_name,
+                'step_order': row.step_order
+            })
+        
+        return operations
+
+
 @router.put("/batches/{batch_id}/complete")
 async def complete_batch(batch_id: int, completion: BatchComplete):
     """Complete a batch and create stock movements"""
