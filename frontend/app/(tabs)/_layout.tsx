@@ -70,6 +70,16 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="production"
+        options={{
+          title: 'Виробництво',
+          href: '/(tabs)/production',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="factory" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
