@@ -211,9 +211,9 @@ async def stock_receipt(operation: StockOperation):
             metadata_json = json.dumps(operation.metadata) if operation.metadata else None
             cursor.execute(
                 """INSERT INTO stock_movements 
-                   (nomenclature_id, operation_type, quantity, balance_after, idempotency_key, metadata)
-                   VALUES (?, 'receipt', ?, ?, ?, ?)""",
-                (operation.nomenclature_id, quantity, new_balance, operation.idempotency_key, metadata_json)
+                   (nomenclature_id, operation_type, quantity, balance_after, price_per_unit, idempotency_key, metadata)
+                   VALUES (?, 'receipt', ?, ?, ?, ?, ?)""",
+                (operation.nomenclature_id, quantity, new_balance, operation.price_per_unit, operation.idempotency_key, metadata_json)
             )
             
             # Update balance
