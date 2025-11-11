@@ -108,3 +108,68 @@ class BatchResponse(BaseModel):
     failed: int
     results: List[BatchOperationResult]
     message: str
+
+
+# Production Module Models
+
+class RecipeStep(BaseModel):
+    id: int
+    step_order: int
+    step_type: str
+    step_name: str
+    duration_days: float
+    parameters: Optional[dict] = None
+    description: Optional[str] = None
+
+class Recipe(BaseModel):
+    id: int
+    name: str
+    target_product_id: int
+    target_product_name: Optional[str] = None
+    expected_yield_min: float
+    expected_yield_max: float
+    description: Optional[str] = None
+    steps: List[RecipeStep] = []
+
+class BatchCreate(BaseModel):
+    recipe_id: int
+    initial_weight: float
+    trim_waste: Optional[float] = 0
+    trim_returned: bool = False
+    operator_notes: Optional[str] = None
+
+class BatchOperationCreate(BaseModel):
+    step_id: int
+    weight_before: Optional[float] = None
+    weight_after: Optional[float] = None
+    parameters: Optional[dict] = None
+    notes: Optional[str] = None
+    idempotency_key: str
+
+class BatchMixProduction(BaseModel):
+    mix_nomenclature_id: int
+    produced_quantity: float
+    used_quantity: float
+    leftover_quantity: float
+    warehouse_mix_used: float
+    idempotency_key: str
+
+class Batch(BaseModel):
+    id: int
+    batch_number: str
+    recipe_id: int
+    recipe_name: Optional[str] = None
+    status: str
+    current_step: int
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    initial_weight: float
+    final_weight: Optional[float] = None
+    trim_waste: Optional[float] = None
+    trim_returned: Optional[bool] = None
+    operator_notes: Optional[str] = None
+
+class BatchComplete(BaseModel):
+    final_weight: float
+    notes: Optional[str] = None
+    idempotency_key: str
