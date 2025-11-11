@@ -208,6 +208,14 @@ export default function ProductionScreen() {
         }
       />
 
+      {/* Analytics Button */}
+      <TouchableOpacity
+        style={[styles.fab, { bottom: 96 }]}
+        onPress={() => router.push('/analytics' as any)}
+      >
+        <MaterialCommunityIcons name="chart-bar" size={28} color="#fff" />
+      </TouchableOpacity>
+
       {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
