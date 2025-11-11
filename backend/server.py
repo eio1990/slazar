@@ -14,10 +14,14 @@ from models import (
     InventorySession, InventoryComplete, SyncBatch,
     BatchStockOperation, BatchResponse, BatchOperationResult
 )
+from production_api import router as production_router
 
 load_dotenv()
 
 app = FastAPI(title="Склад API")
+
+# Include production router
+app.include_router(production_router)
 
 # CORS middleware
 app.add_middleware(
