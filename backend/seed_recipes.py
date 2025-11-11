@@ -16,17 +16,17 @@ def seed_recipes():
         
         # Recipe 1: Бастурма класична (Basturma classic)
         cursor.execute("""
-            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = N'Бастурма класична')
+            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = 'Бастурма класична')
             BEGIN
                 INSERT INTO recipes (name, target_product_id, expected_yield_min, expected_yield_max, description)
-                VALUES (N'Бастурма класична', 
-                       (SELECT id FROM nomenclature WHERE name = N'Яловичина вищій ґатунок'),
+                VALUES ('Бастурма класична', 
+                       (SELECT id FROM nomenclature WHERE name = 'Яловичина вищій ґатунок'),
                        73.0, 78.0, 
-                       N'Класична яловича бастурма з чаманом')
+                       'Класична яловича бастурма з чаманом')
             END
         """)
         
-        recipe_id = cursor.execute("SELECT id FROM recipes WHERE name = N'Бастурма класична'").fetchone()[0]
+        recipe_id = cursor.execute("SELECT id FROM recipes WHERE name = 'Бастурма класична'").fetchone()[0]
         
         # Steps for Basturma classic
         steps_basturma = [
@@ -49,51 +49,51 @@ def seed_recipes():
         
         # Ingredients for Basturma (primary meat)
         cursor.execute("""
-            IF NOT EXISTS (SELECT 1 FROM recipe_ingredients WHERE recipe_id = ? AND nomenclature_id = (SELECT id FROM nomenclature WHERE name = N'Яловичина вищій ґатунок'))
+            IF NOT EXISTS (SELECT 1 FROM recipe_ingredients WHERE recipe_id = ? AND nomenclature_id = (SELECT id FROM nomenclature WHERE name = 'Яловичина вищій ґатунок'))
             INSERT INTO recipe_ingredients (recipe_id, nomenclature_id, quantity_per_100kg, is_optional, notes)
-            VALUES (?, (SELECT id FROM nomenclature WHERE name = N'Яловичина вищій ґатунок'), 100.0, 0, N'Основна сировина')
+            VALUES (?, (SELECT id FROM nomenclature WHERE name = 'Яловичина вищій ґатунок'), 100.0, 0, 'Основна сировина')
         """, recipe_id, recipe_id)
         
         # Spices for salting
         cursor.execute("""
-            IF NOT EXISTS (SELECT 1 FROM recipe_spices WHERE recipe_id = ? AND nomenclature_id = (SELECT id FROM nomenclature WHERE name = N'Сіль'))
+            IF NOT EXISTS (SELECT 1 FROM recipe_spices WHERE recipe_id = ? AND nomenclature_id = (SELECT id FROM nomenclature WHERE name = 'Сіль'))
             INSERT INTO recipe_spices (recipe_id, nomenclature_id, quantity_per_100kg, is_fenugreek, notes)
-            VALUES (?, (SELECT id FROM nomenclature WHERE name = N'Сіль'), 20.67, 0, N'Для засолки')
+            VALUES (?, (SELECT id FROM nomenclature WHERE name = 'Сіль'), 20.67, 0, 'Для засолки')
         """, recipe_id, recipe_id)
         
         # Water for salting
         cursor.execute("""
-            IF NOT EXISTS (SELECT 1 FROM recipe_spices WHERE recipe_id = ? AND nomenclature_id = (SELECT id FROM nomenclature WHERE name = N'Вода'))
+            IF NOT EXISTS (SELECT 1 FROM recipe_spices WHERE recipe_id = ? AND nomenclature_id = (SELECT id FROM nomenclature WHERE name = 'Вода'))
             INSERT INTO recipe_spices (recipe_id, nomenclature_id, quantity_per_100kg, is_fenugreek, notes)
-            VALUES (?, (SELECT id FROM nomenclature WHERE name = N'Вода'), 66.67, 0, N'Для засолки')
+            VALUES (?, (SELECT id FROM nomenclature WHERE name = 'Вода'), 66.67, 0, 'Для засолки')
         """, recipe_id, recipe_id)
         
         # Recipe 2: Бастурма з конини (Basturma horse)
         cursor.execute("""
-            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = N'Бастурма з конини вагова')
+            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = 'Бастурма з конини вагова')
             BEGIN
                 INSERT INTO recipes (name, target_product_id, expected_yield_min, expected_yield_max, description)
-                VALUES (N'Бастурма з конини вагова', 
-                       (SELECT id FROM nomenclature WHERE name = N'Конина вищий ґатунок'),
+                VALUES ('Бастурма з конини вагова', 
+                       (SELECT id FROM nomenclature WHERE name = 'Конина вищий ґатунок'),
                        67.0, 68.0, 
-                       N'Бастурма з конини з маринадом')
+                       'Бастурма з конини з маринадом')
             END
         """)
         
-        recipe_id_horse = cursor.execute("SELECT id FROM recipes WHERE name = N'Бастурма з конини вагова'").fetchone()[0]
+        recipe_id_horse = cursor.execute("SELECT id FROM recipes WHERE name = 'Бастурма з конини вагова'").fetchone()[0]
         
         # Steps for horse basturma
         steps_horse = [
-            (1, 'trim', N'Обрізка та підготовка', 0, json.dumps({'trim_percent_min': 0, 'trim_percent_max': 0})),
-            (2, 'salt', N'Засолка', 3, json.dumps({'salt_per_100kg': 20.67, 'water_per_100kg': 66.67, 'massager_minutes': 40})),
-            (3, 'wash', N'Промивка', 0.125, json.dumps({'water_usage': '1500L per 80kg', 'duration_hours': 3})),
-            (4, 'dry', N'Сушка 1', 1, json.dumps({'type': 'initial'})),
-            (5, 'sugar', N'Масажер з цукром', 0.083, json.dumps({'sugar_per_kg': 20, 'duration_hours': 2})),
-            (6, 'dry', N'В\'ялення', 1, json.dumps({'type': 'curing'})),
-            (7, 'press', N'Прес 1', 1, json.dumps({'press_number': 1})),
-            (8, 'dry', N'Сушка 2', 4, json.dumps({'type': 'before_marinade', 'days_min': 3, 'days_max': 4})),
-            (9, 'mix', N'Нанесення маринаду', 0, json.dumps({'mix_type': 'marinade_horse', 'weight_before_required': True})),
-            (10, 'dry', N'Сушка фінальна', 4, json.dumps({'type': 'final', 'days_min': 3, 'days_max': 4}))
+            (1, 'trim', 'Обрізка та підготовка', 0, json.dumps({'trim_percent_min': 0, 'trim_percent_max': 0})),
+            (2, 'salt', 'Засолка', 3, json.dumps({'salt_per_100kg': 20.67, 'water_per_100kg': 66.67, 'massager_minutes': 40})),
+            (3, 'wash', 'Промивка', 0.125, json.dumps({'water_usage': '1500L per 80kg', 'duration_hours': 3})),
+            (4, 'dry', 'Сушка 1', 1, json.dumps({'type': 'initial'})),
+            (5, 'sugar', 'Масажер з цукром', 0.083, json.dumps({'sugar_per_kg': 20, 'duration_hours': 2})),
+            (6, 'dry', 'В\'ялення', 1, json.dumps({'type': 'curing'})),
+            (7, 'press', 'Прес 1', 1, json.dumps({'press_number': 1})),
+            (8, 'dry', 'Сушка 2', 4, json.dumps({'type': 'before_marinade', 'days_min': 3, 'days_max': 4})),
+            (9, 'mix', 'Нанесення маринаду', 0, json.dumps({'mix_type': 'marinade_horse', 'weight_before_required': True})),
+            (10, 'dry', 'Сушка фінальна', 4, json.dumps({'type': 'final', 'days_min': 3, 'days_max': 4}))
         ]
         
         for step_order, step_type, step_name, duration, params in steps_horse:
@@ -105,24 +105,24 @@ def seed_recipes():
         
         # Recipe 3: Індичка (Turkey)
         cursor.execute("""
-            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = N'Індичка сиров\'ялена вагова')
+            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = 'Індичка сиров\'ялена вагова')
             BEGIN
                 INSERT INTO recipes (name, target_product_id, expected_yield_min, expected_yield_max, description)
-                VALUES (N'Індичка сиров\'ялена вагова', 
-                       (SELECT id FROM nomenclature WHERE name = N'Індик філе'),
+                VALUES ('Індичка сиров\'ялена вагова', 
+                       (SELECT id FROM nomenclature WHERE name = 'Індик філе'),
                        58.0, 61.0, 
-                       N'Сиров\'ялена індичка')
+                       'Сиров\'ялена індичка')
             END
         """)
         
-        recipe_id_turkey = cursor.execute("SELECT id FROM recipes WHERE name = N'Індичка сиров\'ялена вагова'").fetchone()[0]
+        recipe_id_turkey = cursor.execute("SELECT id FROM recipes WHERE name = 'Індичка сиров\'ялена вагова'").fetchone()[0]
         
         steps_turkey = [
-            (1, 'trim', N'Обрізка філе', 0, json.dumps({'trim_percent_min': 7, 'trim_percent_max': 10})),
-            (2, 'marinade', N'Виготовлення маринаду', 0, json.dumps({'type': 'turkey_marinade'})),
-            (3, 'vacuum', N'Вакуумна фасовка та маринування', 6, json.dumps({'package_weight': 3, 'marinate_days_min': 5, 'marinate_days_max': 6})),
-            (4, 'press', N'Пресування', 1, json.dumps({'press_number': 1})),
-            (5, 'dry', N'Сушка', 5, json.dumps({'days_min': 3, 'days_max': 5}))
+            (1, 'trim', 'Обрізка філе', 0, json.dumps({'trim_percent_min': 7, 'trim_percent_max': 10})),
+            (2, 'marinade', 'Виготовлення маринаду', 0, json.dumps({'type': 'turkey_marinade'})),
+            (3, 'vacuum', 'Вакуумна фасовка та маринування', 6, json.dumps({'package_weight': 3, 'marinate_days_min': 5, 'marinate_days_max': 6})),
+            (4, 'press', 'Пресування', 1, json.dumps({'press_number': 1})),
+            (5, 'dry', 'Сушка', 5, json.dumps({'days_min': 3, 'days_max': 5}))
         ]
         
         for step_order, step_type, step_name, duration, params in steps_turkey:
@@ -134,24 +134,24 @@ def seed_recipes():
         
         # Recipe 4: Курка (Chicken)
         cursor.execute("""
-            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = N'Курка сиров\'ялена вагова')
+            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = 'Курка сиров\'ялена вагова')
             BEGIN
                 INSERT INTO recipes (name, target_product_id, expected_yield_min, expected_yield_max, description)
-                VALUES (N'Курка сиров\'ялена вагова', 
-                       (SELECT id FROM nomenclature WHERE name = N'Курка філе'),
+                VALUES ('Курка сиров\'ялена вагова', 
+                       (SELECT id FROM nomenclature WHERE name = 'Курка філе'),
                        53.0, 55.0, 
-                       N'Сиров\'ялена курка')
+                       'Сиров\'ялена курка')
             END
         """)
         
-        recipe_id_chicken = cursor.execute("SELECT id FROM recipes WHERE name = N'Курка сиров\'ялена вагова'").fetchone()[0]
+        recipe_id_chicken = cursor.execute("SELECT id FROM recipes WHERE name = 'Курка сиров\'ялена вагова'").fetchone()[0]
         
         steps_chicken = [
-            (1, 'trim', N'Обрізка філе', 0, json.dumps({'trim_percent_min': 22, 'trim_percent_max': 25})),
-            (2, 'marinade', N'Виготовлення маринаду', 0, json.dumps({'type': 'chicken_marinade'})),
-            (3, 'vacuum', N'Вакуумна фасовка та маринування', 5, json.dumps({'package_weight': 3, 'marinate_days_min': 4, 'marinate_days_max': 5})),
-            (4, 'press', N'Пресування', 1, json.dumps({'press_number': 1})),
-            (5, 'dry', N'Сушка', 3, json.dumps({'days_min': 2, 'days_max': 3}))
+            (1, 'trim', 'Обрізка філе', 0, json.dumps({'trim_percent_min': 22, 'trim_percent_max': 25})),
+            (2, 'marinade', 'Виготовлення маринаду', 0, json.dumps({'type': 'chicken_marinade'})),
+            (3, 'vacuum', 'Вакуумна фасовка та маринування', 5, json.dumps({'package_weight': 3, 'marinate_days_min': 4, 'marinate_days_max': 5})),
+            (4, 'press', 'Пресування', 1, json.dumps({'press_number': 1})),
+            (5, 'dry', 'Сушка', 3, json.dumps({'days_min': 2, 'days_max': 3}))
         ]
         
         for step_order, step_type, step_name, duration, params in steps_chicken:
@@ -163,24 +163,24 @@ def seed_recipes():
         
         # Recipe 5: Свинина (Pork)
         cursor.execute("""
-            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = N'Свинина сиров\'ялена вагова')
+            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = 'Свинина сиров\'ялена вагова')
             BEGIN
                 INSERT INTO recipes (name, target_product_id, expected_yield_min, expected_yield_max, description)
-                VALUES (N'Свинина сиров\'ялена вагова', 
-                       (SELECT id FROM nomenclature WHERE name = N'Свинина биток'),
+                VALUES ('Свинина сиров\'ялена вагова', 
+                       (SELECT id FROM nomenclature WHERE name = 'Свинина биток'),
                        62.0, 64.0, 
-                       N'Сиров\'ялена свинина')
+                       'Сиров\'ялена свинина')
             END
         """)
         
-        recipe_id_pork = cursor.execute("SELECT id FROM recipes WHERE name = N'Свинина сиров\'ялена вагова'").fetchone()[0]
+        recipe_id_pork = cursor.execute("SELECT id FROM recipes WHERE name = 'Свинина сиров\'ялена вагова'").fetchone()[0]
         
         steps_pork = [
-            (1, 'trim', N'Обрізка', 0, json.dumps({'trim_percent_min': 15, 'trim_percent_max': 20})),
-            (2, 'marinade', N'Виготовлення маринаду', 0, json.dumps({'type': 'pork_marinade'})),
-            (3, 'vacuum', N'Вакуумна фасовка та маринування', 6, json.dumps({'package_weight': 3, 'marinate_days_min': 5, 'marinate_days_max': 6})),
-            (4, 'press', N'Пресування', 1, json.dumps({'press_number': 1})),
-            (5, 'dry', N'Сушка', 6, json.dumps({'days_min': 5, 'days_max': 6}))
+            (1, 'trim', 'Обрізка', 0, json.dumps({'trim_percent_min': 15, 'trim_percent_max': 20})),
+            (2, 'marinade', 'Виготовлення маринаду', 0, json.dumps({'type': 'pork_marinade'})),
+            (3, 'vacuum', 'Вакуумна фасовка та маринування', 6, json.dumps({'package_weight': 3, 'marinate_days_min': 5, 'marinate_days_max': 6})),
+            (4, 'press', 'Пресування', 1, json.dumps({'press_number': 1})),
+            (5, 'dry', 'Сушка', 6, json.dumps({'days_min': 5, 'days_max': 6}))
         ]
         
         for step_order, step_type, step_name, duration, params in steps_pork:
@@ -192,24 +192,24 @@ def seed_recipes():
         
         # Recipe 6: Пластина яловичина (Beef plate)
         cursor.execute("""
-            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = N'Пластина яловичина вагова')
+            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = 'Пластина яловичина вагова')
             BEGIN
                 INSERT INTO recipes (name, target_product_id, expected_yield_min, expected_yield_max, description)
-                VALUES (N'Пластина яловичина вагова', 
-                       (SELECT id FROM nomenclature WHERE name = N'Яловичина вищій ґатунок'),
+                VALUES ('Пластина яловичина вагова', 
+                       (SELECT id FROM nomenclature WHERE name = 'Яловичина вищій ґатунок'),
                        53.0, 56.0, 
-                       N'Яловича пластина')
+                       'Яловича пластина')
             END
         """)
         
-        recipe_id_plate = cursor.execute("SELECT id FROM recipes WHERE name = N'Пластина яловичина вагова'").fetchone()[0]
+        recipe_id_plate = cursor.execute("SELECT id FROM recipes WHERE name = 'Пластина яловичина вагова'").fetchone()[0]
         
         steps_plate = [
-            (1, 'trim', N'Обрізка та підготовка', 0, json.dumps({'trim_percent_min': 0, 'trim_percent_max': 0})),
-            (2, 'marinade', N'Виготовлення маринаду', 0, json.dumps({'type': 'beef_plate_marinade'})),
-            (3, 'vacuum', N'Вакуумна фасовка та маринування', 6, json.dumps({'package_weight': 3, 'marinate_days_min': 4, 'marinate_days_max': 6})),
-            (4, 'press', N'Пресування', 1, json.dumps({'press_number': 1})),
-            (5, 'dry', N'Сушка', 3, json.dumps({'days_min': 2, 'days_max': 3}))
+            (1, 'trim', 'Обрізка та підготовка', 0, json.dumps({'trim_percent_min': 0, 'trim_percent_max': 0})),
+            (2, 'marinade', 'Виготовлення маринаду', 0, json.dumps({'type': 'beef_plate_marinade'})),
+            (3, 'vacuum', 'Вакуумна фасовка та маринування', 6, json.dumps({'package_weight': 3, 'marinate_days_min': 4, 'marinate_days_max': 6})),
+            (4, 'press', 'Пресування', 1, json.dumps({'press_number': 1})),
+            (5, 'dry', 'Сушка', 3, json.dumps({'days_min': 2, 'days_max': 3}))
         ]
         
         for step_order, step_type, step_name, duration, params in steps_plate:
@@ -221,29 +221,29 @@ def seed_recipes():
         
         # Recipe 7: Суджук (Sujuk)
         cursor.execute("""
-            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = N'Суджук ваговий')
+            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = 'Суджук ваговий')
             BEGIN
                 INSERT INTO recipes (name, target_product_id, expected_yield_min, expected_yield_max, description)
-                VALUES (N'Суджук ваговий', 
-                       (SELECT id FROM nomenclature WHERE name = N'Яловичина другий ґатунок'),
+                VALUES ('Суджук ваговий', 
+                       (SELECT id FROM nomenclature WHERE name = 'Яловичина другий ґатунок'),
                        60.0, 62.0, 
-                       N'Суджук ваговий')
+                       'Суджук ваговий')
             END
         """)
         
-        recipe_id_sujuk = cursor.execute("SELECT id FROM recipes WHERE name = N'Суджук ваговий'").fetchone()[0]
+        recipe_id_sujuk = cursor.execute("SELECT id FROM recipes WHERE name = 'Суджук ваговий'").fetchone()[0]
         
         steps_sujuk = [
-            (1, 'trim', N'Підготовка м\'яса', 0, json.dumps({'meat_types': ['high_grade', 'small_pieces', 'goulash', 'first_grade']})),
-            (2, 'marinade_spices', N'Замішування зі специями', 2, json.dumps({'marinate_days': 2})),
-            (3, 'grind', N'Помол м\'яса', 0, json.dumps({'grind_type': 'fine'})),
-            (4, 'massage', N'Масажер з водою та барвником', 0, json.dumps({'water_per_100kg': 15, 'dye_per_100kg': 0.25})),
-            (5, 'stuff', N'Заправка в кишку', 0, json.dumps({'casing_options': [{'length': 93, 'diameter': '48+', 'capacity': 100}, {'length': 65, 'diameter': '53+', 'capacity': 100}]})),
-            (6, 'dry', N'Сушка 1', 3, json.dumps({'days': 3})),
-            (7, 'press', N'Прес 1', 1, json.dumps({'press_number': 1})),
-            (8, 'dry', N'Сушка 2', 2, json.dumps({'days_min': 1, 'days_max': 2})),
-            (9, 'press', N'Прес 2', 1, json.dumps({'press_number': 2})),
-            (10, 'dry', N'Сушка фінальна', 4, json.dumps({'days_min': 3, 'days_max': 4}))
+            (1, 'trim', 'Підготовка м\'яса', 0, json.dumps({'meat_types': ['high_grade', 'small_pieces', 'goulash', 'first_grade']})),
+            (2, 'marinade_spices', 'Замішування зі специями', 2, json.dumps({'marinate_days': 2})),
+            (3, 'grind', 'Помол м\'яса', 0, json.dumps({'grind_type': 'fine'})),
+            (4, 'massage', 'Масажер з водою та барвником', 0, json.dumps({'water_per_100kg': 15, 'dye_per_100kg': 0.25})),
+            (5, 'stuff', 'Заправка в кишку', 0, json.dumps({'casing_options': [{'length': 93, 'diameter': '48+', 'capacity': 100}, {'length': 65, 'diameter': '53+', 'capacity': 100}]})),
+            (6, 'dry', 'Сушка 1', 3, json.dumps({'days': 3})),
+            (7, 'press', 'Прес 1', 1, json.dumps({'press_number': 1})),
+            (8, 'dry', 'Сушка 2', 2, json.dumps({'days_min': 1, 'days_max': 2})),
+            (9, 'press', 'Прес 2', 1, json.dumps({'press_number': 2})),
+            (10, 'dry', 'Сушка фінальна', 4, json.dumps({'days_min': 3, 'days_max': 4}))
         ]
         
         for step_order, step_type, step_name, duration, params in steps_sujuk:
@@ -255,25 +255,25 @@ def seed_recipes():
         
         # Recipe 8: Махан (Makhan)
         cursor.execute("""
-            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = N'Махан ваговий')
+            IF NOT EXISTS (SELECT 1 FROM recipes WHERE name = 'Махан ваговий')
             BEGIN
                 INSERT INTO recipes (name, target_product_id, expected_yield_min, expected_yield_max, description)
-                VALUES (N'Махан ваговий', 
-                       (SELECT id FROM nomenclature WHERE name = N'Конина перший ґатунок'),
+                VALUES ('Махан ваговий', 
+                       (SELECT id FROM nomenclature WHERE name = 'Конина перший ґатунок'),
                        60.0, 66.0, 
-                       N'Махан ваговий')
+                       'Махан ваговий')
             END
         """)
         
-        recipe_id_makhan = cursor.execute("SELECT id FROM recipes WHERE name = N'Махан ваговий'").fetchone()[0]
+        recipe_id_makhan = cursor.execute("SELECT id FROM recipes WHERE name = 'Махан ваговий'").fetchone()[0]
         
         steps_makhan = [
-            (1, 'trim', N'Підготовка конини', 0, json.dumps({'includes': ['first_grade', 'trim', 'fat_10_percent', 'goulash']})),
-            (2, 'marinade_first', N'Перший маринад та масажер', 5, json.dumps({'marinate_days': 5, 'cold_storage': True})),
-            (3, 'marinade_second', N'Другий маринад з гусарською', 0, json.dumps({'add_gusarska': True})),
-            (4, 'stuff', N'Заправка в кишку/оболонку', 0, json.dumps({'no_grinding': True})),
-            (5, 'cure', N'В\'ялення в холоді', 10, json.dumps({'days': 10})),
-            (6, 'dry', N'Сушка', 10, json.dumps({'days': 10}))
+            (1, 'trim', 'Підготовка конини', 0, json.dumps({'includes': ['first_grade', 'trim', 'fat_10_percent', 'goulash']})),
+            (2, 'marinade_first', 'Перший маринад та масажер', 5, json.dumps({'marinate_days': 5, 'cold_storage': True})),
+            (3, 'marinade_second', 'Другий маринад з гусарською', 0, json.dumps({'add_gusarska': True})),
+            (4, 'stuff', 'Заправка в кишку/оболонку', 0, json.dumps({'no_grinding': True})),
+            (5, 'cure', 'В\'ялення в холоді', 10, json.dumps({'days': 10})),
+            (6, 'dry', 'Сушка', 10, json.dumps({'days': 10}))
         ]
         
         for step_order, step_type, step_name, duration, params in steps_makhan:
