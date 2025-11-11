@@ -78,30 +78,36 @@ export default function BalancesScreen() {
     loadBalances(false);
   };
 
-  const renderBalanceItem = ({ item }: { item: typeof balances[0] }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.itemName} numberOfLines={2}>
-          {item.nomenclature_name}
-        </Text>
-        <View style={styles.quantityBadge}>
-          <Text style={styles.quantityText}>
-            {item.quantity} {item.unit}
+  const renderBalanceItem = ({ item }: { item: typeof balances[0] }) => {
+    const isLowStock = item.quantity === 0;
+    
+    return (
+      <View style={[styles.card, isLowStock && styles.cardLowStock]}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.itemName} numberOfLines={2}>
+            {item.nomenclature_name}
+          </Text>
+          <View style={[styles.quantityBadge, isLowStock && styles.quantityBadgeLow]}>
+            <Text style={[styles.quantityText, isLowStock && styles.quantityTextLow]}>
+              {item.quantity} {item.unit}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.cardFooter}>
+          <View style={styles.categoryBadge}>
+            <MaterialCommunityIcons name=\"tag\" size={14} color=\"#666\" />
+            <Text style={styles.categoryText}>{item.category}</Text>
+          </View>
+          <Text style={styles.lastUpdated}>
+            {new Date(item.last_updated).toLocaleDateString('uk-UA', {
+              day: '2-digit',
+              month: '2-digit',
+            })}
           </Text>
         </View>
       </View>
-      <View style={styles.cardFooter}>
-        <Text style={styles.categoryText}>{item.category}</Text>
-        <Text style={styles.lastUpdated}>
-          {new Date(item.last_updated).toLocaleDateString('uk-UA', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          })}
-        </Text>
-      </View>
-    </View>
-  );
+    );
+  };
 
   const renderCategoryFilter = () => (
     <View style={styles.filterContainer}>
