@@ -56,8 +56,8 @@ export default function BalancesScreen() {
   };
 
   // Check offline queue
-  const checkOfflineQueue = () => {
-    const queue = getOfflineQueue();
+  const checkOfflineQueue = async () => {
+    const queue = await getOfflineQueue();
     setPendingOperationsCount(queue.length);
   };
 
