@@ -71,6 +71,7 @@ def init_database():
             operation_type NVARCHAR(50) NOT NULL,
             quantity DECIMAL(18, 6) NOT NULL,
             balance_after DECIMAL(18, 6) NOT NULL,
+            price_per_unit DECIMAL(18, 2),
             idempotency_key NVARCHAR(255) NOT NULL,
             metadata NVARCHAR(MAX),
             operation_date DATETIME2 NOT NULL DEFAULT GETDATE(),
@@ -78,6 +79,16 @@ def init_database():
             FOREIGN KEY (nomenclature_id) REFERENCES nomenclature(id),
             CONSTRAINT UQ_idempotency_key UNIQUE(idempotency_key)
         )
+        """)
+        
+        # Add price_per_unit column if it doesn't exist (for existing tables)
+        cursor.execute("""
+        IF NOT EXISTS (SELECT * FROM sys.columns 
+                      WHERE object_id = OBJECT_ID('stock_movements') 
+                      AND name = 'price_per_unit')
+        BEGIN
+            ALTER TABLE stock_movements ADD price_per_unit DECIMAL(18, 2)
+        END
         """)
         
         # Create index on operation_date for faster queries
