@@ -473,6 +473,118 @@ async def complete_inventory(inventory: InventoryComplete):
             }
     return await run_in_threadpool(_complete)
 
+@app.post("/api/stock/receipt/bulk", response_model=BatchResponse)
+async def batch_receipt(batch_operation: BatchStockOperation):
+    """Масовий прихід товарів"""
+    from batch_operations import process_batch_receipt
+    
+    def _batch():
+        try:
+            with get_db_connection() as conn:
+                successful, failed = process_batch_receipt(
+                    conn, batch_operation,
+                    get_nomenclature_precision,
+                    get_current_balance_locked,
+                    update_balance
+                )
+                
+                total = len(batch_operation.operations)
+                success_count = len(successful)
+                fail_count = len(failed)
+                
+                results = successful + failed
+                
+                if fail_count == 0:
+                    status = "success"
+                    message = f"Всі {total} операцій виконано успішно"
+                elif success_count == 0:
+                    status = "error"
+                    message = f"Всі {total} операцій провалились"
+                else:
+                    status = "partial_success"
+                    message = f"Виконано {success_count} з {total} операцій. Провалено: {fail_count}"
+                
+                return BatchResponse(
+                    status=status,
+                    total_operations=total,
+                    successful=success_count,
+                    failed=fail_count,
+                    results=results,
+                    message=message
+                )
+        except Exception as e:
+            # Rollback happened (all_or_nothing=True)
+            error_msg = str(e)
+            return BatchResponse(
+                status="error",
+                total_operations=len(batch_operation.operations),
+                successful=0,
+                failed=len(batch_operation.operations),
+                results=[
+                    {"nomenclature_id": item.nomenclature_id, "status": "error", 
+                     "message": f"Batch failed: {error_msg}", "balance_after": None}
+                    for item in batch_operation.operations
+                ],
+                message=f"Batch operation failed: {error_msg}"
+            )
+    return await run_in_threadpool(_batch)
+
+@app.post("/api/stock/withdrawal/bulk", response_model=BatchResponse)
+async def batch_withdrawal(batch_operation: BatchStockOperation):
+    """Масовий розхід товарів"""
+    from batch_operations import process_batch_withdrawal
+    
+    def _batch():
+        try:
+            with get_db_connection() as conn:
+                successful, failed = process_batch_withdrawal(
+                    conn, batch_operation,
+                    get_nomenclature_precision,
+                    get_current_balance_locked,
+                    update_balance
+                )
+                
+                total = len(batch_operation.operations)
+                success_count = len(successful)
+                fail_count = len(failed)
+                
+                results = successful + failed
+                
+                if fail_count == 0:
+                    status = "success"
+                    message = f"Всі {total} операцій виконано успішно"
+                elif success_count == 0:
+                    status = "error"
+                    message = f"Всі {total} операцій провалились"
+                else:
+                    status = "partial_success"
+                    message = f"Виконано {success_count} з {total} операцій. Провалено: {fail_count}"
+                
+                return BatchResponse(
+                    status=status,
+                    total_operations=total,
+                    successful=success_count,
+                    failed=fail_count,
+                    results=results,
+                    message=message
+                )
+        except Exception as e:
+            # Rollback happened (all_or_nothing=True)
+            error_msg = str(e)
+            return BatchResponse(
+                status="error",
+                total_operations=len(batch_operation.operations),
+                successful=0,
+                failed=len(batch_operation.operations),
+                results=[
+                    {"nomenclature_id": item.nomenclature_id, "status": "error",
+                     "message": f"Batch failed: {error_msg}", "balance_after": None}
+                    for item in batch_operation.operations
+                ],
+                message=f"Batch operation failed: {error_msg}"
+            )
+    return await run_in_threadpool(_batch)
+
 @app.post("/api/sync/operations")
 async def sync_operations(batch: SyncBatch):
     """Синхронізувати офлайн операції"""
