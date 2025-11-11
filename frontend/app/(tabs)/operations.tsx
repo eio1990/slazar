@@ -105,7 +105,9 @@ export default function OperationsScreen() {
           type: operationType,
           data: operation,
         });
-        setPendingOperationsCount(require('../../services/api').getOfflineQueue().length);
+        const { getOfflineQueue: getQueue } = require('../../services/api');
+        const currentQueue = await getQueue();
+        setPendingOperationsCount(currentQueue.length);
         Alert.alert(
           'Офлайн режим',
           'Операція збережена та буде синхронізована при підключенні до мережі'
