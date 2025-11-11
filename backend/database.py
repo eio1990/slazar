@@ -56,8 +56,8 @@ def init_database():
             category NVARCHAR(100) NOT NULL,
             unit NVARCHAR(50) NOT NULL,
             precision_digits INT NOT NULL DEFAULT 2,
-            created_at DATETIME2 DEFAULT GETDATE(),
-            updated_at DATETIME2 DEFAULT GETDATE(),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
+            updated_at DATETIME2 DEFAULT GETUTCDATE(),
             CONSTRAINT UQ_nomenclature_name UNIQUE(name)
         )
         """)
@@ -77,8 +77,8 @@ def init_database():
             parent_movement_id INT,
             idempotency_key NVARCHAR(255) NOT NULL,
             metadata NVARCHAR(MAX),
-            operation_date DATETIME2 NOT NULL DEFAULT GETDATE(),
-            created_at DATETIME2 DEFAULT GETDATE(),
+            operation_date DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
             FOREIGN KEY (nomenclature_id) REFERENCES nomenclature(id),
             FOREIGN KEY (parent_movement_id) REFERENCES stock_movements(id),
             CONSTRAINT UQ_idempotency_key UNIQUE(idempotency_key)
@@ -128,7 +128,7 @@ def init_database():
         CREATE TABLE stock_balances (
             nomenclature_id INT PRIMARY KEY,
             quantity DECIMAL(18, 6) NOT NULL DEFAULT 0,
-            last_updated DATETIME2 DEFAULT GETDATE(),
+            last_updated DATETIME2 DEFAULT GETUTCDATE(),
             FOREIGN KEY (nomenclature_id) REFERENCES nomenclature(id)
         )
         """)
@@ -140,7 +140,7 @@ def init_database():
             id INT IDENTITY(1,1) PRIMARY KEY,
             session_type NVARCHAR(50) NOT NULL,
             status NVARCHAR(50) NOT NULL DEFAULT 'in_progress',
-            started_at DATETIME2 DEFAULT GETDATE(),
+            started_at DATETIME2 DEFAULT GETUTCDATE(),
             completed_at DATETIME2,
             idempotency_key NVARCHAR(255) NOT NULL,
             metadata NVARCHAR(MAX),
@@ -158,7 +158,7 @@ def init_database():
             system_quantity DECIMAL(18, 6) NOT NULL,
             actual_quantity DECIMAL(18, 6) NOT NULL,
             difference DECIMAL(18, 6) NOT NULL,
-            created_at DATETIME2 DEFAULT GETDATE(),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
             FOREIGN KEY (session_id) REFERENCES inventory_sessions(id),
             FOREIGN KEY (nomenclature_id) REFERENCES nomenclature(id)
         )
@@ -174,8 +174,8 @@ def init_database():
             expected_yield_min DECIMAL(5, 2),
             expected_yield_max DECIMAL(5, 2),
             description NVARCHAR(MAX),
-            created_at DATETIME2 DEFAULT GETDATE(),
-            updated_at DATETIME2 DEFAULT GETDATE(),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
+            updated_at DATETIME2 DEFAULT GETUTCDATE(),
             FOREIGN KEY (target_product_id) REFERENCES nomenclature(id),
             CONSTRAINT UQ_recipe_name UNIQUE(name)
         )
@@ -191,7 +191,7 @@ def init_database():
             quantity_per_100kg DECIMAL(18, 6),
             is_optional BIT DEFAULT 0,
             notes NVARCHAR(MAX),
-            created_at DATETIME2 DEFAULT GETDATE(),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
             FOREIGN KEY (nomenclature_id) REFERENCES nomenclature(id)
         )
@@ -207,7 +207,7 @@ def init_database():
             quantity_per_100kg DECIMAL(18, 6),
             is_fenugreek BIT DEFAULT 0,
             notes NVARCHAR(MAX),
-            created_at DATETIME2 DEFAULT GETDATE(),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
             FOREIGN KEY (nomenclature_id) REFERENCES nomenclature(id)
         )
@@ -225,7 +225,7 @@ def init_database():
             duration_days DECIMAL(5, 2),
             parameters NVARCHAR(MAX),
             description NVARCHAR(MAX),
-            created_at DATETIME2 DEFAULT GETDATE(),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
         )
         """)
@@ -239,15 +239,15 @@ def init_database():
             recipe_id INT NOT NULL,
             status NVARCHAR(50) NOT NULL DEFAULT 'created',
             current_step INT DEFAULT 0,
-            started_at DATETIME2 DEFAULT GETDATE(),
+            started_at DATETIME2 DEFAULT GETUTCDATE(),
             completed_at DATETIME2,
             initial_weight DECIMAL(18, 6),
             final_weight DECIMAL(18, 6),
             trim_waste DECIMAL(18, 6),
             trim_returned BIT DEFAULT 0,
             operator_notes NVARCHAR(MAX),
-            created_at DATETIME2 DEFAULT GETDATE(),
-            updated_at DATETIME2 DEFAULT GETDATE(),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
+            updated_at DATETIME2 DEFAULT GETUTCDATE(),
             FOREIGN KEY (recipe_id) REFERENCES recipes(id),
             CONSTRAINT UQ_batch_number UNIQUE(batch_number)
         )
@@ -262,14 +262,14 @@ def init_database():
             step_id INT NOT NULL,
             operation_type NVARCHAR(50) NOT NULL,
             status NVARCHAR(50) NOT NULL DEFAULT 'in_progress',
-            started_at DATETIME2 DEFAULT GETDATE(),
+            started_at DATETIME2 DEFAULT GETUTCDATE(),
             completed_at DATETIME2,
             weight_before DECIMAL(18, 6),
             weight_after DECIMAL(18, 6),
             parameters NVARCHAR(MAX),
             notes NVARCHAR(MAX),
             idempotency_key NVARCHAR(255) NOT NULL,
-            created_at DATETIME2 DEFAULT GETDATE(),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
             FOREIGN KEY (batch_id) REFERENCES batches(id) ON DELETE CASCADE,
             FOREIGN KEY (step_id) REFERENCES recipe_steps(id),
             CONSTRAINT UQ_batch_operation_idempotency UNIQUE(idempotency_key)
@@ -288,7 +288,7 @@ def init_database():
             leftover_quantity DECIMAL(18, 6) NOT NULL DEFAULT 0,
             warehouse_mix_used DECIMAL(18, 6) NOT NULL DEFAULT 0,
             idempotency_key NVARCHAR(255) NOT NULL,
-            created_at DATETIME2 DEFAULT GETDATE(),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
             FOREIGN KEY (batch_id) REFERENCES batches(id) ON DELETE CASCADE,
             FOREIGN KEY (mix_nomenclature_id) REFERENCES nomenclature(id),
             CONSTRAINT UQ_batch_mix_idempotency UNIQUE(idempotency_key)
@@ -306,7 +306,7 @@ def init_database():
             quantity_used DECIMAL(18, 6) NOT NULL,
             movement_id INT,
             notes NVARCHAR(MAX),
-            created_at DATETIME2 DEFAULT GETDATE(),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
             FOREIGN KEY (batch_id) REFERENCES batches(id) ON DELETE CASCADE,
             FOREIGN KEY (nomenclature_id) REFERENCES nomenclature(id),
             FOREIGN KEY (movement_id) REFERENCES stock_movements(id)
