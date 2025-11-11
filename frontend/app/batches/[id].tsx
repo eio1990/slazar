@@ -252,6 +252,109 @@ export default function BatchDetailScreen() {
           )}
         </View>
 
+        {/* Production Progress */}
+        {recipe && batch.status !== 'completed' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Прогрес виробництва</Text>
+            
+            <View style={styles.progressCard}>
+              {recipe.steps.map((step: any, index: number) => {
+                const isCompleted = operations.some((op: any) => op.step_id === step.id);
+                const isCurrent = batch.current_step === step.step_order - 1 || 
+                                 (!operations.length && index === 0);
+                
+                return (
+                  <View key={step.id} style={styles.progressStep}>
+                    <View style={styles.progressStepHeader}>
+                      <View style={[
+                        styles.progressStepIcon,
+                        isCompleted && styles.progressStepIconCompleted,
+                        isCurrent && styles.progressStepIconCurrent
+                      ]}>
+                        {isCompleted ? (
+                          <MaterialCommunityIcons name="check" size={20} color="#fff" />
+                        ) : (
+                          <Text style={[
+                            styles.progressStepNumber,
+                            isCurrent && styles.progressStepNumberCurrent
+                          ]}>
+                            {step.step_order}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={styles.progressStepInfo}>
+                        <Text style={[
+                          styles.progressStepName,
+                          isCompleted && styles.progressStepNameCompleted
+                        ]}>
+                          {step.step_name}
+                        </Text>
+                        {step.duration_days > 0 && (
+                          <Text style={styles.progressStepDuration}>
+                            {step.duration_days} {step.duration_days === 1 ? 'день' : 'днів'}
+                          </Text>
+                        )}
+                      </View>
+                      {isCurrent && !isCompleted && (
+                        <TouchableOpacity
+                          style={styles.progressStepButton}
+                          onPress={() => {
+                            Alert.prompt(
+                              'Завершити крок',
+                              `Введіть вагу після "${step.step_name}"`,
+                              [
+                                { text: 'Скасувати', style: 'cancel' },
+                                {
+                                  text: 'OK',
+                                  onPress: (weight) => {
+                                    if (weight && parseFloat(weight) > 0) {
+                                      // Add operation
+                                      fetch(`${API_URL}/api/production/batches/${id}/operations`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                          step_id: step.id,
+                                          weight_after: parseFloat(weight),
+                                          notes: `Крок ${step.step_order} завершено`,
+                                          idempotency_key: `step-${id}-${step.id}-${Date.now()}`,
+                                        }),
+                                      })
+                                        .then(() => {
+                                          refetch();
+                                          queryClient.invalidateQueries({ queryKey: ['batch-operations', id] });
+                                        })
+                                        .catch((err) => Alert.alert('Помилка', 'Не вдалося додати операцію'));
+                                    }
+                                  },
+                                },
+                              ],
+                              'plain-text',
+                              '',
+                              'decimal-pad'
+                            );
+                          }}
+                        >
+                          <MaterialCommunityIcons name="play-circle" size={20} color="#4CAF50" />
+                          <Text style={styles.progressStepButtonText}>Почати</Text>
+                        </TouchableOpacity>
+                      )}
+                      {isCompleted && (
+                        <MaterialCommunityIcons name="check-circle" size={20} color="#4CAF50" />
+                      )}
+                    </View>
+                    {index < recipe.steps.length - 1 && (
+                      <View style={[
+                        styles.progressStepLine,
+                        isCompleted && styles.progressStepLineCompleted
+                      ]} />
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
         {/* Complete Batch Form */}
         {batch.status !== 'completed' && (
           <View style={styles.section}>
