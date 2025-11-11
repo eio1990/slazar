@@ -310,19 +310,30 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
   },
+  quantityBadgeLow: {
+    backgroundColor: '#FFEBEE',
+  },
   quantityText: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#4CAF50',
+  },
+  quantityTextLow: {
+    color: '#FF5722',
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  categoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   categoryText: {
     fontSize: 12,
-    color: '#999',
+    color: '#666',
   },
   lastUpdated: {
     fontSize: 12,
