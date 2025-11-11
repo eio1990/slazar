@@ -5,7 +5,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 // Configure API URL from environment
-const API_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
+const getApiUrl = () => {
+  // For Expo Go, use the preview URL
+  if (Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL) {
+    return Constants.expoConfig.extra.EXPO_PUBLIC_BACKEND_URL;
+  }
+  
+  // For local development
+  if (__DEV__) {
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:8001'; // Android emulator
+    }
+    return 'http://localhost:8001';
+  }
+  
+  return 'http://localhost:8001';
+};
+
+const API_URL = getApiUrl();
 
 // Storage adapter for cross-platform compatibility
 export const storage = {
