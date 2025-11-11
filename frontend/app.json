@@ -8,9 +8,6 @@
     "scheme": "warehouse",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "locales": {
-      "uk": "./locales/uk.json"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.slazar.warehouse"
