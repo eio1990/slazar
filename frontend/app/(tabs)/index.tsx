@@ -14,7 +14,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { apiService, checkNetworkConnectivity, getOfflineQueue } from '../../services/api';
 import { useStore } from '../../stores/useStore';
 import NetInfo from '@react-native-community/netinfo';
-import { useFocusEffect } from '@react-navigation/native';
 
 export default function BalancesScreen() {
   const { balances, setBalances, setIsOnline, setPendingOperationsCount } = useStore();
