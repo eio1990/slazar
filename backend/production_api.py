@@ -127,16 +127,6 @@ async def get_recipe(recipe_id: int):
         
         return recipe
 
-@router.post("/batches", response_model=Batch)
-async def create_batch(batch_data: BatchCreate):
-    """Create new production batch"""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        
-        # Verify recipe exists
-        cursor.execute("SELECT name FROM recipes WHERE id = ?", batch_data.recipe_id)
-        recipe = cursor.fetchone()
-
 @router.get("/recipes/{recipe_id}/spices")
 async def get_recipe_spices(recipe_id: int):
     """Get spices/ingredients for a recipe"""
