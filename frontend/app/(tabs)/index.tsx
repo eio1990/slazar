@@ -287,6 +287,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  cardLowStock: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF5722',
+  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
