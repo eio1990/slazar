@@ -140,15 +140,18 @@ backend:
 
   - task: "Production API endpoints"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/production_api.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented API endpoints: GET /api/production/recipes, GET /api/production/recipes/{id}, POST /api/production/batches, GET /api/production/batches, GET /api/production/batches/{id}, PUT /api/production/batches/{id}/complete. Basic curl test passed for recipes list. Need comprehensive testing."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing completed successfully. All 8 API endpoints working correctly: ✅ GET /production/recipes (returns 8 recipes with proper fields), ✅ GET /production/recipes/{id} (returns recipe with ordered steps), ✅ POST /production/batches (creates batch with proper batch number format), ✅ GET /production/batches (lists all batches), ✅ GET /production/batches?status=created (filters correctly), ✅ GET /production/batches/{id} (returns batch details), ✅ PUT /production/batches/{id}/complete (completes batch, creates stock movements, calculates yield). Fixed minor type conversion issue in yield calculation. Edge cases tested: invalid recipe/batch IDs return 404, duplicate completion returns 400. Database verification: stock movements created correctly, finished product balance updated (75.0 KG for Бастурма класична вагова). Idempotency working properly."
 
   - task: "ODBC driver installation"
     implemented: true
