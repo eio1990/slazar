@@ -11,6 +11,36 @@ from models import Recipe, RecipeStep, BatchCreate, Batch, BatchComplete, BatchO
 
 router = APIRouter(prefix="/api/production", tags=["production"])
 
+# Constants
+FENUGREEK_ID = 19  # Пажитник in nomenclature
+WATER_ID = 71      # Вода in nomenclature
+FENUGREEK_WATER_RATIO = 4  # 1:4 rule
+
+def calculate_produced_mix(spices: list) -> float:
+    """
+    Calculate produced mix quantity with fenugreek water rule
+    ProducedMix = Σ(all spices except fenugreek) + (fenugreek_weight × 4)
+    """
+    total = 0
+    fenugreek_weight = 0
+    
+    for spice in spices:
+        nomenclature_id = spice.get('nomenclature_id')
+        quantity = spice.get('quantity', 0)
+        
+        if nomenclature_id == FENUGREEK_ID:
+            fenugreek_weight = quantity
+        elif nomenclature_id != WATER_ID:  # Don't count manually added water
+            total += quantity
+    
+    # Add fenugreek and its required water (1:4 ratio)
+    if fenugreek_weight > 0:
+        total += fenugreek_weight + (fenugreek_weight * FENUGREEK_WATER_RATIO)
+    
+    return total
+
+
+
 @router.get("/recipes", response_model=List[Recipe])
 async def get_recipes():
     """Get all recipes"""
