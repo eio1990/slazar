@@ -101,3 +101,96 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  Implement "Recipes for Finished Weight Products Module" (Модуль рецепти готової весової продукції).
+  This module manages recipes for production, including ingredients, spices, production steps, and batch operations.
+  Key features:
+  - Recipe management (read-only in app, stored in DB)
+  - Production batch lifecycle (create, track steps, complete)
+  - Mix production logic (Chaman, Marinade with fenugreek water rule)
+  - Trim waste handling
+  - Stock movements for raw materials and finished products
+  - Idempotency for offline sync
+
+backend:
+  - task: "Database schema for recipes module"
+    implemented: true
+    working: true
+    file: "backend/database.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Created tables: recipes, recipe_ingredients, recipe_spices, recipe_steps, batches, batch_operations, batch_mix_production, batch_materials. All tables created successfully with proper foreign keys and constraints."
+
+  - task: "Seed recipes and finished products"
+    implemented: true
+    working: true
+    file: "backend/seed_recipes_simple.py, backend/seed_finished_products.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Created 8 recipes with production steps: Бастурма класична, Бастурма з конини, Індичка, Курка, Свинина, Пластина, Суджук, Махан. All recipes seeded successfully with target products."
+
+  - task: "Production API endpoints"
+    implemented: true
+    working: "NA"
+    file: "backend/production_api.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented API endpoints: GET /api/production/recipes, GET /api/production/recipes/{id}, POST /api/production/batches, GET /api/production/batches, GET /api/production/batches/{id}, PUT /api/production/batches/{id}/complete. Basic curl test passed for recipes list. Need comprehensive testing."
+
+  - task: "ODBC driver installation"
+    implemented: true
+    working: true
+    file: "N/A (system level)"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Initial issue: libodbc.so.2 not found"
+      - working: true
+        agent: "main"
+        comment: "Installed unixODBC and msodbcsql18. Backend now starts successfully and connects to MS SQL Server."
+
+frontend:
+  - task: "Production module UI"
+    implemented: false
+    working: "NA"
+    file: "N/A"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Not yet implemented. Planned for Phase 2."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Production API endpoints"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Phase 1 (Backend MVP) completed. Created database schema for recipes module, seeded 8 recipes with production steps, and implemented core API endpoints. ODBC driver issue resolved. Ready for backend testing before proceeding to frontend development."
