@@ -73,13 +73,6 @@ export default function BalancesScreen() {
     return () => unsubscribe();
   }, [selectedCategory]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadBalances(false);
-      checkOfflineQueue();
-    }, [])
-  );
-
   const onRefresh = () => {
     setRefreshing(true);
     loadBalances(false);
