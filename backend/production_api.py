@@ -344,6 +344,233 @@ async def get_batch_operations(batch_id: int):
 
 
 @router.put("/batches/{batch_id}/complete")
+
+@router.post("/batches/{batch_id}/mix")
+async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
+    """Produce mix (Chaman/Marinade) with fenugreek water rule"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Get batch
+        cursor.execute("SELECT * FROM batches WHERE id = ?", batch_id)
+        batch = cursor.fetchone()
+        if not batch:
+            raise HTTPException(status_code=404, detail="Batch not found")
+        
+        if batch.status == 'completed':
+            raise HTTPException(status_code=400, detail="Batch already completed")
+        
+        # Check idempotency
+        cursor.execute(
+            "SELECT id FROM batch_mix_production WHERE idempotency_key = ?",
+            mix_data.idempotency_key
+        )
+        if cursor.fetchone():
+            return {"message": "Mix already produced", "batch_id": batch_id}
+        
+        # Insert mix production record
+        cursor.execute("""
+            INSERT INTO batch_mix_production (
+                batch_id, mix_nomenclature_id, produced_quantity, used_quantity,
+                leftover_quantity, warehouse_mix_used, idempotency_key
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, batch_id, mix_data.mix_nomenclature_id, mix_data.produced_quantity,
+            mix_data.used_quantity, mix_data.leftover_quantity,
+            mix_data.warehouse_mix_used, mix_data.idempotency_key)
+        
+        # If leftover > 0, create stock receipt for mix
+        if mix_data.leftover_quantity > 0:
+            leftover_key = f"mix-leftover-{batch_id}-{mix_data.idempotency_key}"
+            
+            cursor.execute("""
+                INSERT INTO stock_movements (
+                    nomenclature_id, operation_type, quantity, balance_after,
+                    source_operation_type, source_operation_id,
+                    idempotency_key, operation_date, metadata
+                )
+                SELECT 
+                    ?, 'receipt', ?, 
+                    COALESCE((SELECT quantity FROM stock_balances WHERE nomenclature_id = ?), 0) + ?,
+                    'production_leftover', ?,
+                    ?, GETDATE(), ?
+            """, mix_data.mix_nomenclature_id, mix_data.leftover_quantity,
+                mix_data.mix_nomenclature_id, mix_data.leftover_quantity,
+                batch.batch_number, leftover_key,
+                json.dumps({
+                    'batch_id': batch_id,
+                    'batch_number': batch.batch_number,
+                    'mix_type': 'leftover'
+                }))
+            
+            # Update stock balance
+            cursor.execute("""
+                IF EXISTS (SELECT 1 FROM stock_balances WHERE nomenclature_id = ?)
+                    UPDATE stock_balances
+                    SET quantity = quantity + ?,
+                        last_updated = GETDATE()
+                    WHERE nomenclature_id = ?
+                ELSE
+                    INSERT INTO stock_balances (nomenclature_id, quantity, last_updated)
+                    VALUES (?, ?, GETDATE())
+            """, mix_data.mix_nomenclature_id, mix_data.leftover_quantity,
+                mix_data.mix_nomenclature_id, mix_data.mix_nomenclature_id,
+                mix_data.leftover_quantity)
+        
+        # If warehouse mix used, create withdrawal
+        if mix_data.warehouse_mix_used > 0:
+            warehouse_key = f"mix-warehouse-{batch_id}-{mix_data.idempotency_key}"
+            
+            # Check if enough stock
+            cursor.execute(
+                "SELECT quantity FROM stock_balances WHERE nomenclature_id = ?",
+                mix_data.mix_nomenclature_id
+            )
+            result = cursor.fetchone()
+            current_balance = float(result[0]) if result else 0
+            
+            if current_balance < mix_data.warehouse_mix_used:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Insufficient warehouse mix. Available: {current_balance}, Required: {mix_data.warehouse_mix_used}"
+                )
+            
+            new_balance = current_balance - mix_data.warehouse_mix_used
+            
+            cursor.execute("""
+                INSERT INTO stock_movements (
+                    nomenclature_id, operation_type, quantity, balance_after,
+                    source_operation_type, source_operation_id,
+                    idempotency_key, operation_date, metadata
+                )
+                VALUES (?, 'withdrawal', ?, ?, 'production_use', ?, ?, GETDATE(), ?)
+            """, mix_data.mix_nomenclature_id, mix_data.warehouse_mix_used,
+                new_balance, batch.batch_number, warehouse_key,
+                json.dumps({
+                    'batch_id': batch_id,
+                    'batch_number': batch.batch_number,
+                    'mix_type': 'warehouse_use'
+                }))
+            
+            # Update stock balance
+            cursor.execute("""
+                UPDATE stock_balances
+                SET quantity = ?,
+                    last_updated = GETDATE()
+                WHERE nomenclature_id = ?
+            """, new_balance, mix_data.mix_nomenclature_id)
+        
+        conn.commit()
+        
+        return {
+            "message": "Mix produced successfully",
+            "batch_id": batch_id,
+            "produced_quantity": mix_data.produced_quantity,
+            "used_quantity": mix_data.used_quantity,
+            "leftover_quantity": mix_data.leftover_quantity,
+            "warehouse_mix_used": mix_data.warehouse_mix_used
+        }
+
+@router.post("/batches/{batch_id}/materials/consume")
+async def consume_materials(batch_id: int, materials: dict):
+    """Consume materials (raw materials and spices) for batch production"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Get batch
+        cursor.execute("SELECT * FROM batches WHERE id = ?", batch_id)
+        batch = cursor.fetchone()
+        if not batch:
+            raise HTTPException(status_code=404, detail="Batch not found")
+        
+        consumed = []
+        idempotency_key = materials.get('idempotency_key', f"consume-{batch_id}-{datetime.now().timestamp()}")
+        
+        for material in materials.get('materials', []):
+            nomenclature_id = material['nomenclature_id']
+            quantity = material['quantity']
+            material_type = material.get('type', 'ingredient')
+            
+            # Check idempotency for this specific material
+            material_key = f"{idempotency_key}-{nomenclature_id}"
+            cursor.execute(
+                "SELECT id FROM stock_movements WHERE idempotency_key = ?",
+                material_key
+            )
+            if cursor.fetchone():
+                continue  # Already consumed
+            
+            # Check stock availability
+            cursor.execute(
+                "SELECT quantity FROM stock_balances WHERE nomenclature_id = ?",
+                nomenclature_id
+            )
+            result = cursor.fetchone()
+            current_balance = float(result[0]) if result else 0
+            
+            if current_balance < quantity:
+                cursor.execute(
+                    "SELECT name FROM nomenclature WHERE id = ?",
+                    nomenclature_id
+                )
+                name_result = cursor.fetchone()
+                material_name = name_result[0] if name_result else f"ID {nomenclature_id}"
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Insufficient stock for {material_name}. Available: {current_balance}, Required: {quantity}"
+                )
+            
+            new_balance = current_balance - quantity
+            
+            # Create withdrawal movement
+            cursor.execute("""
+                INSERT INTO stock_movements (
+                    nomenclature_id, operation_type, quantity, balance_after,
+                    source_operation_type, source_operation_id,
+                    idempotency_key, operation_date, metadata
+                )
+                VALUES (?, 'withdrawal', ?, ?, 'production', ?, ?, GETDATE(), ?)
+            """, nomenclature_id, quantity, new_balance,
+                batch.batch_number, material_key,
+                json.dumps({
+                    'batch_id': batch_id,
+                    'batch_number': batch.batch_number,
+                    'material_type': material_type
+                }))
+            
+            # Update stock balance
+            cursor.execute("""
+                UPDATE stock_balances
+                SET quantity = ?,
+                    last_updated = GETDATE()
+                WHERE nomenclature_id = ?
+            """, new_balance, nomenclature_id)
+            
+            # Record in batch_materials
+            cursor.execute("""
+                INSERT INTO batch_materials (
+                    batch_id, nomenclature_id, material_type, quantity_used, notes
+                )
+                VALUES (?, ?, ?, ?, ?)
+            """, batch_id, nomenclature_id, material_type, quantity,
+                material.get('notes', ''))
+            
+            consumed.append({
+                'nomenclature_id': nomenclature_id,
+                'quantity': quantity,
+                'material_type': material_type
+            })
+        
+        conn.commit()
+        
+        return {
+            "message": "Materials consumed successfully",
+            "batch_id": batch_id,
+            "consumed_count": len(consumed),
+            "consumed_materials": consumed
+        }
+
+
 async def complete_batch(batch_id: int, completion: BatchComplete):
     """Complete a batch and create stock movements"""
     with get_db_connection() as conn:
