@@ -1054,6 +1054,3 @@ async def export_batches(
             'filename': f'batches_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv',
             'count': len(batches)
         }
-
-
-        }
