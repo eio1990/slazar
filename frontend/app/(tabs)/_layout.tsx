@@ -34,6 +34,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Залишки',
+          href: '/(tabs)',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="warehouse" size={size} color={color} />
           ),
@@ -43,6 +44,7 @@ export default function TabLayout() {
         name="operations"
         options={{
           title: 'Операції',
+          href: '/(tabs)/operations',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="swap-horizontal" size={size} color={color} />
           ),
@@ -52,6 +54,7 @@ export default function TabLayout() {
         name="inventory"
         options={{
           title: 'Інвентаризація',
+          href: '/(tabs)/inventory',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="clipboard-check" size={size} color={color} />
           ),
@@ -61,6 +64,7 @@ export default function TabLayout() {
         name="history"
         options={{
           title: 'Журнал',
+          href: '/(tabs)/history',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="history" size={size} color={color} />
           ),
