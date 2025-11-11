@@ -24,6 +24,9 @@ class StockOperation(BaseModel):
     nomenclature_id: int
     quantity: float
     price_per_unit: Optional[float] = None
+    source_operation_type: Optional[str] = None
+    source_operation_id: Optional[str] = None
+    parent_movement_id: Optional[int] = None
     idempotency_key: str
     metadata: Optional[dict] = None
 
