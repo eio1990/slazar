@@ -65,6 +65,17 @@ def get_current_balance(conn, nomenclature_id: int) -> float:
     row = cursor.fetchone()
     return float(row[0]) if row else 0.0
 
+def get_current_balance_locked(conn, nomenclature_id: int) -> float:
+    """Get current balance with row lock (prevents race conditions)"""
+    cursor = conn.cursor()
+    # WITH (UPDLOCK, ROWLOCK) provides row-level exclusive lock in MS SQL
+    cursor.execute(
+        "SELECT quantity FROM stock_balances WITH (UPDLOCK, ROWLOCK) WHERE nomenclature_id = ?",
+        (nomenclature_id,)
+    )
+    row = cursor.fetchone()
+    return float(row[0]) if row else 0.0
+
 def update_balance(conn, nomenclature_id: int, new_balance: float):
     """Update or insert balance"""
     cursor = conn.cursor()
