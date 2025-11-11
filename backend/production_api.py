@@ -186,9 +186,59 @@ async def get_recipe_spices(recipe_id: int):
             'ingredients': ingredients
         }
 
-
+@router.post("/batches", response_model=Batch)
+async def create_batch(batch_data: BatchCreate):
+    """Create new production batch with stock availability check"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Verify recipe exists and get target product
+        cursor.execute("""
+            SELECT r.name, r.target_product_id, n.name as product_name
+            FROM recipes r
+            JOIN nomenclature n ON r.target_product_id = n.id
+            WHERE r.id = ?
+        """, batch_data.recipe_id)
+        recipe = cursor.fetchone()
         if not recipe:
             raise HTTPException(status_code=404, detail="Recipe not found")
+        
+        # Check raw material availability on stock
+        # Get main ingredient from recipe
+        cursor.execute("""
+            SELECT ri.nomenclature_id, n.name, ri.quantity_per_100kg
+            FROM recipe_ingredients ri
+            JOIN nomenclature n ON ri.nomenclature_id = n.id
+            WHERE ri.recipe_id = ? AND ri.is_optional = 0
+            ORDER BY ri.quantity_per_100kg DESC
+        """, batch_data.recipe_id)
+        
+        main_ingredient = cursor.fetchone()
+        if main_ingredient:
+            ingredient_id = main_ingredient.nomenclature_id
+            ingredient_name = main_ingredient.name
+            
+            # Check stock balance
+            cursor.execute("""
+                SELECT COALESCE(quantity, 0) as quantity
+                FROM stock_balances
+                WHERE nomenclature_id = ?
+            """, ingredient_id)
+            
+            balance_row = cursor.fetchone()
+            current_balance = float(balance_row[0]) if balance_row else 0.0
+            
+            # Check if enough stock (considering trim waste)
+            total_required = batch_data.initial_weight
+            if batch_data.trim_waste and batch_data.trim_waste > 0:
+                total_required += batch_data.trim_waste
+            
+            if current_balance < total_required:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Insufficient stock for {ingredient_name}. "
+                           f"Available: {current_balance:.2f} kg, Required: {total_required:.2f} kg"
+                )
         
         # Generate batch number
         today = datetime.now().strftime("%d%m%Y")
