@@ -20,7 +20,7 @@ def seed_recipes():
             BEGIN
                 INSERT INTO recipes (name, target_product_id, expected_yield_min, expected_yield_max, description)
                 VALUES ('Бастурма класична', 
-                       (SELECT id FROM nomenclature WHERE name = 'Яловичина вищій ґатунок'),
+                       (SELECT id FROM nomenclature WHERE name = 'Бастурма класична вагова'),
                        73.0, 78.0, 
                        'Класична яловича бастурма з чаманом')
             END
