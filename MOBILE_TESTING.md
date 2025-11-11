@@ -4,7 +4,7 @@
 
 1. **Відкрийте в браузері:**
    ```
-   https://meat-inventory-2.preview.emergentagent.com
+   https://stockflow-311.preview.emergentagent.com
    ```
 
 2. **Натисніть кнопку "Connect" або відкрийте DevTools**
@@ -100,7 +100,7 @@
 ### "Network request failed"
 **Рішення:** 
 - Перевірте інтернет підключення
-- Backend має бути доступний на `https://meat-inventory-2.preview.emergentagent.com/api/health`
+- Backend має бути доступний на `https://stockflow-311.preview.emergentagent.com/api/health`
 
 ### "Could not find navigation object"
 **Рішення:** Це вже виправлено, перезапустіть додаток
