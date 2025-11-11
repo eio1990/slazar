@@ -25,11 +25,14 @@ def seed_finished_products():
         ]
         
         for name, category, unit, precision in products:
-            cursor.execute("""
-                IF NOT EXISTS (SELECT 1 FROM nomenclature WHERE name = ?)
-                INSERT INTO nomenclature (name, category, unit, precision_digits)
-                VALUES (?, ?, ?, ?)
-            """, name, name, category, unit, precision)
+            # Check if exists
+            cursor.execute("SELECT COUNT(*) FROM nomenclature WHERE name = ?", name)
+            if cursor.fetchone()[0] == 0:
+                cursor.execute("""
+                    INSERT INTO nomenclature (name, category, unit, precision_digits)
+                    VALUES (?, ?, ?, ?)
+                """, name, category, unit, precision)
+                print(f"  Додано: {name}")
         
         conn.commit()
         print("✅ Finished products seeded successfully")
