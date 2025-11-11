@@ -823,4 +823,237 @@ async def complete_batch(batch_id: int, completion: BatchComplete):
             "batch_id": batch_id,
             "yield_percent": round(yield_percent, 2),
             "expected_range": f"{batch.expected_yield_min}-{batch.expected_yield_max}%"
+
+
+@router.get("/batches/analytics")
+async def get_batches_analytics(
+    start_date: str = None,
+    end_date: str = None,
+    recipe_id: int = None,
+    status: str = None
+):
+    """Get analytics and statistics for batches"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Build WHERE clause
+        where_clauses = []
+        params = []
+        
+        if start_date:
+            where_clauses.append("b.started_at >= ?")
+            params.append(start_date)
+        
+        if end_date:
+            where_clauses.append("b.started_at <= ?")
+            params.append(end_date)
+        
+        if recipe_id:
+            where_clauses.append("b.recipe_id = ?")
+            params.append(recipe_id)
+        
+        if status:
+            where_clauses.append("b.status = ?")
+            params.append(status)
+        
+        where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+        
+        # Get summary statistics
+        cursor.execute(f"""
+            SELECT 
+                COUNT(*) as total_batches,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_batches,
+                COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress_batches,
+                COUNT(CASE WHEN status = 'created' THEN 1 END) as created_batches,
+                SUM(CASE WHEN status = 'completed' THEN initial_weight ELSE 0 END) as total_input_weight,
+                SUM(CASE WHEN status = 'completed' THEN final_weight ELSE 0 END) as total_output_weight,
+                AVG(CASE WHEN status = 'completed' AND final_weight > 0 AND initial_weight > 0 
+                    THEN (final_weight * 100.0 / initial_weight) ELSE NULL END) as avg_yield_percent
+            FROM batches b
+            WHERE {where_sql}
+        """, *params)
+        
+        summary = cursor.fetchone()
+        
+        # Get statistics by recipe
+        cursor.execute(f"""
+            SELECT 
+                r.id,
+                r.name,
+                COUNT(*) as batch_count,
+                COUNT(CASE WHEN b.status = 'completed' THEN 1 END) as completed_count,
+                SUM(CASE WHEN b.status = 'completed' THEN b.initial_weight ELSE 0 END) as total_input,
+                SUM(CASE WHEN b.status = 'completed' THEN b.final_weight ELSE 0 END) as total_output,
+                AVG(CASE WHEN b.status = 'completed' AND b.final_weight > 0 AND b.initial_weight > 0 
+                    THEN (b.final_weight * 100.0 / b.initial_weight) ELSE NULL END) as avg_yield,
+                r.expected_yield_min,
+                r.expected_yield_max
+            FROM batches b
+            JOIN recipes r ON b.recipe_id = r.id
+            WHERE {where_sql}
+            GROUP BY r.id, r.name, r.expected_yield_min, r.expected_yield_max
+            ORDER BY COUNT(*) DESC
+        """, *params)
+        
+        by_recipe = []
+        for row in cursor.fetchall():
+            by_recipe.append({
+                'recipe_id': row[0],
+                'recipe_name': row[1],
+                'batch_count': row[2],
+                'completed_count': row[3],
+                'total_input_weight': float(row[4]) if row[4] else 0,
+                'total_output_weight': float(row[5]) if row[5] else 0,
+                'avg_yield_percent': float(row[6]) if row[6] else 0,
+                'expected_yield_min': float(row[7]) if row[7] else 0,
+                'expected_yield_max': float(row[8]) if row[8] else 0,
+            })
+        
+        # Get recent batches
+        cursor.execute(f"""
+            SELECT TOP 10
+                b.id, b.batch_number, b.recipe_id, r.name as recipe_name,
+                b.status, b.started_at, b.completed_at,
+                b.initial_weight, b.final_weight,
+                CASE WHEN b.final_weight > 0 AND b.initial_weight > 0 
+                    THEN (b.final_weight * 100.0 / b.initial_weight) 
+                    ELSE NULL END as yield_percent
+            FROM batches b
+            JOIN recipes r ON b.recipe_id = r.id
+            WHERE {where_sql}
+            ORDER BY b.started_at DESC
+        """, *params)
+        
+        recent_batches = []
+        for row in cursor.fetchall():
+            recent_batches.append({
+                'id': row[0],
+                'batch_number': row[1],
+                'recipe_id': row[2],
+                'recipe_name': row[3],
+                'status': row[4],
+                'started_at': row[5].isoformat() if row[5] else None,
+                'completed_at': row[6].isoformat() if row[6] else None,
+                'initial_weight': float(row[7]) if row[7] else 0,
+                'final_weight': float(row[8]) if row[8] else 0,
+                'yield_percent': float(row[9]) if row[9] else None,
+            })
+        
+        return {
+            'summary': {
+                'total_batches': summary[0],
+                'completed_batches': summary[1],
+                'in_progress_batches': summary[2],
+                'created_batches': summary[3],
+                'total_input_weight': float(summary[4]) if summary[4] else 0,
+                'total_output_weight': float(summary[5]) if summary[5] else 0,
+                'avg_yield_percent': float(summary[6]) if summary[6] else 0,
+            },
+            'by_recipe': by_recipe,
+            'recent_batches': recent_batches,
+            'filters': {
+                'start_date': start_date,
+                'end_date': end_date,
+                'recipe_id': recipe_id,
+                'status': status,
+            }
+        }
+
+@router.get("/batches/export")
+async def export_batches(
+    start_date: str = None,
+    end_date: str = None,
+    recipe_id: int = None,
+    status: str = None,
+    format: str = 'csv'
+):
+    """Export batches to CSV/Excel format"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Build WHERE clause
+        where_clauses = []
+        params = []
+        
+        if start_date:
+            where_clauses.append("b.started_at >= ?")
+            params.append(start_date)
+        
+        if end_date:
+            where_clauses.append("b.started_at <= ?")
+            params.append(end_date)
+        
+        if recipe_id:
+            where_clauses.append("b.recipe_id = ?")
+            params.append(recipe_id)
+        
+        if status:
+            where_clauses.append("b.status = ?")
+            params.append(status)
+        
+        where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+        
+        # Get batches data
+        cursor.execute(f"""
+            SELECT 
+                b.batch_number,
+                r.name as recipe_name,
+                b.status,
+                b.started_at,
+                b.completed_at,
+                b.initial_weight,
+                b.final_weight,
+                b.trim_waste,
+                CASE WHEN b.final_weight > 0 AND b.initial_weight > 0 
+                    THEN (b.final_weight * 100.0 / b.initial_weight) 
+                    ELSE NULL END as yield_percent,
+                r.expected_yield_min,
+                r.expected_yield_max,
+                b.operator_notes
+            FROM batches b
+            JOIN recipes r ON b.recipe_id = r.id
+            WHERE {where_sql}
+            ORDER BY b.started_at DESC
+        """, *params)
+        
+        batches = []
+        for row in cursor.fetchall():
+            batches.append({
+                'Номер партії': row[0],
+                'Рецепт': row[1],
+                'Статус': row[2],
+                'Початок': row[3].strftime('%d.%m.%Y %H:%M') if row[3] else '',
+                'Завершено': row[4].strftime('%d.%m.%Y %H:%M') if row[4] else '',
+                'Початкова вага (кг)': float(row[5]) if row[5] else 0,
+                'Фінальна вага (кг)': float(row[6]) if row[6] else 0,
+                'Обрізки (кг)': float(row[7]) if row[7] else 0,
+                'Вихід (%)': round(float(row[8]), 2) if row[8] else '',
+                'Очікуваний вихід мін (%)': float(row[9]) if row[9] else 0,
+                'Очікуваний вихід макс (%)': float(row[10]) if row[10] else 0,
+                'Примітки': row[11] or '',
+            })
+        
+        if format == 'json':
+            return batches
+        
+        # CSV format
+        import csv
+        import io
+        
+        output = io.StringIO()
+        if batches:
+            writer = csv.DictWriter(output, fieldnames=batches[0].keys())
+            writer.writeheader()
+            writer.writerows(batches)
+        
+        csv_content = output.getvalue()
+        
+        return {
+            'format': 'csv',
+            'content': csv_content,
+            'filename': f'batches_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv',
+            'count': len(batches)
+        }
+
+
         }
