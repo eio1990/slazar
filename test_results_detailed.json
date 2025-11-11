@@ -1,0 +1,108 @@
+{
+  "total": 10,
+  "passed": 8,
+  "failed": 2,
+  "success_rate": 80.0,
+  "results": [
+    {
+      "test": "Health Check",
+      "success": true,
+      "details": "Status: ok",
+      "timestamp": "2025-11-11T13:05:01.736296",
+      "response_data": {
+        "status": "ok",
+        "service": "warehouse-api"
+      }
+    },
+    {
+      "test": "GET /production/recipes",
+      "success": true,
+      "details": "Found 8 recipes with all required fields",
+      "timestamp": "2025-11-11T13:05:02.918863",
+      "response_data": {
+        "count": 8,
+        "sample": {
+          "id": 3,
+          "name": "\u0411\u0430\u0441\u0442\u0443\u0440\u043c\u0430 \u0437 \u043a\u043e\u043d\u0438\u043d\u0438 \u0432\u0430\u0433\u043e\u0432\u0430",
+          "target_product_id": 108,
+          "target_product_name": "\u0411\u0430\u0441\u0442\u0443\u0440\u043c\u0430 \u0437 \u043a\u043e\u043d\u0438\u043d\u0438 \u0432\u0430\u0433\u043e\u0432\u0430",
+          "expected_yield_min": 67.0,
+          "expected_yield_max": 68.0,
+          "description": "\u0420\u0435\u0446\u0435\u043f\u0442 \u0434\u043b\u044f \u0411\u0430\u0441\u0442\u0443\u0440\u043c\u0430 \u0437 \u043a\u043e\u043d\u0438\u043d\u0438 \u0432\u0430\u0433\u043e\u0432\u0430",
+          "steps": []
+        }
+      }
+    },
+    {
+      "test": "GET /production/recipes/2",
+      "success": true,
+      "details": "Recipe '\u0411\u0430\u0441\u0442\u0443\u0440\u043c\u0430 \u043a\u043b\u0430\u0441\u0438\u0447\u043d\u0430' with 8 steps, ordered: True",
+      "timestamp": "2025-11-11T13:05:04.245320",
+      "response_data": {
+        "recipe_name": "\u0411\u0430\u0441\u0442\u0443\u0440\u043c\u0430 \u043a\u043b\u0430\u0441\u0438\u0447\u043d\u0430",
+        "steps_count": 8
+      }
+    },
+    {
+      "test": "POST /production/batches",
+      "success": true,
+      "details": "Created batch BATCH-11112025-001 with ID 1",
+      "timestamp": "2025-11-11T13:05:06.144940",
+      "response_data": {
+        "batch_id": 1,
+        "batch_number": "BATCH-11112025-001"
+      }
+    },
+    {
+      "test": "GET /production/batches",
+      "success": true,
+      "details": "Retrieved 1 batches",
+      "timestamp": "2025-11-11T13:05:07.324099",
+      "response_data": {
+        "count": 1
+      }
+    },
+    {
+      "test": "GET /production/batches?status=created",
+      "success": true,
+      "details": "Retrieved 1 created batches",
+      "timestamp": "2025-11-11T13:05:08.500864",
+      "response_data": {
+        "count": 1
+      }
+    },
+    {
+      "test": "GET /production/batches/1",
+      "success": true,
+      "details": "Retrieved batch BATCH-11112025-001",
+      "timestamp": "2025-11-11T13:05:09.679542",
+      "response_data": {
+        "batch_number": "BATCH-11112025-001",
+        "status": "created"
+      }
+    },
+    {
+      "test": "PUT /production/batches/1/complete",
+      "success": false,
+      "details": "HTTP 500",
+      "timestamp": "2025-11-11T13:05:10.996129",
+      "response_data": "Internal Server Error"
+    },
+    {
+      "test": "Edge Cases",
+      "success": false,
+      "details": "\u2705 Invalid recipe ID returns 404; \u2705 Non-existent recipe returns 404; \u2705 Non-existent batch returns 404; \u274c Duplicate completion returned 500",
+      "timestamp": "2025-11-11T13:05:15.877075",
+      "response_data": null
+    },
+    {
+      "test": "Database Verification",
+      "success": true,
+      "details": "No finished products with stock found (may be expected)",
+      "timestamp": "2025-11-11T13:05:17.056676",
+      "response_data": {
+        "total_balances": 135
+      }
+    }
+  ]
+}
