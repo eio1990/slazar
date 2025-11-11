@@ -7,7 +7,7 @@ from datetime import datetime
 import json
 
 from database import get_db_connection
-from models import Recipe, RecipeStep, BatchCreate, Batch, BatchComplete, BatchOperationCreate
+from models import Recipe, RecipeStep, BatchCreate, Batch, BatchComplete, BatchOperationCreate, BatchMixProduction
 
 router = APIRouter(prefix="/api/production", tags=["production"])
 
