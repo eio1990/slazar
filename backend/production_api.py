@@ -367,7 +367,7 @@ async def add_batch_operation(batch_id: int, operation: BatchOperationCreate):
             UPDATE batches
             SET status = ?,
                 current_step = ?,
-                updated_at = GETDATE()
+                updated_at = GETUTCDATE()
             WHERE id = ?
         """, new_status, batch.step_order, batch_id)
         
@@ -474,7 +474,7 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
                     ?, 'receipt', ?, 
                     COALESCE((SELECT quantity FROM stock_balances WHERE nomenclature_id = ?), 0) + ?,
                     'production_leftover', ?,
-                    ?, GETDATE(), ?
+                    ?, GETUTCDATE(), ?
             """, mix_data.mix_nomenclature_id, mix_data.leftover_quantity,
                 mix_data.mix_nomenclature_id, mix_data.leftover_quantity,
                 batch.batch_number, leftover_key,
@@ -489,11 +489,11 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
                 IF EXISTS (SELECT 1 FROM stock_balances WHERE nomenclature_id = ?)
                     UPDATE stock_balances
                     SET quantity = quantity + ?,
-                        last_updated = GETDATE()
+                        last_updated = GETUTCDATE()
                     WHERE nomenclature_id = ?
                 ELSE
                     INSERT INTO stock_balances (nomenclature_id, quantity, last_updated)
-                    VALUES (?, ?, GETDATE())
+                    VALUES (?, ?, GETUTCDATE())
             """, mix_data.mix_nomenclature_id, mix_data.leftover_quantity,
                 mix_data.mix_nomenclature_id, mix_data.mix_nomenclature_id,
                 mix_data.leftover_quantity)
@@ -524,7 +524,7 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
                     source_operation_type, source_operation_id,
                     idempotency_key, operation_date, metadata
                 )
-                VALUES (?, 'withdrawal', ?, ?, 'production_use', ?, ?, GETDATE(), ?)
+                VALUES (?, 'withdrawal', ?, ?, 'production_use', ?, ?, GETUTCDATE(), ?)
             """, mix_data.mix_nomenclature_id, mix_data.warehouse_mix_used,
                 new_balance, batch.batch_number, warehouse_key,
                 json.dumps({
@@ -537,7 +537,7 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
             cursor.execute("""
                 UPDATE stock_balances
                 SET quantity = ?,
-                    last_updated = GETDATE()
+                    last_updated = GETUTCDATE()
                 WHERE nomenclature_id = ?
             """, new_balance, mix_data.mix_nomenclature_id)
         
@@ -610,7 +610,7 @@ async def consume_materials(batch_id: int, materials: dict):
                     source_operation_type, source_operation_id,
                     idempotency_key, operation_date, metadata
                 )
-                VALUES (?, 'withdrawal', ?, ?, 'production', ?, ?, GETDATE(), ?)
+                VALUES (?, 'withdrawal', ?, ?, 'production', ?, ?, GETUTCDATE(), ?)
             """, nomenclature_id, quantity, new_balance,
                 batch.batch_number, material_key,
                 json.dumps({
@@ -623,7 +623,7 @@ async def consume_materials(batch_id: int, materials: dict):
             cursor.execute("""
                 UPDATE stock_balances
                 SET quantity = ?,
-                    last_updated = GETDATE()
+                    last_updated = GETUTCDATE()
                 WHERE nomenclature_id = ?
             """, new_balance, nomenclature_id)
             
@@ -677,9 +677,9 @@ async def complete_batch(batch_id: int, completion: BatchComplete):
             UPDATE batches
             SET status = 'completed',
                 final_weight = ?,
-                completed_at = GETDATE(),
+                completed_at = GETUTCDATE(),
                 operator_notes = COALESCE(operator_notes, '') + ' ' + COALESCE(?, ''),
-                updated_at = GETDATE()
+                updated_at = GETUTCDATE()
             WHERE id = ?
         """, completion.final_weight, completion.notes, batch_id)
         
@@ -707,7 +707,7 @@ async def complete_batch(batch_id: int, completion: BatchComplete):
                 ?, 'receipt', ?, 
                 COALESCE((SELECT quantity FROM stock_balances WHERE nomenclature_id = ?), 0) + ?,
                 'production', ?,
-                ?, GETDATE(), ?
+                ?, GETUTCDATE(), ?
         """, batch.target_product_id, completion.final_weight,
             batch.target_product_id, completion.final_weight,
             batch.batch_number, completion.idempotency_key,
@@ -722,11 +722,11 @@ async def complete_batch(batch_id: int, completion: BatchComplete):
             IF EXISTS (SELECT 1 FROM stock_balances WHERE nomenclature_id = ?)
                 UPDATE stock_balances
                 SET quantity = quantity + ?,
-                    last_updated = GETDATE()
+                    last_updated = GETUTCDATE()
                 WHERE nomenclature_id = ?
             ELSE
                 INSERT INTO stock_balances (nomenclature_id, quantity, last_updated)
-                VALUES (?, ?, GETDATE())
+                VALUES (?, ?, GETUTCDATE())
         """, batch.target_product_id, completion.final_weight,
             batch.target_product_id, batch.target_product_id, completion.final_weight)
         
