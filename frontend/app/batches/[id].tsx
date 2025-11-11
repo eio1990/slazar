@@ -50,6 +50,26 @@ export default function BatchDetailScreen() {
     },
   });
 
+  const { data: recipe } = useQuery({
+    queryKey: ['recipe', batch?.recipe_id],
+    queryFn: async () => {
+      if (!batch) return null;
+      const response = await fetch(`${API_URL}/api/production/recipes/${batch.recipe_id}`);
+      if (!response.ok) throw new Error('Failed to fetch recipe');
+      return response.json();
+    },
+    enabled: !!batch,
+  });
+
+  const { data: operations = [] } = useQuery({
+    queryKey: ['batch-operations', id],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/production/batches/${id}/operations`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+  });
+
   const completeBatchMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await fetch(`${API_URL}/api/production/batches/${id}/complete`, {
