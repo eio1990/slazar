@@ -109,30 +109,31 @@ export interface QueuedOperation {
   timestamp: string;
 }
 
-export function getOfflineQueue(): QueuedOperation[] {
-  const queueStr = storage.getString(QUEUE_KEY);
+export async function getOfflineQueue(): Promise<QueuedOperation[]> {
+  const queueStr = await storage.getString(QUEUE_KEY);
   return queueStr ? JSON.parse(queueStr) : [];
 }
 
-export function addToOfflineQueue(operation: Omit<QueuedOperation, 'id' | 'timestamp'>) {
-  const queue = getOfflineQueue();
+export async function addToOfflineQueue(operation: Omit<QueuedOperation, 'id' | 'timestamp'>) {
+  const queue = await getOfflineQueue();
   const newOp: QueuedOperation = {
     ...operation,
     id: generateIdempotencyKey(),
     timestamp: new Date().toISOString(),
   };
   queue.push(newOp);
-  storage.set(QUEUE_KEY, JSON.stringify(queue));
+  await storage.set(QUEUE_KEY, JSON.stringify(queue));
   return newOp;
 }
 
-export function removeFromOfflineQueue(id: string) {
-  const queue = getOfflineQueue().filter(op => op.id !== id);
-  storage.set(QUEUE_KEY, JSON.stringify(queue));
+export async function removeFromOfflineQueue(id: string) {
+  const queue = await getOfflineQueue();
+  const filtered = queue.filter(op => op.id !== id);
+  await storage.set(QUEUE_KEY, JSON.stringify(filtered));
 }
 
-export function clearOfflineQueue() {
-  storage.delete(QUEUE_KEY);
+export async function clearOfflineQueue() {
+  await storage.delete(QUEUE_KEY);
 }
 
 // API Functions
