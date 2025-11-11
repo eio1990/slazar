@@ -95,7 +95,7 @@ export default function BalancesScreen() {
         </View>
         <View style={styles.cardFooter}>
           <View style={styles.categoryBadge}>
-            <MaterialCommunityIcons name=\"tag\" size={14} color=\"#666\" />
+            <MaterialCommunityIcons name="tag" size={14} color="#666" />
             <Text style={styles.categoryText}>{item.category}</Text>
           </View>
           <Text style={styles.lastUpdated}>
