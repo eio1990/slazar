@@ -252,6 +252,52 @@ async def create_batch(batch_data: BatchCreate):
         
         batch_id = cursor.execute("SELECT @@IDENTITY").fetchone()[0]
         
+        # Automatically consume raw materials (списання сировини)
+        if main_ingredient:
+            ingredient_id = main_ingredient.nomenclature_id
+            quantity_to_consume = batch_data.initial_weight
+            
+            # Add trim waste if not returned to stock
+            if batch_data.trim_waste and batch_data.trim_waste > 0 and not batch_data.trim_returned:
+                quantity_to_consume += batch_data.trim_waste
+            
+            # Create idempotency key for material consumption
+            material_key = f"batch-{batch_id}-raw-material-{datetime.now().timestamp()}"
+            
+            # Create withdrawal movement
+            new_balance = current_balance - quantity_to_consume
+            cursor.execute("""
+                INSERT INTO stock_movements (
+                    nomenclature_id, operation_type, quantity, balance_after,
+                    source_operation_type, source_operation_id,
+                    idempotency_key, operation_date, metadata
+                )
+                VALUES (?, 'withdrawal', ?, ?, 'production', ?, ?, GETUTCDATE(), ?)
+            """, ingredient_id, quantity_to_consume, new_balance,
+                batch_number, material_key,
+                json.dumps({
+                    'batch_id': batch_id,
+                    'batch_number': batch_number,
+                    'material_type': 'raw_material',
+                    'auto_consumed': True
+                }))
+            
+            # Update stock balance
+            cursor.execute("""
+                UPDATE stock_balances
+                SET quantity = ?,
+                    last_updated = GETUTCDATE()
+                WHERE nomenclature_id = ?
+            """, new_balance, ingredient_id)
+            
+            # Record in batch_materials
+            cursor.execute("""
+                INSERT INTO batch_materials (
+                    batch_id, nomenclature_id, material_type, quantity_used, notes
+                )
+                VALUES (?, ?, 'raw_material', ?, 'Auto-consumed at batch start')
+            """, batch_id, ingredient_id, quantity_to_consume)
+        
         # Get created batch
         cursor.execute("""
             SELECT b.id, b.batch_number, b.recipe_id, r.name as recipe_name,
