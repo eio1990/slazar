@@ -89,7 +89,7 @@ def update_balance(conn, nomenclature_id: int, new_balance: float):
     )
     if cursor.fetchone():
         cursor.execute(
-            "UPDATE stock_balances SET quantity = ?, last_updated = GETDATE() WHERE nomenclature_id = ?",
+            "UPDATE stock_balances SET quantity = ?, last_updated = GETUTCDATE() WHERE nomenclature_id = ?",
             (new_balance, nomenclature_id)
         )
     else:
@@ -464,7 +464,7 @@ async def complete_inventory(inventory: InventoryComplete):
             
             # Mark session as completed
             cursor.execute(
-                "UPDATE inventory_sessions SET status = 'completed', completed_at = GETDATE() WHERE id = ?",
+                "UPDATE inventory_sessions SET status = 'completed', completed_at = GETUTCDATE() WHERE id = ?",
                 (inventory.session_id,)
             )
             
