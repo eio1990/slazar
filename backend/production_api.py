@@ -645,6 +645,74 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
             mix_data.used_quantity, mix_data.leftover_quantity,
             mix_data.warehouse_mix_used, mix_data.idempotency_key)
         
+        # Deduct all spices from stock
+        # Get recipe_id from batch
+        recipe_id = batch.recipe_id
+        
+        # Get all spices for this recipe
+        cursor.execute("""
+            SELECT rs.nomenclature_id, rs.quantity_per_100kg, n.name
+            FROM recipe_spices rs
+            JOIN nomenclature n ON rs.nomenclature_id = n.id
+            WHERE rs.recipe_id = ?
+        """, recipe_id)
+        
+        spices = cursor.fetchall()
+        
+        # Calculate required quantity based on initial weight
+        initial_weight = float(batch.initial_weight)
+        
+        for spice_row in spices:
+            spice_id = spice_row[0]
+            quantity_per_100kg = float(spice_row[1])
+            spice_name = spice_row[2]
+            
+            # Calculate required quantity for this batch
+            required_quantity = (initial_weight / 100.0) * quantity_per_100kg
+            
+            # Check if enough stock
+            cursor.execute(
+                "SELECT quantity FROM stock_balances WHERE nomenclature_id = ?",
+                spice_id
+            )
+            result = cursor.fetchone()
+            current_balance = float(result[0]) if result else 0
+            
+            if current_balance < required_quantity:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Недостатньо специй '{spice_name}'. Доступно: {current_balance:.2f} кг, Потрібно: {required_quantity:.2f} кг"
+                )
+            
+            new_balance = current_balance - required_quantity
+            
+            # Create withdrawal record
+            spice_withdrawal_key = f"mix-spice-{batch_id}-{spice_id}-{mix_data.idempotency_key}"
+            
+            cursor.execute("""
+                INSERT INTO stock_movements (
+                    nomenclature_id, operation_type, quantity, balance_after,
+                    source_operation_type, source_operation_id,
+                    idempotency_key, operation_date, metadata
+                )
+                VALUES (?, 'withdrawal', ?, ?, 'production_spice_use', ?, ?, GETUTCDATE(), ?)
+            """, spice_id, required_quantity, new_balance, batch.batch_number, spice_withdrawal_key,
+                json.dumps({
+                    'batch_id': batch_id,
+                    'batch_number': batch.batch_number,
+                    'spice_name': spice_name,
+                    'recipe_id': recipe_id,
+                    'initial_weight': initial_weight
+                }))
+            
+            # Update stock balance
+            cursor.execute("""
+                UPDATE stock_balances
+                SET quantity = ?,
+                    last_updated = GETUTCDATE()
+                WHERE nomenclature_id = ?
+            """, new_balance, spice_id)
+        
         # If leftover > 0, create stock receipt for mix
         if mix_data.leftover_quantity > 0:
             leftover_key = f"mix-leftover-{batch_id}-{mix_data.idempotency_key}"
