@@ -307,7 +307,14 @@ async def create_batch(batch_data: BatchCreate):
                 product_code = code
                 break
         
-        batch_number = f"{product_code}-{today}"
+        # Count existing batches for today with this product code
+        cursor.execute("""
+            SELECT COUNT(*) FROM batches 
+            WHERE batch_number LIKE ?
+        """, f"{product_code}-{today}%")
+        count = cursor.fetchone()[0] + 1
+        
+        batch_number = f"{product_code}-{today}-{count}"
         
         # Create batch
         cursor.execute("""
