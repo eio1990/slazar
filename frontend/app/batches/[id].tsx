@@ -9,6 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Modal,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
