@@ -313,7 +313,7 @@ export default function BatchDetailScreen() {
                                   { text: 'Скасувати', style: 'cancel' },
                                   {
                                     text: 'OK',
-                                    onPress: (weight) => {
+                                    onPress: (weight: any) => {
                                       if (weight && parseFloat(weight) > 0) {
                                         fetch(`${API_URL}/api/production/batches/${id}/operations`, {
                                           method: 'POST',
