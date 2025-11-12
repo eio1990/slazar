@@ -365,7 +365,40 @@ export default function OperationsScreen() {
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <MaterialCommunityIcons name="close-circle" size={20} color="#999" />
+              </TouchableOpacity>
+            )}
           </View>
+
+          {/* Category filters */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryFilterContainer}
+            contentContainerStyle={styles.categoryFilterContent}
+          >
+            <TouchableOpacity
+              style={[styles.categoryChip, !selectedCategory && styles.categoryChipActive]}
+              onPress={() => setSelectedCategory(null)}
+            >
+              <Text style={[styles.categoryChipText, !selectedCategory && styles.categoryChipTextActive]}>
+                Всі
+              </Text>
+            </TouchableOpacity>
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category}
+                style={[styles.categoryChip, selectedCategory === category && styles.categoryChipActive]}
+                onPress={() => setSelectedCategory(category)}
+              >
+                <Text style={[styles.categoryChipText, selectedCategory === category && styles.categoryChipTextActive]}>
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
           {loading ? (
             <View style={styles.modalLoading}>
