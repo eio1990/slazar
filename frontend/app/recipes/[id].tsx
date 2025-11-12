@@ -93,8 +93,8 @@ export default function RecipeDetailScreen() {
       return;
     }
 
-    if (hasTrim && (!trimWaste || parseFloat(trimWaste) < 0)) {
-      Alert.alert('Помилка', 'Введіть вагу обрізків');
+    if (hasTrim && (trimWaste === '' || trimWaste === null || parseFloat(trimWaste) < 0)) {
+      Alert.alert('Помилка', 'Введіть вагу обрізків (0 або більше)');
       return;
     }
 
