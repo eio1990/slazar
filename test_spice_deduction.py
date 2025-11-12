@@ -190,8 +190,8 @@ def test_spice_deduction_comprehensive():
         # Try to produce mix - should fail
         large_mix_payload = {
             "mix_nomenclature_id": 72,
-            "produced_quantity": 12310.0,  # 24.62 * 500 for 50000kg batch
-            "used_quantity": 12310.0,
+            "produced_quantity": 123.1,  # 24.62 * 5 for 500kg batch
+            "used_quantity": 123.1,
             "leftover_quantity": 0.0,
             "warehouse_mix_used": 0.0,
             "idempotency_key": f"insufficient-test-{large_batch_id}-{int(time.time())}"
