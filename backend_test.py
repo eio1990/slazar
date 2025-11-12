@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, Any
 
 # Backend URL from environment
-BACKEND_URL = "https://stockflow-311.preview.emergentagent.com/api"
+BACKEND_URL = "https://batchcraft.preview.emergentagent.com/api"
 
 class ProductionAPITester:
     def __init__(self):

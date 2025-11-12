@@ -1,0 +1,95 @@
+<analysis>
+The trajectory details the evolution of a warehouse management app, initially focusing on a Warehouse Module (inventory, movements) and then pivoting to a complex Recipes and Production Module. The initial phase involved setting up a full-stack environment with Expo, FastAPI, and MS SQL, overcoming significant challenges with ODBC drivers and Expo build configurations.
+
+The core of the recent work was implementing the production module based on detailed user specifications. This included creating database schemas for recipes, production steps, and batches; seeding the database with user-provided recipe data; and building out a comprehensive backend API () to manage the production lifecycle (start batch, add spices, calculate mix, close batch).
+
+Key struggles included repeatedly fixing a persistent MS SQL ODBC driver issue within the Linux container, correcting SQL syntax in seed scripts, and debugging Python errors. The frontend development involved adding new tabs and screens for production, recipes, and analytics using Expo Router.
+
+The most recent activity involves debugging critical UI failures reported by the user: a non-functional nomenclature list and an error on the production screen. The root cause was identified as the frontend incorrectly using  instead of the correct backend URL. The engineer's attempts to fix this by using  to manage environment variables led to further Expo startup errors, indicating a fundamental misconfiguration in how the frontend consumes environment variables. The immediate task is to stabilize the frontend's connection to the backend.
+</analysis>
+
+<product_requirements>
+The initial request was for a cross-platform mobile app for warehouse management, focusing on a Warehouse Module for tracking stock, logging movements, and supporting offline operations with an MS SQL database.
+
+This evolved into a Recipes and Production Module for managing the creation of finished weighted products.
+
+Key requirements for the production module include:
+1.  **Recipe Management**: Define recipes linking a finished product to raw materials and spices. Recipes are stored in the DB and are not editable from the app.
+2.  **Production Batches**: Users manually create production batches based on a selected recipe. Each batch gets a unique, human-readable ID (e.g., ).
+3.  **Production Lifecycle**: Implement a multi-step process:
+    *   **Start Batch**: Record raw material usage, with checks for sufficient stock. Handle trimmings/waste.
+    *   **Spice/Mix Addition**: Calculate a mix of spices. A special rule applies to fenugreek (пажитник), requiring water at a 4:1 ratio. The system must differentiate between produced mix, used mix, and leftover mix.
+    *   **Close Batch**: Record the final weight of the finished product and calculate the production yield.
+4.  **Data & Logic**: Ensure all operations are idempotent. Track all material consumption. Prohibit negative stock.
+5.  **Analytics & Reporting**: Provide statistics on batch performance (e.g., yield) and an export function (Excel/PDF).
+</product_requirements>
+
+<key_technical_concepts>
+- **Backend**: FastAPI with Python 3, serving a REST API.
+- **Database**: MS SQL Server 2022, accessed via .
+- **Frontend**: Expo SDK (React Native) with file-based routing via .
+- **State Management**:  and  for client and server state.
+- **Architecture**: Client-Server model with offline-first considerations (local storage queue for operations).
+- **Core Principles**: Idempotency for backend operations, UTC for all timestamps, transactional integrity for database writes.
+- **Environment**: Dockerized Linux container with services managed by .
+</key_technical_concepts>
+
+<code_architecture>
+The application is a monorepo with distinct  and  directories.
+
+
+
+- ****:
+  - **Importance**: Newly created file that contains all API endpoints for the Recipes and Production Module. It handles getting recipes, creating/managing batches, processing production steps, and providing analytics. This separates production logic from the original warehousing API.
+  - **Changes**: Created from scratch. Endpoints like , , and  were added to implement the core business logic.
+
+- ****:
+  - **Importance**: Manages the MS SQL database connection and schema initialization.
+  - **Changes**: All instances of  were replaced with  to enforce UTC standard for timestamps, a critical fix from the implementation audit.
+
+- ****:
+  - **Importance**: A script to populate the database with the complex, multi-step recipes provided by the user.
+  - **Changes**: Created and heavily iterated upon to fix Python syntax errors (e.g., removing  prefixes), correct product names, and add recipe ingredients (spices).
+
+- ****:
+  - **Importance**: The main screen for the production module, intended to list all active and completed production batches.
+  - **Changes**: Created as a new tab. It fetches and displays a list of batches. An Analytics button was added to navigate to the analytics screen. This screen is currently failing to load data.
+
+- ****:
+  - **Importance**: The detail screen for a single production batch. It displays the batch's progress through its predefined recipe steps.
+  - **Changes**: Created to show batch details and a step-by-step progress tracker. Logic was added to navigate to a special  screen for steps of type mix.
+
+- ****:
+  - **Importance**: The central Axios-based API service for the frontend. It defines how the app communicates with the backend.
+  - **Changes**: This file is at the center of the current bug. A  was added, revealing it was using a hardcoded  URL. The logic for constructing the  was modified multiple times in an attempt to correctly consume the  environment variable, including removing a duplicate  suffix.
+
+- ** & **:
+  - **Importance**: Expo configuration files that control the build process, including how environment variables are exposed to the application.
+  - **Changes**:  was edited to hardcode the backend URL as a temporary fix. An  file was then created to properly load  variables using , but this caused a startup error and was subsequently deleted. The configuration for environment variables remains broken.
+</code_architecture>
+
+<pending_tasks>
+- **Backend**: Implement robust idempotency checks using the  for all production operations (Start, Spices, Close).
+- **Backend**: Implement transactional locking to prevent race conditions during material consumption.
+- **Frontend**: Complete the UI for the Add Spices/Mix form ().
+- **Feature**: Implement the requested Excel export functionality for analytics and reports.
+- **Feature**: Fully develop the analytics screen with filters and visualizations.
+</pending_tasks>
+
+<current_work>
+The AI engineer is in the middle of debugging two critical, user-reported UI failures:
+1.  **Nomenclature Not Loading**: On the stock receipt screen (), the list of inventory items fails to load, and search is broken.
+2.  **Batches Not Loading**: The Production tab () shows an error and fails to display the list of production batches.
+
+Both issues were traced back to a single root cause: the frontend is making API calls to  instead of the correct backend URL supplied by the environment. This was confirmed by adding a  to , which printed the incorrect URL.
+
+The engineer's efforts to resolve this have been unsuccessful so far:
+-   An attempt to hardcode the URL in  failed because the environment variable string  was not being substituted.
+-   A more robust attempt was made by creating an  file to use the  package, which would programmatically load the  file and inject the variables into the Expo config. However, this introduced a new  on [08:31:05] Starting project at /app/frontend, related to a  module, forcing the deletion of .
+
+The immediate task is to correctly configure the Expo project to pass the  from the  file to the running application so that the  service can make successful API calls. The backend services themselves are confirmed to be running and responsive to direct  requests.
+</current_work>
+
+<optional_next_step>
+Fix the Expo environment variable configuration. I will re-create  and ensure it correctly exports the configuration while resolving the plugin error, which is the most reliable method for handling environment variables in Expo.
+</optional_next_step>
