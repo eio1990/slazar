@@ -173,3 +173,9 @@ class BatchComplete(BaseModel):
     final_weight: float
     notes: Optional[str] = None
     idempotency_key: str
+
+class BatchSalting(BaseModel):
+    salt_quantity: float
+    water_quantity: float
+    notes: Optional[str] = None
+    idempotency_key: str
