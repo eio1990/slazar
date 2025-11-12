@@ -600,8 +600,8 @@ class ProductionAPITester:
                 idempotency_key = f"test-idempotency-{test_batch_id}-{int(time.time())}"
                 mix_payload = {
                     "mix_nomenclature_id": 72,
-                    "produced_quantity": 12.31,  # 24.62 / 2 for 50kg batch
-                    "used_quantity": 12.31,
+                    "produced_quantity": 6.155,  # 24.62 / 4 for 25kg batch
+                    "used_quantity": 6.155,
                     "leftover_quantity": 0.0,
                     "warehouse_mix_used": 0.0,
                     "idempotency_key": idempotency_key
