@@ -196,6 +196,21 @@ frontend:
         agent: "testing"
         comment: "✅ MASS RECEIPT FUNCTIONALITY WORKING: Successfully tested receipt operations with comprehensive validation. Key findings: (1) Operations tab loads correctly with Receipt/Withdrawal toggle, (2) Nomenclature modal opens and displays ~95+ items with proper categorization, (3) Search functionality works, (4) Category filtering present with 'Готова продукція' items correctly identified and sorted last, (5) Individual receipt operations process successfully - tested 'Банкетна 100*50' with 100 units, form resets after successful submission indicating backend integration working, (6) Mobile-responsive UI with proper touch interactions. The system correctly excludes finished products from bulk operations as required. Ready for production use. Minor: Some Playwright selector conflicts due to duplicate elements but core functionality verified working."
 
+  - task: "Operations module - Withdrawal functionality"
+    implemented: true
+    working: true
+    file: "frontend/app/(tabs)/operations.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing withdrawal (розхід) functionality for 5 specific items: Яловичина вищій ґатунок, Паприка, Сіль, Пакет вакуумний 110*400, Коробка 150*300*400. Need to verify balance display, withdrawal processing, and form validation."
+      - working: true
+        agent: "testing"
+        comment: "✅ WITHDRAWAL FUNCTIONALITY WORKING: Successfully tested withdrawal operations with comprehensive validation. Key findings: (1) Withdrawal operation type selection working correctly, (2) All 5 test items found with correct available balances: Яловичина вищій ґатунок (225.5 кг), Паприка (80 кг), Сіль (80 кг), Пакет вакуумний 110*400 (80 од), Коробка 150*300*400 (80 од), (3) Balance display ('Доступно на складі') shows correctly for withdrawal operations, (4) API integration working - POST /api/stock/withdrawal returns 200 OK, (5) Form resets after successful withdrawal indicating backend processing, (6) Balance updates correctly after withdrawal (verified by re-selecting items). Minor: Success alert messages not displaying but operations are processed successfully as confirmed by API responses and balance changes. Core withdrawal functionality is working correctly for production use."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
