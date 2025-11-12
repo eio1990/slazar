@@ -1,14 +1,14 @@
 {
-  "total": 10,
-  "passed": 10,
-  "failed": 0,
-  "success_rate": 100.0,
+  "total": 12,
+  "passed": 7,
+  "failed": 5,
+  "success_rate": 58.333333333333336,
   "results": [
     {
       "test": "Health Check",
       "success": true,
       "details": "Status: ok",
-      "timestamp": "2025-11-11T13:05:36.699569",
+      "timestamp": "2025-11-12T13:25:51.713653",
       "response_data": {
         "status": "ok",
         "service": "warehouse-api"
@@ -18,7 +18,7 @@
       "test": "GET /production/recipes",
       "success": true,
       "details": "Found 8 recipes with all required fields",
-      "timestamp": "2025-11-11T13:05:37.873365",
+      "timestamp": "2025-11-12T13:25:52.907931",
       "response_data": {
         "count": 8,
         "sample": {
@@ -37,7 +37,7 @@
       "test": "GET /production/recipes/2",
       "success": true,
       "details": "Recipe '\u0411\u0430\u0441\u0442\u0443\u0440\u043c\u0430 \u043a\u043b\u0430\u0441\u0438\u0447\u043d\u0430' with 8 steps, ordered: True",
-      "timestamp": "2025-11-11T13:05:39.196577",
+      "timestamp": "2025-11-12T13:25:54.236644",
       "response_data": {
         "recipe_name": "\u0411\u0430\u0441\u0442\u0443\u0440\u043c\u0430 \u043a\u043b\u0430\u0441\u0438\u0447\u043d\u0430",
         "steps_count": 8
@@ -45,66 +45,71 @@
     },
     {
       "test": "POST /production/batches",
-      "success": true,
-      "details": "Created batch BATCH-11112025-002 with ID 2",
-      "timestamp": "2025-11-11T13:05:41.091207",
-      "response_data": {
-        "batch_id": 2,
-        "batch_number": "BATCH-11112025-002"
-      }
+      "success": false,
+      "details": "HTTP 400",
+      "timestamp": "2025-11-12T13:25:55.707561",
+      "response_data": "{\"detail\":\"\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043d\u044c\u043e \u0441\u0438\u0440\u043e\u0432\u0438\u043d\u0438 \u043d\u0430 \u0441\u043a\u043b\u0430\u0434\u0456: \u042f\u043b\u043e\u0432\u0438\u0447\u0438\u043d\u0430 \u0432\u0438\u0449\u0456\u0439 \u0491\u0430\u0442\u0443\u043d\u043e\u043a: \u043f\u043e\u0442\u0440\u0456\u0431\u043d\u043e 100.00 \u043a\u0433, \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e 20.50 \u043a\u0433\"}"
     },
     {
       "test": "GET /production/batches",
       "success": true,
-      "details": "Retrieved 2 batches",
-      "timestamp": "2025-11-11T13:05:42.263794",
+      "details": "Retrieved 5 batches",
+      "timestamp": "2025-11-12T13:25:56.899830",
       "response_data": {
-        "count": 2
+        "count": 5
       }
     },
     {
       "test": "GET /production/batches?status=created",
       "success": true,
       "details": "Retrieved 2 created batches",
-      "timestamp": "2025-11-11T13:05:43.432118",
+      "timestamp": "2025-11-12T13:25:58.078190",
       "response_data": {
         "count": 2
       }
     },
     {
-      "test": "GET /production/batches/2",
-      "success": true,
-      "details": "Retrieved batch BATCH-11112025-002",
-      "timestamp": "2025-11-11T13:05:44.597242",
-      "response_data": {
-        "batch_number": "BATCH-11112025-002",
-        "status": "created"
-      }
+      "test": "GET /production/batches/{id}",
+      "success": false,
+      "details": "No batch ID available from previous test",
+      "timestamp": "2025-11-12T13:25:58.078224",
+      "response_data": null
     },
     {
-      "test": "PUT /production/batches/2/complete",
-      "success": true,
-      "details": "Batch completed with 75.0% yield",
-      "timestamp": "2025-11-11T13:05:46.364100",
-      "response_data": {
-        "yield_percent": 75.0,
-        "batch_id": 2
-      }
+      "test": "PUT /production/batches/{id}/complete",
+      "success": false,
+      "details": "No batch ID available from previous test",
+      "timestamp": "2025-11-12T13:25:58.078232",
+      "response_data": null
+    },
+    {
+      "test": "Spice Deduction - Create Batch",
+      "success": false,
+      "details": "Failed to create batch: HTTP 400",
+      "timestamp": "2025-11-12T13:25:59.551798",
+      "response_data": "{\"detail\":\"\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043d\u044c\u043e \u0441\u0438\u0440\u043e\u0432\u0438\u043d\u0438 \u043d\u0430 \u0441\u043a\u043b\u0430\u0434\u0456: \u042f\u043b\u043e\u0432\u0438\u0447\u0438\u043d\u0430 \u0432\u0438\u0449\u0456\u0439 \u0491\u0430\u0442\u0443\u043d\u043e\u043a: \u043f\u043e\u0442\u0440\u0456\u0431\u043d\u043e 100.00 \u043a\u0433, \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e 20.50 \u043a\u0433\"}"
+    },
+    {
+      "test": "Spice Deduction Edge Cases",
+      "success": false,
+      "details": "\u274c Failed to create test batch for insufficient stock test: 400; \u274c Failed to create batch for idempotency test: 400; \u2705 Zero initial weight handled gracefully",
+      "timestamp": "2025-11-12T13:26:09.595343",
+      "response_data": null
     },
     {
       "test": "Edge Cases",
       "success": true,
-      "details": "\u2705 Invalid recipe ID returns 404; \u2705 Non-existent recipe returns 404; \u2705 Non-existent batch returns 404; \u2705 Completing already completed batch returns 400",
-      "timestamp": "2025-11-11T13:05:51.136697",
+      "details": "\u2705 Invalid recipe ID returns 404; \u2705 Non-existent recipe returns 404; \u2705 Non-existent batch returns 404",
+      "timestamp": "2025-11-12T13:26:13.184133",
       "response_data": null
     },
     {
       "test": "Database Verification",
       "success": true,
-      "details": "No finished products with stock found (may be expected)",
-      "timestamp": "2025-11-11T13:05:52.306460",
+      "details": "Found 2 finished products with stock",
+      "timestamp": "2025-11-12T13:26:14.374025",
       "response_data": {
-        "total_balances": 135
+        "finished_products_count": 2
       }
     }
   ]
