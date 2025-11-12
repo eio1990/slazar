@@ -16,6 +16,20 @@ FENUGREEK_ID = 19  # Пажитник in nomenclature
 WATER_ID = 71      # Вода in nomenclature
 FENUGREEK_WATER_RATIO = 4  # 1:4 rule
 
+# Product name to code mapping for batch numbers
+PRODUCT_CODE_MAP = {
+    'Бастурма класична': 'BAST',
+    'Бастурма з конини': 'HORSE',
+    'Бастурма конина': 'HORSE',
+    'Суджук': 'SUDJ',
+    'Курка': 'CHIK',
+    'Куряче': 'CHIK',
+    'Махан': 'MAHAN',
+    'Індичка': 'TURK',
+    'Свинина': 'PORK',
+    'Пластина': 'PLAST',
+}
+
 def calculate_produced_mix(spices: list) -> float:
     """
     Calculate produced mix quantity with fenugreek water rule
