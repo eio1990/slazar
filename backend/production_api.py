@@ -849,6 +849,155 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
             "warehouse_mix_used": mix_data.warehouse_mix_used
         }
 
+@router.post("/batches/{batch_id}/salting")
+async def process_salting(batch_id: int, salting_data: BatchSalting):
+    """Process salting step with salt and water consumption"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Get batch
+        cursor.execute("SELECT * FROM batches WHERE id = ?", batch_id)
+        batch = cursor.fetchone()
+        if not batch:
+            raise HTTPException(status_code=404, detail="Batch not found")
+        
+        if batch.status == 'completed':
+            raise HTTPException(status_code=400, detail="Batch already completed")
+        
+        # Check idempotency
+        cursor.execute(
+            "SELECT id FROM batch_operations WHERE idempotency_key = ?",
+            salting_data.idempotency_key
+        )
+        if cursor.fetchone():
+            return {"message": "Salting already processed", "batch_id": batch_id}
+        
+        # Check stock availability for salt
+        cursor.execute(
+            "SELECT quantity FROM stock_balances WHERE nomenclature_id = ?",
+            SALT_ID
+        )
+        result = cursor.fetchone()
+        salt_balance = float(result[0]) if result else 0
+        
+        if salt_balance < salting_data.salt_quantity:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Недостатньо солі на складі. Доступно: {salt_balance:.2f} кг, Потрібно: {salting_data.salt_quantity:.2f} кг"
+            )
+        
+        # Check stock availability for water
+        cursor.execute(
+            "SELECT quantity FROM stock_balances WHERE nomenclature_id = ?",
+            WATER_ID
+        )
+        result = cursor.fetchone()
+        water_balance = float(result[0]) if result else 0
+        
+        if water_balance < salting_data.water_quantity:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Недостатньо води на складі. Доступно: {water_balance:.2f} л, Потрібно: {salting_data.water_quantity:.2f} л"
+            )
+        
+        # Deduct salt from stock
+        salt_key = f"salting-salt-{batch_id}-{salting_data.idempotency_key}"
+        new_salt_balance = salt_balance - salting_data.salt_quantity
+        
+        cursor.execute("""
+            INSERT INTO stock_movements (
+                nomenclature_id, operation_type, quantity, balance_after,
+                source_operation_type, source_operation_id,
+                idempotency_key, operation_date, metadata
+            )
+            VALUES (?, 'withdrawal', ?, ?, 'production_salting', ?, ?, GETUTCDATE(), ?)
+        """, SALT_ID, salting_data.salt_quantity, new_salt_balance, batch.batch_number, salt_key,
+            json.dumps({
+                'batch_id': batch_id,
+                'batch_number': batch.batch_number,
+                'step_type': 'salting'
+            }))
+        
+        cursor.execute("""
+            UPDATE stock_balances
+            SET quantity = ?,
+                last_updated = GETUTCDATE()
+            WHERE nomenclature_id = ?
+        """, new_salt_balance, SALT_ID)
+        
+        # Deduct water from stock
+        water_key = f"salting-water-{batch_id}-{salting_data.idempotency_key}"
+        new_water_balance = water_balance - salting_data.water_quantity
+        
+        cursor.execute("""
+            INSERT INTO stock_movements (
+                nomenclature_id, operation_type, quantity, balance_after,
+                source_operation_type, source_operation_id,
+                idempotency_key, operation_date, metadata
+            )
+            VALUES (?, 'withdrawal', ?, ?, 'production_salting', ?, ?, GETUTCDATE(), ?)
+        """, WATER_ID, salting_data.water_quantity, new_water_balance, batch.batch_number, water_key,
+            json.dumps({
+                'batch_id': batch_id,
+                'batch_number': batch.batch_number,
+                'step_type': 'salting'
+            }))
+        
+        cursor.execute("""
+            UPDATE stock_balances
+            SET quantity = ?,
+                last_updated = GETUTCDATE()
+            WHERE nomenclature_id = ?
+        """, new_water_balance, WATER_ID)
+        
+        # Find the salting step
+        cursor.execute("""
+            SELECT rs.id, rs.step_order, rs.step_name
+            FROM recipe_steps rs
+            WHERE rs.recipe_id = (SELECT recipe_id FROM batches WHERE id = ?)
+                AND rs.step_type = 'salt'
+            ORDER BY rs.step_order
+        """, batch_id)
+        
+        salt_step_row = cursor.fetchone()
+        if salt_step_row:
+            salt_step_id = salt_step_row[0]
+            salt_step_order = salt_step_row[1]
+            salt_step_name = salt_step_row[2]
+            
+            # Create operation record
+            cursor.execute("""
+                INSERT INTO batch_operations (
+                    batch_id, step_id, operation_type, status,
+                    weight_before, weight_after, parameters, notes, idempotency_key
+                )
+                VALUES (?, ?, 'salting', 'completed', NULL, NULL, ?, ?, ?)
+            """, batch_id, salt_step_id,
+                json.dumps({
+                    'salt_quantity': salting_data.salt_quantity,
+                    'water_quantity': salting_data.water_quantity
+                }),
+                salting_data.notes or f"Засолка виконана: сіль {salting_data.salt_quantity} кг, вода {salting_data.water_quantity} л",
+                salting_data.idempotency_key)
+            
+            # Update batch current_step
+            cursor.execute("""
+                UPDATE batches
+                SET current_step = ?,
+                    status = 'in_progress',
+                    updated_at = GETUTCDATE()
+                WHERE id = ?
+            """, salt_step_order, batch_id)
+        
+        conn.commit()
+        
+        return {
+            "message": "Salting processed successfully",
+            "batch_id": batch_id,
+            "salt_quantity": salting_data.salt_quantity,
+            "water_quantity": salting_data.water_quantity
+        }
+
 @router.post("/batches/{batch_id}/materials/consume")
 async def consume_materials(batch_id: int, materials: dict):
     """Consume materials (raw materials and spices) for batch production"""
