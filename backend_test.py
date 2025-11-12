@@ -504,14 +504,21 @@ class ProductionAPITester:
             if response.status_code == 200:
                 movements = response.json()
                 
-                # Look for withdrawal movements with source_operation_type='production_spice_use'
+                # Look for withdrawal movements for spices related to our batch
                 spice_movements = []
                 for movement in movements:
                     if (movement.get('operation_type') == 'withdrawal' and 
-                        movement.get('metadata') and 
-                        'batch_id' in str(movement.get('metadata', '')) and 
-                        str(test_batch_id) in str(movement.get('metadata', ''))):
-                        spice_movements.append(movement)
+                        movement.get('metadata')):
+                        try:
+                            import json
+                            metadata = json.loads(movement.get('metadata', '{}'))
+                            if (metadata.get('batch_id') == test_batch_id and 
+                                'spice_name' in metadata):
+                                spice_movements.append(movement)
+                        except:
+                            # If metadata parsing fails, check string contains batch_id
+                            if str(test_batch_id) in str(movement.get('metadata', '')):
+                                spice_movements.append(movement)
                 
                 if len(spice_movements) >= 5:
                     self.log_test("Spice Deduction - Stock Movements", True, f"Found {len(spice_movements)} spice withdrawal movements")
