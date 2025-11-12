@@ -631,6 +631,17 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
         if batch.status == 'completed':
             raise HTTPException(status_code=400, detail="Batch already completed")
         
+        # Check if mix was already produced for this batch (prevent duplicate production)
+        cursor.execute(
+            "SELECT id FROM batch_mix_production WHERE batch_id = ?",
+            batch_id
+        )
+        if cursor.fetchone():
+            raise HTTPException(
+                status_code=400, 
+                detail="Суміш для цієї партії вже виготовлена. Повторне виготовлення заборонене."
+            )
+        
         # Check idempotency
         cursor.execute(
             "SELECT id FROM batch_mix_production WHERE idempotency_key = ?",
