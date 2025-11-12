@@ -453,13 +453,14 @@ export default function BatchDetailScreen() {
                 <TouchableOpacity
                   style={[styles.weightModalButton, styles.weightModalButtonConfirm]}
                   onPress={() => {
-                    if (weightInput && parseFloat(weightInput) > 0 && currentStep) {
+                    const weight = parseFloat(weightInput);
+                    if (weightInput !== '' && !isNaN(weight) && weight >= 0 && currentStep) {
                       fetch(`${API_URL}/api/production/batches/${id}/operations`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                           step_id: currentStep.id,
-                          weight_after: parseFloat(weightInput),
+                          weight_after: weight,
                           notes: `Крок ${currentStep.step_order} завершено`,
                           idempotency_key: `step-${id}-${currentStep.id}-${Date.now()}`,
                         }),
@@ -474,7 +475,7 @@ export default function BatchDetailScreen() {
                           Alert.alert('Помилка', 'Не вдалося додати операцію');
                         });
                     } else {
-                      Alert.alert('Помилка', 'Введіть коректну вагу');
+                      Alert.alert('Помилка', 'Введіть коректну вагу (0 або більше)');
                     }
                   }}
                 >
