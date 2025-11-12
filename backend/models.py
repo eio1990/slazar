@@ -179,3 +179,76 @@ class BatchSalting(BaseModel):
     water_quantity: float
     notes: Optional[str] = None
     idempotency_key: str
+
+# ========== PACKAGING MODULE MODELS ==========
+
+class PackagingRecipeMaterial(BaseModel):
+    material_id: int
+    material_name: Optional[str] = None
+    quantity_per_unit: float
+    rounding_precision: Optional[float] = None
+    material_type: str  # 'packaging', 'label', 'film', etc.
+
+class PackagingRecipe(BaseModel):
+    id: int
+    source_product_id: int
+    source_product_name: Optional[str] = None
+    target_product_id: int
+    target_product_name: Optional[str] = None
+    packaging_type: str  # 'vacuum', 'skin', 'sealed'
+    target_weight_grams: int
+    is_active: bool
+    materials: List[PackagingRecipeMaterial] = []
+    notes: Optional[str] = None
+
+class PackagingBatchCreate(BaseModel):
+    recipe_id: int
+    source_weight_taken: float  # кількість весового продукту взятого на фасовку (кг)
+    planned_quantity: Optional[int] = None  # планована кількість упаковок (опціонально)
+    notes: Optional[str] = None
+    idempotency_key: str
+
+class PackagingOperationCreate(BaseModel):
+    packed_quantity: int  # кількість запакованих одиниць
+    source_used: float  # фактично використано весового продукту (кг)
+    waste_quantity: float = 0  # відходи (кг)
+    materials_used: List[dict]  # [{'material_id': int, 'quantity': float}]
+    notes: Optional[str] = None
+    idempotency_key: str
+
+class PackagingOperation(BaseModel):
+    id: int
+    batch_id: int
+    operation_type: str
+    packed_quantity: int
+    source_used: float
+    waste_quantity: float
+    notes: Optional[str] = None
+    created_at: datetime
+
+class PackagingBatch(BaseModel):
+    id: int
+    batch_number: str
+    recipe_id: int
+    source_product_id: int
+    source_product_name: Optional[str] = None
+    target_product_id: int
+    target_product_name: Optional[str] = None
+    packaging_type: Optional[str] = None
+    target_weight_grams: Optional[int] = None
+    status: str
+    planned_quantity: Optional[int] = None
+    source_weight_taken: float
+    actual_packed_quantity: int
+    actual_source_used: float
+    waste_quantity: float
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    operator_notes: Optional[str] = None
+
+class PackagingBatchComplete(BaseModel):
+    final_packed_quantity: int
+    final_source_used: float
+    final_waste: float
+    notes: Optional[str] = None
+    idempotency_key: str
