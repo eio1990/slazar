@@ -515,15 +515,27 @@ class ProductionAPITester:
                             if (metadata.get('batch_id') == test_batch_id and 
                                 'spice_name' in metadata):
                                 spice_movements.append(movement)
-                        except:
+                        except Exception as e:
                             # If metadata parsing fails, check string contains batch_id
                             if str(test_batch_id) in str(movement.get('metadata', '')):
                                 spice_movements.append(movement)
                 
                 if len(spice_movements) >= 5:
-                    self.log_test("Spice Deduction - Stock Movements", True, f"Found {len(spice_movements)} spice withdrawal movements")
+                    spice_names = []
+                    for mov in spice_movements:
+                        try:
+                            metadata = json.loads(mov.get('metadata', '{}'))
+                            spice_names.append(metadata.get('spice_name', 'Unknown'))
+                        except:
+                            spice_names.append('Unknown')
+                    self.log_test("Spice Deduction - Stock Movements", True, f"Found {len(spice_movements)} spice withdrawal movements: {', '.join(spice_names)}")
                 else:
-                    self.log_test("Spice Deduction - Stock Movements", False, f"Expected at least 5 spice movements, found {len(spice_movements)}")
+                    # Debug: show what movements we found
+                    debug_info = f"Looking for batch_id={test_batch_id}. Found {len(spice_movements)} movements"
+                    if spice_movements:
+                        for mov in spice_movements:
+                            debug_info += f"; Movement ID {mov['id']}: {mov.get('metadata', 'No metadata')}"
+                    self.log_test("Spice Deduction - Stock Movements", False, f"Expected at least 5 spice movements, found {len(spice_movements)}. {debug_info}")
             
             return success
             
