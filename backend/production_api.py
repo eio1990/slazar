@@ -360,12 +360,13 @@ async def create_batch(batch_data: BatchCreate):
             
             balance_row = cursor.fetchone()
             current_balance = float(balance_row[0]) if balance_row else 0.0
+            quantity_to_consume = float(quantity_to_consume)
             
             # Create idempotency key for material consumption
             material_key = f"batch-{batch_id}-raw-material-{datetime.now().timestamp()}"
             
             # Create withdrawal movement
-            new_balance = current_balance - quantity_to_consume
+            new_balance = float(current_balance - quantity_to_consume)
             cursor.execute("""
                 INSERT INTO stock_movements (
                     nomenclature_id, operation_type, quantity, balance_after,
