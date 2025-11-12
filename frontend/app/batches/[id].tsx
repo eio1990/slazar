@@ -36,6 +36,9 @@ export default function BatchDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const queryClient = useQueryClient();
+  const [weightModalVisible, setWeightModalVisible] = useState(false);
+  const [currentStep, setCurrentStep] = useState<any>(null);
+  const [weightInput, setWeightInput] = useState('');
   
   const [finalWeight, setFinalWeight] = useState('');
   const [notes, setNotes] = useState('');
