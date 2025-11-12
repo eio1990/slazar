@@ -176,7 +176,7 @@ def test_spice_deduction_comprehensive():
     print("\n7️⃣ Testing edge case: insufficient stock...")
     large_batch_payload = {
         "recipe_id": 2,
-        "initial_weight": 50000.0,  # Very large batch
+        "initial_weight": 500.0,  # Large enough to exceed spice stock but not raw materials
         "trim_waste": 0,
         "trim_returned": False,
         "operator_notes": "Test batch for insufficient stock"
