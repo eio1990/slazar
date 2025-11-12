@@ -1,351 +1,356 @@
-diff --git a/backend/production_api.py b/backend/production_api.py
-index f21ae20..227f914 100644
---- a/backend/production_api.py
-+++ b/backend/production_api.py
-@@ -271,7 +271,7 @@ async def complete_batch(batch_id: int, completion: BatchComplete):
-         """, completion.final_weight, completion.notes, batch_id)
-         
-         # Calculate yield percentage
--        yield_percent = (completion.final_weight / batch.initial_weight) * 100
-+        yield_percent = (completion.final_weight / float(batch.initial_weight)) * 100
-         
-         # Check if idempotency key already exists
-         cursor.execute(
 diff --git a/model.patch b/model.patch
-index 66229da..e69de29 100644
+index 44c8d3c..e69de29 100644
 --- a/model.patch
 +++ b/model.patch
-@@ -1,284 +0,0 @@
--diff --git a/frontend/app/(tabs)/operations.tsx b/frontend/app/(tabs)/operations.tsx
--index 8d4bf1f..35a9ff6 100644
----- a/frontend/app/(tabs)/operations.tsx
--+++ b/frontend/app/(tabs)/operations.tsx
--@@ -105,7 +105,9 @@ export default function OperationsScreen() {
--           type: operationType,
--           data: operation,
--         });
---        setPendingOperationsCount(require('../../services/api').getOfflineQueue().length);
--+        const { getOfflineQueue: getQueue } = require('../../services/api');
--+        const currentQueue = await getQueue();
--+        setPendingOperationsCount(currentQueue.length);
--         Alert.alert(
--           'Офлайн режим',
--           'Операція збережена та буде синхронізована при підключенні до мережі'
+@@ -1,351 +0,0 @@
+-diff --git a/backend/production_api.py b/backend/production_api.py
+-index f21ae20..227f914 100644
+---- a/backend/production_api.py
+-+++ b/backend/production_api.py
+-@@ -271,7 +271,7 @@ async def complete_batch(batch_id: int, completion: BatchComplete):
+-         """, completion.final_weight, completion.notes, batch_id)
+-         
+-         # Calculate yield percentage
+--        yield_percent = (completion.final_weight / batch.initial_weight) * 100
+-+        yield_percent = (completion.final_weight / float(batch.initial_weight)) * 100
+-         
+-         # Check if idempotency key already exists
+-         cursor.execute(
 -diff --git a/model.patch b/model.patch
--index 86aadbe..e69de29 100644
+-index 66229da..e69de29 100644
 ---- a/model.patch
 -+++ b/model.patch
--@@ -1,264 +0,0 @@
---diff --git a/README.md b/README.md
---index 3786c8a..2371ac0 100644
------ a/README.md
---+++ b/README.md
---@@ -1 +1,258 @@
----# Here are your Instructions
---+# Система управління складом та виробництвом
---+
---+Мобільний додаток для управління виробництвом та фасовкою на м'ясному підприємстві з підтримкою офлайн-режиму.
---+
---+## Технології
---+
---+### Backend
---+- **FastAPI** (Python) - REST API
---+- **MS SQL Server 2022** - база даних
---+- **pyodbc** - драйвер для підключення до MS SQL
---+- **pydantic** - валідація даних
---+
---+### Frontend  
---+- **Expo / React Native** - кросплатформенний мобільний додаток (iOS + Android)
---+- **TypeScript** - типізація
---+- **Expo Router** - навігація з file-based routing
---+- **Zustand** - управління станом
---+- **TanStack Query** - кешування та синхронізація даних
---+- **MMKV** - швидке локальне сховище
---+- **NetInfo** - відслідковування мережі
---+- **axios** - HTTP клієнт
---+
---+### База даних
---+- Підключення до віддаленого MS SQL Server
---+- Адреса: `85.238.112.232:14330`
---+- База: `SLAZAR_DB`
---+
---+## Функціонал модуля "Склад"
---+
---+### ✅ Реалізовано
---+
---+1. **Номенклатура**
---+   - 132 позиції (сировина, спеції, упаковка, етикетки, готова продукція)
---+   - Різні одиниці виміру: кг, л, м, од
---+   - Точність округлення (кг/л/м - 2 знаки, штуки - 0)
---+
---+2. **Залишки на складі**
---+   - Перегляд поточних залишків
---+   - Фільтрація за категоріями
---+   - Пошук по назві
---+   - Pull-to-refresh оновлення
---+
---+3. **Операції приходу/розходу**
---+   - Прихід товару на склад
---+   - Розхід товару зі складу
---+   - Обов'язкова перевірка на від'ємні залишки
---+   - Додавання приміток до операцій
---+   - Ідемпотентність (захист від дублювання)
---+
---+4. **Інвентаризація**
---+   - Повна інвентаризація (всі позиції)
---+   - Часткова інвентаризація (вибрані позиції)
---+   - Автоматичне коригування різниць
---+   - Фіксація системних та фактичних залишків
---+
---+5. **Журнал руху**
---+   - Історія всіх операцій
---+   - Фільтрація за періодом
---+   - Відображення типу операції
---+   - Метадані (примітки, коригування)
---+
---+6. **Offline-first архітектура**
---+   - Робота без інтернету
---+   - Локальна черга операцій
---+   - Автоматична синхронізація при появі мережі
---+   - Індикатор статусу підключення
---+   - Лічильник несинхронізованих операцій
---+
---+7. **Ідемпотентність**
---+   - Кожна операція має унікальний ключ
---+   - Повторна відправка не створює дублів
---+   - Захист при нестабільному інтернеті
---+
---+8. **Запобігання від'ємних залишків**
---+   - Перевірка перед кожним списанням
---+   - Інформативні повідомлення про помилки
---+   - Відображення доступної кількості
---+
---+## Запуск додатку
---+
---+### Backend
---+```bash
---+cd /app/backend
---+python server.py
---+# Запущено на http://0.0.0.0:8001
---+```
---+
---+### Frontend (Expo)
---+```bash
---+cd /app/frontend
---+yarn start
---+# Або через supervisor:
---+sudo supervisorctl restart expo
---+```
---+
---+### Ініціалізація БД
---+```bash
---+cd /app/backend
---+python -c "from database import init_database; init_database()"
---+```
---+
---+### Заповнення номенклатури
---+```bash
---+cd /app/backend
---+python seed_data.py
---+```
---+
---+## API Endpoints
---+
---+### Номенклатура
---+- `GET /api/nomenclature` - отримати всю номенклатуру
---+- `POST /api/nomenclature` - створити нову позицію
---+
---+### Залишки
---+- `GET /api/stock/balances` - залишки на складі
---+- `GET /api/stock/balances?category=<category>` - залишки за категорією
---+
---+### Операції
---+- `POST /api/stock/receipt` - прихід товару
---+- `POST /api/stock/withdrawal` - розхід товару
---+
---+### Журнал
---+- `GET /api/stock/movements` - історія операцій
---+- `GET /api/stock/movements?nomenclature_id=<id>` - за позицією
---+- `GET /api/stock/movements?start_date=<date>&end_date=<date>` - за період
---+
---+### Інвентаризація
---+- `POST /api/stock/inventory/start` - почати інвентаризацію
---+- `POST /api/stock/inventory/complete` - завершити інвентаризацію
---+
---+### Синхронізація
---+- `POST /api/sync/operations` - синхронізувати офлайн операції
---+
---+## Структура проекту
---+
---+```
---+/app
---+├── backend/
---+│   ├── server.py         # FastAPI додаток
---+│   ├── database.py       # Підключення до MS SQL
---+│   ├── models.py         # Pydantic моделі
---+│   ├── seed_data.py      # Скрипт заповнення даних
---+│   ├── requirements.txt
---+│   └── .env              # Налаштування БД
---+├── frontend/
---+│   ├── app/
---+│   │   ├── (tabs)/       # Екрани з навігацією
---+│   │   │   ├── index.tsx         # Залишки
---+│   │   │   ├── operations.tsx    # Операції
---+│   │   │   ├── inventory.tsx     # Інвентаризація
---+│   │   │   └── history.tsx       # Журнал
---+│   │   ├── index.tsx     # Root redirect
---+│   │   └── _layout.tsx
---+│   ├── services/
---+│   │   └── api.ts        # API клієнт та офлайн логіка
---+│   ├── stores/
---+│   │   └── useStore.ts   # Zustand store
---+│   ├── app.json
---+│   └── package.json
---+└── README.md
---+```
---+
---+## Особливості реалізації
---+
---+### 1. Точність округлення
---+Налаштовується для кожної одиниці виміру:
---+- Ваговий товар (кг, л) - 2 знаки після коми
---+- Метраж (м) - 2 знаки після коми  
---+- Штучний товар (од) - 0 знаків (ціле число)
---+
---+### 2. Ідемпотентність
---+Кожна операція має `idempotency_key`:
---+```javascript
---+const key = generateIdempotencyKey(); // timestamp-random
---+```
---+При повторній відправці з тим же ключем - операція не дублюється.
---+
---+### 3. Offline Queue
---+Операції зберігаються локально в MMKV:
---+```javascript
---+addToOfflineQueue({
---+  type: 'receipt', 
---+  data: operation
---+});
---+```
---+
---+При появі мережі - автоматична синхронізація через `/api/sync/operations`.
---+
---+### 4. Валідації
---+- Перевірка на від'ємні залишки
---+- Валідація формату даних (Pydantic)
---+- Перевірка унікальності ключів ідемпотентності
---+- Округлення згідно точності
---+
---+## Тестування
---+
---+### Backend тести
---+```bash
---+# Перевірка здоров'я
---+curl http://localhost:8001/api/health
---+
---+# Отримати залишки
---+curl http://localhost:8001/api/stock/balances
---+
---+# Прихід товару
---+curl -X POST http://localhost:8001/api/stock/receipt \
---+  -H "Content-Type: application/json" \
---+  -d '{
---+    "nomenclature_id": 1,
---+    "quantity": 100,
---+    "idempotency_key": "unique-key-123"
---+  }'
---+
---+# Розхід товару
---+curl -X POST http://localhost:8001/api/stock/withdrawal \
---+  -H "Content-Type: application/json" \
---+  -d '{
---+    "nomenclature_id": 1,
---+    "quantity": 30,
---+    "idempotency_key": "unique-key-456"
---+  }'
---+```
---+
---+## Наступні кроки (фази 2-4)
---+
---+1. **Виробництво**
---+   - Рецептури та технологічні карти
---+   - Процеси виробництва
---+   - Списання сировини
---+   - Вихід готової продукції
---+
---+2. **Фасовка**
---+   - Процеси фасування
---+   - Етикетування
---+   - Контроль якості
---+   - QR/штрих-коди
---+
---+3. **Аналітика та звіти**
---+   - Залишки на дату
---+   - Обороти по номенклатурі
---+   - Результати інвентаризацій
---+   - Експорт даних
---+
---+4. **Аутентифікація**
---+   - Багатокористувацький режим
---+   - Журнал дій операторів
---+   - Ролі та права доступу
---+
---+## Контакти розробки
---+
---+- База даних: MS SQL Server 2022
---+- Server: 85.238.112.232:14330
---+- Database: SLAZAR_DB
---+- User: llm_user (адміністратор БД)
---+
---+## Ліцензія
---+
---+Proprietary - всі права захищені © 2025
-diff --git a/test_result.md b/test_result.md
-index 16c618d..d9084f3 100644
---- a/test_result.md
-+++ b/test_result.md
-@@ -140,15 +140,18 @@ backend:
- 
-   - task: "Production API endpoints"
-     implemented: true
--    working: "NA"
-+    working: true
-     file: "backend/production_api.py"
-     stuck_count: 0
-     priority: "high"
--    needs_retesting: true
-+    needs_retesting: false
-     status_history:
-       - working: "NA"
-         agent: "main"
-         comment: "Implemented API endpoints: GET /api/production/recipes, GET /api/production/recipes/{id}, POST /api/production/batches, GET /api/production/batches, GET /api/production/batches/{id}, PUT /api/production/batches/{id}/complete. Basic curl test passed for recipes list. Need comprehensive testing."
-+      - working: true
-+        agent: "testing"
-+        comment: "Comprehensive testing completed successfully. All 8 API endpoints working correctly: ✅ GET /production/recipes (returns 8 recipes with proper fields), ✅ GET /production/recipes/{id} (returns recipe with ordered steps), ✅ POST /production/batches (creates batch with proper batch number format), ✅ GET /production/batches (lists all batches), ✅ GET /production/batches?status=created (filters correctly), ✅ GET /production/batches/{id} (returns batch details), ✅ PUT /production/batches/{id}/complete (completes batch, creates stock movements, calculates yield). Fixed minor type conversion issue in yield calculation. Edge cases tested: invalid recipe/batch IDs return 404, duplicate completion returns 400. Database verification: stock movements created correctly, finished product balance updated (75.0 KG for Бастурма класична вагова). Idempotency working properly."
- 
-   - task: "ODBC driver installation"
-     implemented: true
-@@ -181,16 +184,17 @@ frontend:
- metadata:
-   created_by: "main_agent"
-   version: "1.0"
--  test_sequence: 1
-+  test_sequence: 2
-   run_ui: false
- 
- test_plan:
--  current_focus:
--    - "Production API endpoints"
-+  current_focus: []
-   stuck_tasks: []
-   test_all: false
-   test_priority: "high_first"
- 
- agent_communication:
-   - agent: "main"
--    message: "Phase 1 (Backend MVP) completed. Created database schema for recipes module, seeded 8 recipes with production steps, and implemented core API endpoints. ODBC driver issue resolved. Ready for backend testing before proceeding to frontend development."
-\ No newline at end of file
-+    message: "Phase 1 (Backend MVP) completed. Created database schema for recipes module, seeded 8 recipes with production steps, and implemented core API endpoints. ODBC driver issue resolved. Ready for backend testing before proceeding to frontend development."
-+  - agent: "testing"
-+    message: "Backend testing completed successfully. All production API endpoints are working correctly. Fixed minor type conversion issue in batch completion. All 8 endpoints tested with 100% success rate: recipes listing, recipe details, batch creation, batch listing with filtering, batch details, and batch completion with stock movements. Database integration verified - stock movements and balances updated correctly. Edge cases handled properly (404 for invalid IDs, 400 for duplicate operations). Ready for frontend development or user acceptance testing."
-\ No newline at end of file
+-@@ -1,284 +0,0 @@
+--diff --git a/frontend/app/(tabs)/operations.tsx b/frontend/app/(tabs)/operations.tsx
+--index 8d4bf1f..35a9ff6 100644
+----- a/frontend/app/(tabs)/operations.tsx
+--+++ b/frontend/app/(tabs)/operations.tsx
+--@@ -105,7 +105,9 @@ export default function OperationsScreen() {
+--           type: operationType,
+--           data: operation,
+--         });
+---        setPendingOperationsCount(require('../../services/api').getOfflineQueue().length);
+--+        const { getOfflineQueue: getQueue } = require('../../services/api');
+--+        const currentQueue = await getQueue();
+--+        setPendingOperationsCount(currentQueue.length);
+--         Alert.alert(
+--           'Офлайн режим',
+--           'Операція збережена та буде синхронізована при підключенні до мережі'
+--diff --git a/model.patch b/model.patch
+--index 86aadbe..e69de29 100644
+----- a/model.patch
+--+++ b/model.patch
+--@@ -1,264 +0,0 @@
+---diff --git a/README.md b/README.md
+---index 3786c8a..2371ac0 100644
+------ a/README.md
+---+++ b/README.md
+---@@ -1 +1,258 @@
+----# Here are your Instructions
+---+# Система управління складом та виробництвом
+---+
+---+Мобільний додаток для управління виробництвом та фасовкою на м'ясному підприємстві з підтримкою офлайн-режиму.
+---+
+---+## Технології
+---+
+---+### Backend
+---+- **FastAPI** (Python) - REST API
+---+- **MS SQL Server 2022** - база даних
+---+- **pyodbc** - драйвер для підключення до MS SQL
+---+- **pydantic** - валідація даних
+---+
+---+### Frontend  
+---+- **Expo / React Native** - кросплатформенний мобільний додаток (iOS + Android)
+---+- **TypeScript** - типізація
+---+- **Expo Router** - навігація з file-based routing
+---+- **Zustand** - управління станом
+---+- **TanStack Query** - кешування та синхронізація даних
+---+- **MMKV** - швидке локальне сховище
+---+- **NetInfo** - відслідковування мережі
+---+- **axios** - HTTP клієнт
+---+
+---+### База даних
+---+- Підключення до віддаленого MS SQL Server
+---+- Адреса: `85.238.112.232:14330`
+---+- База: `SLAZAR_DB`
+---+
+---+## Функціонал модуля "Склад"
+---+
+---+### ✅ Реалізовано
+---+
+---+1. **Номенклатура**
+---+   - 132 позиції (сировина, спеції, упаковка, етикетки, готова продукція)
+---+   - Різні одиниці виміру: кг, л, м, од
+---+   - Точність округлення (кг/л/м - 2 знаки, штуки - 0)
+---+
+---+2. **Залишки на складі**
+---+   - Перегляд поточних залишків
+---+   - Фільтрація за категоріями
+---+   - Пошук по назві
+---+   - Pull-to-refresh оновлення
+---+
+---+3. **Операції приходу/розходу**
+---+   - Прихід товару на склад
+---+   - Розхід товару зі складу
+---+   - Обов'язкова перевірка на від'ємні залишки
+---+   - Додавання приміток до операцій
+---+   - Ідемпотентність (захист від дублювання)
+---+
+---+4. **Інвентаризація**
+---+   - Повна інвентаризація (всі позиції)
+---+   - Часткова інвентаризація (вибрані позиції)
+---+   - Автоматичне коригування різниць
+---+   - Фіксація системних та фактичних залишків
+---+
+---+5. **Журнал руху**
+---+   - Історія всіх операцій
+---+   - Фільтрація за періодом
+---+   - Відображення типу операції
+---+   - Метадані (примітки, коригування)
+---+
+---+6. **Offline-first архітектура**
+---+   - Робота без інтернету
+---+   - Локальна черга операцій
+---+   - Автоматична синхронізація при появі мережі
+---+   - Індикатор статусу підключення
+---+   - Лічильник несинхронізованих операцій
+---+
+---+7. **Ідемпотентність**
+---+   - Кожна операція має унікальний ключ
+---+   - Повторна відправка не створює дублів
+---+   - Захист при нестабільному інтернеті
+---+
+---+8. **Запобігання від'ємних залишків**
+---+   - Перевірка перед кожним списанням
+---+   - Інформативні повідомлення про помилки
+---+   - Відображення доступної кількості
+---+
+---+## Запуск додатку
+---+
+---+### Backend
+---+```bash
+---+cd /app/backend
+---+python server.py
+---+# Запущено на http://0.0.0.0:8001
+---+```
+---+
+---+### Frontend (Expo)
+---+```bash
+---+cd /app/frontend
+---+yarn start
+---+# Або через supervisor:
+---+sudo supervisorctl restart expo
+---+```
+---+
+---+### Ініціалізація БД
+---+```bash
+---+cd /app/backend
+---+python -c "from database import init_database; init_database()"
+---+```
+---+
+---+### Заповнення номенклатури
+---+```bash
+---+cd /app/backend
+---+python seed_data.py
+---+```
+---+
+---+## API Endpoints
+---+
+---+### Номенклатура
+---+- `GET /api/nomenclature` - отримати всю номенклатуру
+---+- `POST /api/nomenclature` - створити нову позицію
+---+
+---+### Залишки
+---+- `GET /api/stock/balances` - залишки на складі
+---+- `GET /api/stock/balances?category=<category>` - залишки за категорією
+---+
+---+### Операції
+---+- `POST /api/stock/receipt` - прихід товару
+---+- `POST /api/stock/withdrawal` - розхід товару
+---+
+---+### Журнал
+---+- `GET /api/stock/movements` - історія операцій
+---+- `GET /api/stock/movements?nomenclature_id=<id>` - за позицією
+---+- `GET /api/stock/movements?start_date=<date>&end_date=<date>` - за період
+---+
+---+### Інвентаризація
+---+- `POST /api/stock/inventory/start` - почати інвентаризацію
+---+- `POST /api/stock/inventory/complete` - завершити інвентаризацію
+---+
+---+### Синхронізація
+---+- `POST /api/sync/operations` - синхронізувати офлайн операції
+---+
+---+## Структура проекту
+---+
+---+```
+---+/app
+---+├── backend/
+---+│   ├── server.py         # FastAPI додаток
+---+│   ├── database.py       # Підключення до MS SQL
+---+│   ├── models.py         # Pydantic моделі
+---+│   ├── seed_data.py      # Скрипт заповнення даних
+---+│   ├── requirements.txt
+---+│   └── .env              # Налаштування БД
+---+├── frontend/
+---+│   ├── app/
+---+│   │   ├── (tabs)/       # Екрани з навігацією
+---+│   │   │   ├── index.tsx         # Залишки
+---+│   │   │   ├── operations.tsx    # Операції
+---+│   │   │   ├── inventory.tsx     # Інвентаризація
+---+│   │   │   └── history.tsx       # Журнал
+---+│   │   ├── index.tsx     # Root redirect
+---+│   │   └── _layout.tsx
+---+│   ├── services/
+---+│   │   └── api.ts        # API клієнт та офлайн логіка
+---+│   ├── stores/
+---+│   │   └── useStore.ts   # Zustand store
+---+│   ├── app.json
+---+│   └── package.json
+---+└── README.md
+---+```
+---+
+---+## Особливості реалізації
+---+
+---+### 1. Точність округлення
+---+Налаштовується для кожної одиниці виміру:
+---+- Ваговий товар (кг, л) - 2 знаки після коми
+---+- Метраж (м) - 2 знаки після коми  
+---+- Штучний товар (од) - 0 знаків (ціле число)
+---+
+---+### 2. Ідемпотентність
+---+Кожна операція має `idempotency_key`:
+---+```javascript
+---+const key = generateIdempotencyKey(); // timestamp-random
+---+```
+---+При повторній відправці з тим же ключем - операція не дублюється.
+---+
+---+### 3. Offline Queue
+---+Операції зберігаються локально в MMKV:
+---+```javascript
+---+addToOfflineQueue({
+---+  type: 'receipt', 
+---+  data: operation
+---+});
+---+```
+---+
+---+При появі мережі - автоматична синхронізація через `/api/sync/operations`.
+---+
+---+### 4. Валідації
+---+- Перевірка на від'ємні залишки
+---+- Валідація формату даних (Pydantic)
+---+- Перевірка унікальності ключів ідемпотентності
+---+- Округлення згідно точності
+---+
+---+## Тестування
+---+
+---+### Backend тести
+---+```bash
+---+# Перевірка здоров'я
+---+curl http://localhost:8001/api/health
+---+
+---+# Отримати залишки
+---+curl http://localhost:8001/api/stock/balances
+---+
+---+# Прихід товару
+---+curl -X POST http://localhost:8001/api/stock/receipt \
+---+  -H "Content-Type: application/json" \
+---+  -d '{
+---+    "nomenclature_id": 1,
+---+    "quantity": 100,
+---+    "idempotency_key": "unique-key-123"
+---+  }'
+---+
+---+# Розхід товару
+---+curl -X POST http://localhost:8001/api/stock/withdrawal \
+---+  -H "Content-Type: application/json" \
+---+  -d '{
+---+    "nomenclature_id": 1,
+---+    "quantity": 30,
+---+    "idempotency_key": "unique-key-456"
+---+  }'
+---+```
+---+
+---+## Наступні кроки (фази 2-4)
+---+
+---+1. **Виробництво**
+---+   - Рецептури та технологічні карти
+---+   - Процеси виробництва
+---+   - Списання сировини
+---+   - Вихід готової продукції
+---+
+---+2. **Фасовка**
+---+   - Процеси фасування
+---+   - Етикетування
+---+   - Контроль якості
+---+   - QR/штрих-коди
+---+
+---+3. **Аналітика та звіти**
+---+   - Залишки на дату
+---+   - Обороти по номенклатурі
+---+   - Результати інвентаризацій
+---+   - Експорт даних
+---+
+---+4. **Аутентифікація**
+---+   - Багатокористувацький режим
+---+   - Журнал дій операторів
+---+   - Ролі та права доступу
+---+
+---+## Контакти розробки
+---+
+---+- База даних: MS SQL Server 2022
+---+- Server: 85.238.112.232:14330
+---+- Database: SLAZAR_DB
+---+- User: llm_user (адміністратор БД)
+---+
+---+## Ліцензія
+---+
+---+Proprietary - всі права захищені © 2025
+-diff --git a/test_result.md b/test_result.md
+-index 16c618d..d9084f3 100644
+---- a/test_result.md
+-+++ b/test_result.md
+-@@ -140,15 +140,18 @@ backend:
+- 
+-   - task: "Production API endpoints"
+-     implemented: true
+--    working: "NA"
+-+    working: true
+-     file: "backend/production_api.py"
+-     stuck_count: 0
+-     priority: "high"
+--    needs_retesting: true
+-+    needs_retesting: false
+-     status_history:
+-       - working: "NA"
+-         agent: "main"
+-         comment: "Implemented API endpoints: GET /api/production/recipes, GET /api/production/recipes/{id}, POST /api/production/batches, GET /api/production/batches, GET /api/production/batches/{id}, PUT /api/production/batches/{id}/complete. Basic curl test passed for recipes list. Need comprehensive testing."
+-+      - working: true
+-+        agent: "testing"
+-+        comment: "Comprehensive testing completed successfully. All 8 API endpoints working correctly: ✅ GET /production/recipes (returns 8 recipes with proper fields), ✅ GET /production/recipes/{id} (returns recipe with ordered steps), ✅ POST /production/batches (creates batch with proper batch number format), ✅ GET /production/batches (lists all batches), ✅ GET /production/batches?status=created (filters correctly), ✅ GET /production/batches/{id} (returns batch details), ✅ PUT /production/batches/{id}/complete (completes batch, creates stock movements, calculates yield). Fixed minor type conversion issue in yield calculation. Edge cases tested: invalid recipe/batch IDs return 404, duplicate completion returns 400. Database verification: stock movements created correctly, finished product balance updated (75.0 KG for Бастурма класична вагова). Idempotency working properly."
+- 
+-   - task: "ODBC driver installation"
+-     implemented: true
+-@@ -181,16 +184,17 @@ frontend:
+- metadata:
+-   created_by: "main_agent"
+-   version: "1.0"
+--  test_sequence: 1
+-+  test_sequence: 2
+-   run_ui: false
+- 
+- test_plan:
+--  current_focus:
+--    - "Production API endpoints"
+-+  current_focus: []
+-   stuck_tasks: []
+-   test_all: false
+-   test_priority: "high_first"
+- 
+- agent_communication:
+-   - agent: "main"
+--    message: "Phase 1 (Backend MVP) completed. Created database schema for recipes module, seeded 8 recipes with production steps, and implemented core API endpoints. ODBC driver issue resolved. Ready for backend testing before proceeding to frontend development."
+-\ No newline at end of file
+-+    message: "Phase 1 (Backend MVP) completed. Created database schema for recipes module, seeded 8 recipes with production steps, and implemented core API endpoints. ODBC driver issue resolved. Ready for backend testing before proceeding to frontend development."
+-+  - agent: "testing"
+-+    message: "Backend testing completed successfully. All production API endpoints are working correctly. Fixed minor type conversion issue in batch completion. All 8 endpoints tested with 100% success rate: recipes listing, recipe details, batch creation, batch listing with filtering, batch details, and batch completion with stock movements. Database integration verified - stock movements and balances updated correctly. Edge cases handled properly (404 for invalid IDs, 400 for duplicate operations). Ready for frontend development or user acceptance testing."
+-\ No newline at end of file
