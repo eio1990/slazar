@@ -309,39 +309,10 @@ export default function BatchDetailScreen() {
                               const mixId = mixParams.mix_id || (batch.recipe_name?.includes('конини') ? 135 : 134);
                               router.push(`/batches/mix-form?batchId=${id}&stepId=${step.id}&recipeId=${batch.recipe_id}&mixId=${mixId}` as any);
                             } else {
-                              // Regular step - simple weight input
-                              Alert.prompt(
-                                'Завершити крок',
-                                `Введіть вагу після "${step.step_name}"`,
-                                [
-                                  { text: 'Скасувати', style: 'cancel' },
-                                  {
-                                    text: 'OK',
-                                    onPress: (weight: any) => {
-                                      if (weight && parseFloat(weight) > 0) {
-                                        fetch(`${API_URL}/api/production/batches/${id}/operations`, {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({
-                                            step_id: step.id,
-                                            weight_after: parseFloat(weight),
-                                            notes: `Крок ${step.step_order} завершено`,
-                                            idempotency_key: `step-${id}-${step.id}-${Date.now()}`,
-                                          }),
-                                        })
-                                          .then(() => {
-                                            refetch();
-                                            queryClient.invalidateQueries({ queryKey: ['batch-operations', id] });
-                                          })
-                                          .catch((err) => Alert.alert('Помилка', 'Не вдалося додати операцію'));
-                                      }
-                                    },
-                                  },
-                                ],
-                                'plain-text',
-                                '',
-                                'decimal-pad'
-                              );
+                              // Regular step - open modal for weight input
+                              setCurrentStep(step);
+                              setWeightInput('');
+                              setWeightModalVisible(true);
                             }
                           }}
                         >
