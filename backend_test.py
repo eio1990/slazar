@@ -714,6 +714,10 @@ class ProductionAPITester:
         self.test_get_batch_by_id()
         self.test_complete_batch()
         
+        # NEW: Spice deduction functionality tests
+        self.test_spice_deduction_functionality()
+        self.test_spice_deduction_edge_cases()
+        
         # Edge cases
         self.test_edge_cases()
         
