@@ -572,6 +572,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     fontSize: 16,
   },
+  categoryFilterContainer: {
+    flexGrow: 0,
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  categoryFilterContent: {
+    paddingRight: 16,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  categoryChipActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  categoryChipText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+  },
+  categoryChipTextActive: {
+    color: '#fff',
+  },
   modalLoading: {
     flex: 1,
     justifyContent: 'center',
