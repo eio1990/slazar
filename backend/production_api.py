@@ -610,8 +610,6 @@ async def get_batch_operations(batch_id: int):
         return operations
 
 
-@router.put("/batches/{batch_id}/complete")
-
 @router.post("/batches/{batch_id}/mix")
 async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
     """Produce mix (Chaman/Marinade) with fenugreek water rule"""
