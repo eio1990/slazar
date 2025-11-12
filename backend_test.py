@@ -543,7 +543,7 @@ class ProductionAPITester:
             # Create a batch with very high initial weight to trigger insufficient stock
             batch_payload = {
                 "recipe_id": 2,
-                "initial_weight": 10000.0,  # Very high weight
+                "initial_weight": 5000.0,  # High weight but not excessive
                 "trim_waste": 0,
                 "trim_returned": False,
                 "operator_notes": "Test batch for insufficient stock testing"
