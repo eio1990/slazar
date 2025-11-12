@@ -6,16 +6,20 @@ import { Platform } from 'react-native';
 
 // Configure API URL from environment
 const getApiUrl = () => {
-  // Try to get from environment variable
-  const envUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || 
-                 process.env.EXPO_PUBLIC_BACKEND_URL;
-  
-  if (envUrl) {
-    console.log('[API Service] Using env URL:', envUrl);
-    return envUrl;
+  // Priority 1: Check process.env (works with EXPO_PUBLIC_ prefix)
+  if (process.env.EXPO_PUBLIC_BACKEND_URL) {
+    console.log('[API Service] Using EXPO_PUBLIC_BACKEND_URL:', process.env.EXPO_PUBLIC_BACKEND_URL);
+    return process.env.EXPO_PUBLIC_BACKEND_URL;
   }
   
-  // Fallback for local development
+  // Priority 2: Check Constants.expoConfig.extra
+  if (Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL) {
+    console.log('[API Service] Using from expoConfig:', Constants.expoConfig.extra.EXPO_PUBLIC_BACKEND_URL);
+    return Constants.expoConfig.extra.EXPO_PUBLIC_BACKEND_URL;
+  }
+  
+  // Priority 3: Fallback for local development
+  console.warn('[API Service] No EXPO_PUBLIC_BACKEND_URL found, using fallback');
   if (__DEV__) {
     if (Platform.OS === 'android') {
       return 'http://10.0.2.2:8001'; // Android emulator
@@ -28,7 +32,7 @@ const getApiUrl = () => {
 
 const BASE_URL = getApiUrl();
 
-console.log('[API Service] Configured BASE URL:', BASE_URL);
+console.log('[API Service] Final BASE URL:', BASE_URL);
 
 // Storage adapter for cross-platform compatibility
 export const storage = {
