@@ -110,7 +110,14 @@ def fix_duplicates():
                 WHERE nomenclature_id = ?
             """, original_id, duplicate_id)
             
-            # 5. Delete duplicate nomenclature
+            # 5. Update recipes (target_product_id)
+            cursor.execute("""
+                UPDATE recipes 
+                SET target_product_id = ? 
+                WHERE target_product_id = ?
+            """, original_id, duplicate_id)
+            
+            # 6. Delete duplicate nomenclature
             cursor.execute("""
                 DELETE FROM nomenclature 
                 WHERE id = ?
