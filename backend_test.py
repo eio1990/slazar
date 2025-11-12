@@ -585,7 +585,7 @@ class ProductionAPITester:
             # Create a normal batch
             batch_payload = {
                 "recipe_id": 2,
-                "initial_weight": 50.0,  # Smaller batch
+                "initial_weight": 25.0,  # Even smaller batch to avoid stock issues
                 "trim_waste": 0,
                 "trim_returned": False,
                 "operator_notes": "Test batch for idempotency testing"
