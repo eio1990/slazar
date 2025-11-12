@@ -6,12 +6,16 @@ import { Platform } from 'react-native';
 
 // Configure API URL from environment
 const getApiUrl = () => {
-  // For Expo Go, use the preview URL
-  if (Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL) {
-    return Constants.expoConfig.extra.EXPO_PUBLIC_BACKEND_URL;
+  // Try to get from environment variable
+  const envUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || 
+                 process.env.EXPO_PUBLIC_BACKEND_URL;
+  
+  if (envUrl) {
+    console.log('[API Service] Using env URL:', envUrl);
+    return envUrl;
   }
   
-  // For local development
+  // Fallback for local development
   if (__DEV__) {
     if (Platform.OS === 'android') {
       return 'http://10.0.2.2:8001'; // Android emulator
@@ -22,9 +26,9 @@ const getApiUrl = () => {
   return 'http://localhost:8001';
 };
 
-const API_URL = getApiUrl();
+const BASE_URL = getApiUrl();
 
-console.log('[API Service] Configured API URL:', API_URL);
+console.log('[API Service] Configured BASE URL:', BASE_URL);
 
 // Storage adapter for cross-platform compatibility
 export const storage = {
@@ -46,7 +50,7 @@ export const storage = {
 
 // Axios instance
 export const api = axios.create({
-  baseURL: `${API_URL}/api`,
+  baseURL: `${BASE_URL}/api`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
