@@ -190,6 +190,11 @@ async def get_recipe_spices(recipe_id: int):
             'ingredients': ingredients
         }
 
+@router.get("/recipes/{recipe_id}/materials")
+async def get_recipe_materials(recipe_id: int):
+    """Get recipe materials (ingredients + spices) with nomenclature IDs"""
+    return get_recipe_spices_and_ingredients(recipe_id)
+
 @router.post("/batches", response_model=Batch)
 async def create_batch(batch_data: BatchCreate):
     """Create new production batch with stock availability check"""
