@@ -13,7 +13,8 @@ router = APIRouter(prefix="/api/production", tags=["production"])
 
 # Constants
 FENUGREEK_ID = 19  # Пажитник in nomenclature
-WATER_ID = 71      # Вода in nomenclature
+WATER_ID = 136     # Вода in nomenclature
+SALT_ID = 28       # Сіль in nomenclature
 FENUGREEK_WATER_RATIO = 4  # 1:4 rule
 
 # Product name to code mapping for batch numbers
