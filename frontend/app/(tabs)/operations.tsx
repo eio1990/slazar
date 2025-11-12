@@ -35,6 +35,7 @@ export default function OperationsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [nomenclature, setNomenclature] = useState<Nomenclature[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [availableBalance, setAvailableBalance] = useState<number | null>(null);
@@ -66,10 +67,28 @@ export default function OperationsScreen() {
     }
   };
 
-  const filteredNomenclature = nomenclature.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Get unique categories
+  const categories = Array.from(new Set(nomenclature.map(item => item.category))).sort();
+
+  // Filter and sort nomenclature
+  const filteredNomenclature = nomenclature
+    .filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = !selectedCategory || item.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      // Finished products go last
+      const aIsFinished = a.category === 'Готова продукція';
+      const bIsFinished = b.category === 'Готова продукція';
+      
+      if (aIsFinished && !bIsFinished) return 1;
+      if (!aIsFinished && bIsFinished) return -1;
+      
+      // Alphabetical order within groups
+      return a.name.localeCompare(b.name, 'uk');
+    });
 
   const handleSelectItem = (item: Nomenclature) => {
     setSelectedItem(item);
