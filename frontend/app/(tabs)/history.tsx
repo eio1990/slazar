@@ -42,16 +42,25 @@ export default function HistoryScreen() {
           apiService.getNomenclature(),
         ]);
         
+        console.log('Loaded movements:', movementsData.length);
+        console.log('Loaded nomenclature:', nomenclature.length);
+        
         // Create a map of nomenclature names
         const nomenclatureMap = new Map(
           nomenclature.map(n => [n.id, n.name])
         );
         
+        console.log('Nomenclature map size:', nomenclatureMap.size);
+        
         // Add nomenclature names to movements
-        const movementsWithNames = movementsData.map(m => ({
-          ...m,
-          nomenclature_name: nomenclatureMap.get(m.nomenclature_id) || `ID: ${m.nomenclature_id}`,
-        }));
+        const movementsWithNames = movementsData.map(m => {
+          const name = nomenclatureMap.get(m.nomenclature_id);
+          console.log(`Movement ${m.id}: nomenclature_id=${m.nomenclature_id}, name=${name}`);
+          return {
+            ...m,
+            nomenclature_name: name || `Номенклатура #${m.nomenclature_id}`,
+          };
+        });
         
         setMovements(movementsWithNames);
       }
