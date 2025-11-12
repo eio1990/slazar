@@ -1,95 +1,93 @@
 <analysis>
-The trajectory details the evolution of a warehouse management app, initially focusing on a Warehouse Module (inventory, movements) and then pivoting to a complex Recipes and Production Module. The initial phase involved setting up a full-stack environment with Expo, FastAPI, and MS SQL, overcoming significant challenges with ODBC drivers and Expo build configurations.
+The trajectory documents an extensive development and debugging cycle for a warehouse management application, focusing on a complex Recipes and Production module. The initial phase involved resolving fundamental environment issues, most critically a recurring MS SQL ODBC driver installation problem within the ARM64 Docker container and a persistent misconfiguration of environment variables in the Expo frontend. The engineer correctly identified that API calls were failing due to an incorrect  URL and systematically fixed this by replacing the unreliable  with the standard  across all frontend files.
 
-The core of the recent work was implementing the production module based on detailed user specifications. This included creating database schemas for recipes, production steps, and batches; seeding the database with user-provided recipe data; and building out a comprehensive backend API () to manage the production lifecycle (start batch, add spices, calculate mix, close batch).
+Following environment stabilization, the work shifted to implementing a series of user-requested features and bug fixes. This included: a backend logic change to generate custom batch numbers (e.g., 'BAST-DDMMYYYY-XXX'); a major UI overhaul moving several tabs into a new hamburger menu; and adding filters and sorting to inventory screens.
 
-Key struggles included repeatedly fixing a persistent MS SQL ODBC driver issue within the Linux container, correcting SQL syntax in seed scripts, and debugging Python errors. The frontend development involved adding new tabs and screens for production, recipes, and analytics using Expo Router.
-
-The most recent activity involves debugging critical UI failures reported by the user: a non-functional nomenclature list and an error on the production screen. The root cause was identified as the frontend incorrectly using  instead of the correct backend URL. The engineer's attempts to fix this by using  to manage environment variables led to further Expo startup errors, indicating a fundamental misconfiguration in how the frontend consumes environment variables. The immediate task is to stabilize the frontend's connection to the backend.
+A significant portion of the work involved data integrity and business logic alignment. The user provided an Excel file with detailed recipes, which the engineer parsed and used to seed the database with correct ingredients and quantities. This led to a series of iterative fixes in the backend: ensuring all ingredients are checked for stock availability before starting a batch, correcting foreign key constraints related to deleted duplicate nomenclatures, and fixing  errors by explicitly casting database values to  or  before returning them. The final phase focused on aligning the production lifecycle in the app with the user's detailed process descriptions, which was the immediate task at hand.
 </analysis>
 
 <product_requirements>
-The initial request was for a cross-platform mobile app for warehouse management, focusing on a Warehouse Module for tracking stock, logging movements, and supporting offline operations with an MS SQL database.
+The application is a comprehensive warehouse and production management system. The core of the recent development is the Recipes and Production Module, designed to manage the manufacturing of finished meat products.
 
-This evolved into a Recipes and Production Module for managing the creation of finished weighted products.
+**Core Features Implemented:**
+1.  **Recipe-Based Production:** The system uses pre-defined recipes stored in an MS SQL database to guide the production process.
+2.  **Batch Management:** Users can create and manage production batches. Batch IDs are now customized based on the product name (e.g., 'BAST' for Basturma) and include a daily counter ().
+3.  **Production Lifecycle:** A multi-step process is implemented, including starting a batch, raw material consumption, creating spice mixes (чаман or marinades), and completing the batch to add the finished product to stock.
+4.  **UI/UX:** The main navigation was refactored. The bottom tab bar was simplified to Operations, Production, and Packaging. Other screens like Stock, Journal, and Inventory were moved to a side hamburger menu. Filters and sorting were added to improve usability on stock and operation screens.
 
-Key requirements for the production module include:
-1.  **Recipe Management**: Define recipes linking a finished product to raw materials and spices. Recipes are stored in the DB and are not editable from the app.
-2.  **Production Batches**: Users manually create production batches based on a selected recipe. Each batch gets a unique, human-readable ID (e.g., ).
-3.  **Production Lifecycle**: Implement a multi-step process:
-    *   **Start Batch**: Record raw material usage, with checks for sufficient stock. Handle trimmings/waste.
-    *   **Spice/Mix Addition**: Calculate a mix of spices. A special rule applies to fenugreek (пажитник), requiring water at a 4:1 ratio. The system must differentiate between produced mix, used mix, and leftover mix.
-    *   **Close Batch**: Record the final weight of the finished product and calculate the production yield.
-4.  **Data & Logic**: Ensure all operations are idempotent. Track all material consumption. Prohibit negative stock.
-5.  **Analytics & Reporting**: Provide statistics on batch performance (e.g., yield) and an export function (Excel/PDF).
+**Recent & Pending Requirements (from user feedback):**
+The user provided a detailed breakdown of 8 distinct recipes (Basturma, Horse Basturma, Turkey, etc.), revealing critical discrepancies in the current implementation. The system must be updated to:
+-   Reflect the exact ingredient quantities specified.
+-   Implement special production steps like Salting and Marination which have their own ingredient lists (e.g., salt and water).
+-   Ensure all raw materials and spices are correctly deducted from stock at the appropriate production stage (e.g., spices deducted when a mix is made, raw meat deducted when a batch starts).
 </product_requirements>
 
 <key_technical_concepts>
-- **Backend**: FastAPI with Python 3, serving a REST API.
-- **Database**: MS SQL Server 2022, accessed via .
-- **Frontend**: Expo SDK (React Native) with file-based routing via .
-- **State Management**:  and  for client and server state.
-- **Architecture**: Client-Server model with offline-first considerations (local storage queue for operations).
-- **Core Principles**: Idempotency for backend operations, UTC for all timestamps, transactional integrity for database writes.
-- **Environment**: Dockerized Linux container with services managed by .
+- **Backend:** FastAPI (Python) serving a REST API.
+- **Database:** MS SQL Server, accessed with . Connection timeouts were increased to handle network instability.
+- **Frontend:** Expo (React Native) using  for file-based routing.
+- **State Management:** Zustand for global client state.
+- **Key Backend Logic:**
+    - Explicit type casting (e.g., , ) to prevent  errors.
+    - Idempotency keys for safe, repeatable operations.
+    - Transactional database updates within  blocks.
+- **Environment:** Dockerized  Linux environment managed by Supervisor.
 </key_technical_concepts>
 
 <code_architecture>
-The application is a monorepo with distinct  and  directories.
+The application uses a monorepo structure with separate  and  directories.
 
 
 
-- ****:
-  - **Importance**: Newly created file that contains all API endpoints for the Recipes and Production Module. It handles getting recipes, creating/managing batches, processing production steps, and providing analytics. This separates production logic from the original warehousing API.
-  - **Changes**: Created from scratch. Endpoints like , , and  were added to implement the core business logic.
+-   ****
+    -   **Importance:** This is the core of the business logic, containing all endpoints for managing the production lifecycle.
+    -   **Summary of Changes:** It underwent numerous critical fixes:
+        1.  **Batch Number Generation:** Logic was added to create custom batch numbers (e.g., ) based on . A counter was re-added to prevent unique key violations.
+        2.  ** Serialization Fix:** Corrected  by explicitly casting database return values (like  or balances) to  or  before they were used in JSON responses or .
+        3.  **Decorator Fix:** A misplaced  decorator was causing  errors on the batch completion endpoint. It was moved to the correct  function definition.
+        4.  **Stock Availability Check:** The logic for starting a batch was updated to check for the availability of *all* required ingredients, not just the primary one.
+        5.  **Step Progression:** Added logic to create a  record after a mix is produced, allowing the frontend to correctly advance to the next production step.
 
-- ****:
-  - **Importance**: Manages the MS SQL database connection and schema initialization.
-  - **Changes**: All instances of  were replaced with  to enforce UTC standard for timestamps, a critical fix from the implementation audit.
+-   ****
+    -   **Importance:** A new script created to parse a user-provided Excel file () and populate the database with correct recipe ingredients and quantities.
+    -   **Summary of Changes:** Created from scratch to bridge the gap between the user's detailed specifications and the database state.
 
-- ****:
-  - **Importance**: A script to populate the database with the complex, multi-step recipes provided by the user.
-  - **Changes**: Created and heavily iterated upon to fix Python syntax errors (e.g., removing  prefixes), correct product names, and add recipe ingredients (spices).
+-   ****
+    -   **Importance:** Defines the main navigation structure.
+    -   **Summary of Changes:** Was significantly refactored to implement a major UI change. It now renders only three tabs (Operations, Production, Packaging) and incorporates the new  component, which provides navigation to screens that were previously in the tab bar.
 
-- ****:
-  - **Importance**: The main screen for the production module, intended to list all active and completed production batches.
-  - **Changes**: Created as a new tab. It fetches and displays a list of batches. An Analytics button was added to navigate to the analytics screen. This screen is currently failing to load data.
+-   ****
+    -   **Importance:** The detail screen for a single production batch, where users interact with production steps.
+    -   **Summary of Changes:**
+        1.  Replaced a non-functional  with a custom  for user input, fixing a crash on web/mobile.
+        2.  Corrected input validation logic (e.g., ) to correctly handle  as a valid input for weights (e.g., zero trimmings), and improved user feedback on validation failure.
+        3.  Improved error handling in  callbacks to display user-friendly messages from the API instead of .
 
-- ****:
-  - **Importance**: The detail screen for a single production batch. It displays the batch's progress through its predefined recipe steps.
-  - **Changes**: Created to show batch details and a step-by-step progress tracker. Logic was added to navigate to a special  screen for steps of type mix.
-
-- ****:
-  - **Importance**: The central Axios-based API service for the frontend. It defines how the app communicates with the backend.
-  - **Changes**: This file is at the center of the current bug. A  was added, revealing it was using a hardcoded  URL. The logic for constructing the  was modified multiple times in an attempt to correctly consume the  environment variable, including removing a duplicate  suffix.
-
-- ** & **:
-  - **Importance**: Expo configuration files that control the build process, including how environment variables are exposed to the application.
-  - **Changes**:  was edited to hardcode the backend URL as a temporary fix. An  file was then created to properly load  variables using , but this caused a startup error and was subsequently deleted. The configuration for environment variables remains broken.
+-   **Multiple Frontend Files (e.g., , )**
+    -   **Importance:** These files were responsible for communicating with the backend.
+    -   **Summary of Changes:** A project-wide find-and-replace was performed to fix the root cause of initial API failures. All instances of  were replaced with the correct .
 </code_architecture>
 
 <pending_tasks>
-- **Backend**: Implement robust idempotency checks using the  for all production operations (Start, Spices, Close).
-- **Backend**: Implement transactional locking to prevent race conditions during material consumption.
-- **Frontend**: Complete the UI for the Add Spices/Mix form ().
-- **Feature**: Implement the requested Excel export functionality for analytics and reports.
-- **Feature**: Fully develop the analytics screen with filters and visualizations.
+- **Backend:**
+    - Add missing ingredients (Flour, Chili Pepper) to the nomenclature and the Basturma recipe.
+    - Implement logic to deduct all constituent spices from stock when a mix is produced.
+- **Frontend/Backend:**
+    - Implement a dedicated UI and backend logic for the Salting step, which requires specific inputs (salt, water) based on recipe parameters.
+    - Implement a similar dedicated process for the Marination step for other recipes.
 </pending_tasks>
 
 <current_work>
-The AI engineer is in the middle of debugging two critical, user-reported UI failures:
-1.  **Nomenclature Not Loading**: On the stock receipt screen (), the list of inventory items fails to load, and search is broken.
-2.  **Batches Not Loading**: The Production tab () shows an error and fails to display the list of production batches.
+The previous AI engineer was actively correcting the recipe data in the database to match a new, highly detailed specification provided by the user. The user pointed out critical discrepancies in the quantities and types of spices for Бастурма класична (Classic Basturma).
 
-Both issues were traced back to a single root cause: the frontend is making API calls to  instead of the correct backend URL supplied by the environment. This was confirmed by adding a  to , which printed the incorrect URL.
+The engineer's last actions were:
+1.  **Analyzing Discrepancies:** They confirmed that the database had incorrect quantities for spices and was missing Борошно (Flour) and Перець чілі (Chili Pepper) for the Basturma recipe.
+2.  **Executing a Fix:** They created and ran a Python script () to update the quantities of the *existing* spices (Fenugreek, Paprika, Garlic) in the  table for the Basturma recipe.
+3.  **Identifying Next Step:** The script execution was successful. The immediate next task identified was to handle the *missing* ingredients. The last thought was: Добре! Спеції оновлено, але Перець чілі та Борошно відсутні в номенклатурі. Перевірю їх наявність: (Okay! Spices updated, but Chili Pepper and Flour are missing from the nomenclature. I will check their availability:).
 
-The engineer's efforts to resolve this have been unsuccessful so far:
--   An attempt to hardcode the URL in  failed because the environment variable string  was not being substituted.
--   A more robust attempt was made by creating an  file to use the  package, which would programmatically load the  file and inject the variables into the Expo config. However, this introduced a new  on [08:31:05] Starting project at /app/frontend, related to a  module, forcing the deletion of .
-
-The immediate task is to correctly configure the Expo project to pass the  from the  file to the running application so that the  service can make successful API calls. The backend services themselves are confirmed to be running and responsive to direct  requests.
+The work paused right before checking the  table to see if Flour and Chili Pepper exist, which is the prerequisite step to adding them to the recipe.
 </current_work>
 
 <optional_next_step>
-Fix the Expo environment variable configuration. I will re-create  and ensure it correctly exports the configuration while resolving the plugin error, which is the most reliable method for handling environment variables in Expo.
+I will check if Перець чілі and Борошно exist in the  table. If not, I will add them. Then, I will add them as ingredients to the Бастурма класична recipe with the correct quantities.
 </optional_next_step>

@@ -43,7 +43,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "EXPO_PUBLIC_BACKEND_URL": "https://batchcraft.preview.emergentagent.com"
+      "EXPO_PUBLIC_BACKEND_URL": "https://recipe-factory-1.preview.emergentagent.com"
     }
   }
 }
