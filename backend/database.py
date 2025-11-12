@@ -20,6 +20,8 @@ CONNECTION_STRING = (
     f"PWD={MSSQL_PASSWORD};"
     f"Encrypt=no;"
     f"TrustServerCertificate=yes;"
+    f"LoginTimeout=30;"  # Increase timeout to 30 seconds
+    f"Timeout=30;"
 )
 
 @contextmanager
