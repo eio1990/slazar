@@ -105,21 +105,24 @@ export default function BatchDetailScreen() {
   });
 
   const handleCompleteBatch = () => {
-    if (!finalWeight || parseFloat(finalWeight) <= 0) {
-      Alert.alert('Помилка', 'Введіть фінальну вагу');
+    const weight = parseFloat(finalWeight);
+    
+    if (!finalWeight || finalWeight.trim() === '' || isNaN(weight) || weight < 0) {
+      Alert.alert('Помилка', 'Введіть фінальну вагу (більше або дорівнює 0)');
       return;
     }
 
     Alert.alert(
       'Підтвердження',
-      `Завершити партію з фінальною вагою ${finalWeight} кг?`,
+      `Завершити партію з фінальною вагою ${weight} кг?`,
       [
         { text: 'Скасувати', style: 'cancel' },
         {
           text: 'Так',
           onPress: () => {
+            console.log('Completing batch with weight:', weight);
             completeBatchMutation.mutate({
-              final_weight: parseFloat(finalWeight),
+              final_weight: weight,
               notes: notes || 'Партія завершена',
               idempotency_key: `complete-${id}-${Date.now()}`,
             });
