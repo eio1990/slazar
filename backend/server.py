@@ -23,6 +23,7 @@ app = FastAPI(title="Склад API")
 
 # Include production router
 app.include_router(production_router)
+app.include_router(packaging_router)
 
 # CORS middleware
 app.add_middleware(
