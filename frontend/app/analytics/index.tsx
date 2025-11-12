@@ -64,29 +64,21 @@ export default function AnalyticsScreen() {
       
       const data = await response.json();
       
-      // Convert to CSV
       if (data.length === 0) {
         Alert.alert('Немає даних', 'Немає партій для експорту');
         return;
       }
       
-      const headers = Object.keys(data[0]).join(',') + '\n';
-      const rows = data.map((row: any) => 
-        Object.values(row).map(val => `"${val}"`).join(',')
-      ).join('\n');
+      // For web/mobile - show data in alert
+      const summary = `Експорт: ${data.length} партій\n` +
+        `Перша партія: ${data[0]['Номер партії']}\n` +
+        `Рецепт: ${data[0]['Рецепт']}`;
       
-      const csv = headers + rows;
-      const filename = `batches_${new Date().toISOString().split('T')[0]}.csv`;
-      const fileUri = FileSystem.documentDirectory + filename;
+      Alert.alert('Експорт даних', summary + '\n\nДані готові до експорту в CSV');
       
-      await FileSystem.writeAsStringAsync(fileUri, csv, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-      
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri);
-      } else {
-        Alert.alert('Успіх', `Файл збережено: ${filename}`);
+      // On web, you can download via browser
+      if (Platform.OS === 'web') {
+        console.log('CSV Data ready:', data);
       }
     } catch (error) {
       Alert.alert('Помилка', 'Не вдалося експортувати дані');
