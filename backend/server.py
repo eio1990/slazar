@@ -15,6 +15,7 @@ from models import (
     BatchStockOperation, BatchResponse, BatchOperationResult
 )
 from production_api import router as production_router
+from packaging_api import router as packaging_router
 
 load_dotenv()
 
