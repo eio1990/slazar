@@ -149,8 +149,10 @@ export default function HistoryScreen() {
     return type;
   };
 
-  const renderMovement = ({ item }: { item: StockMovement }) => {
+  const renderMovement = ({ item }: { item: MovementWithName }) => {
     const operationColor = getOperationColor(item.operation_type);
+    const operationLabel = getOperationLabel(item.operation_type);
+    const sign = item.operation_type === 'withdrawal' ? '-' : '+';
     
     return (
       <View style={styles.card}>
@@ -164,7 +166,10 @@ export default function HistoryScreen() {
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.operationType}>
-              {getOperationLabel(item.operation_type)}
+              {operationLabel}: {item.nomenclature_name}
+            </Text>
+            <Text style={styles.quantityInline}>
+              {sign}{item.quantity} кг
             </Text>
             <Text style={styles.dateText}>
               {format(new Date(item.operation_date), 'dd MMMM yyyy, HH:mm', { locale: uk })}
@@ -176,8 +181,7 @@ export default function HistoryScreen() {
           <View style={styles.quantityItem}>
             <Text style={styles.quantityLabel}>Кількість</Text>
             <Text style={[styles.quantityValue, { color: operationColor }]}>
-              {item.operation_type === 'withdrawal' ? '-' : '+'}
-              {item.quantity}
+              {sign}{item.quantity}
             </Text>
           </View>
           <View style={styles.quantityItem}>
