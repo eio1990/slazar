@@ -155,6 +155,9 @@ backend:
       - working: "NA"
         agent: "main"
         comment: "MAJOR ENHANCEMENT: Implemented automatic spice deduction during mix production. When POST /api/production/batches/{batch_id}/mix is called, the system now: (1) Retrieves ALL spices from recipe_spices table for the batch's recipe, (2) Calculates required quantity for each spice based on batch initial_weight, (3) Checks stock availability for each spice before processing, (4) Creates withdrawal stock_movements records for each spice, (5) Updates stock_balances for all spices. Also added missing ingredients to Basturma recipe (Перець чілі: 1.54 кг, Борошно: 3.08 кг). Needs comprehensive testing to verify spice deduction logic works correctly with real production scenarios."
+      - working: true
+        agent: "testing"
+        comment: "✅ SPICE DEDUCTION FUNCTIONALITY FULLY TESTED AND WORKING: Comprehensive testing completed successfully for automatic spice deduction during mix production. Key findings: (1) Recipe verification: All 5 expected spices found with correct quantities - Борошно (3.08 кг), Пажитник (9.23 кг), Паприка (4.62 кг), Перець чілі (1.54 кг), Часник (6.15 кг) per 100kg batch, (2) Stock deduction accuracy: All spices correctly deducted based on batch initial_weight calculation (initial_weight / 100 * quantity_per_100kg), (3) Stock movements verification: All 5 spice withdrawal movements created with correct metadata including batch_id, batch_number, spice_name, recipe_id, and initial_weight, (4) Error handling: Insufficient stock properly detected and rejected with appropriate error messages, (5) Idempotency: Duplicate mix production calls handled correctly, (6) Edge cases: Zero initial weight handled gracefully. The spice deduction system is production-ready and accurately implements the business logic for automatic spice consumption during mix production."
 
   - task: "ODBC driver installation"
     implemented: true
