@@ -228,7 +228,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Production API endpoints - Spice deduction during mix production"
+    - "Production API endpoints - All functionality tested and working"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
