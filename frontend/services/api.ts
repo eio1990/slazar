@@ -24,6 +24,8 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
+console.log('[API Service] Configured API URL:', API_URL);
+
 // Storage adapter for cross-platform compatibility
 export const storage = {
   getString: async (key: string): Promise<string | undefined> => {
