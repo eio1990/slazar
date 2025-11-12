@@ -256,8 +256,7 @@ async def create_batch(batch_data: BatchCreate):
         if not recipe:
             raise HTTPException(status_code=404, detail="Recipe not found")
         
-        # Check raw material availability on stock
-        # Get main ingredient from recipe
+        # Check raw material availability on stock for ALL ingredients
         cursor.execute("""
             SELECT ri.nomenclature_id, n.name, ri.quantity_per_100kg
             FROM recipe_ingredients ri
@@ -266,10 +265,16 @@ async def create_batch(batch_data: BatchCreate):
             ORDER BY ri.quantity_per_100kg DESC
         """, batch_data.recipe_id)
         
-        main_ingredient = cursor.fetchone()
-        if main_ingredient:
-            ingredient_id = main_ingredient.nomenclature_id
-            ingredient_name = main_ingredient.name
+        ingredients = cursor.fetchall()
+        insufficient_materials = []
+        
+        for ingredient in ingredients:
+            ingredient_id = ingredient.nomenclature_id
+            ingredient_name = ingredient.name
+            qty_per_100kg = float(ingredient.quantity_per_100kg)
+            
+            # Calculate required quantity based on batch initial_weight
+            required_qty = (batch_data.initial_weight * qty_per_100kg) / 100.0
             
             # Check stock balance
             cursor.execute("""
@@ -281,17 +286,23 @@ async def create_batch(batch_data: BatchCreate):
             balance_row = cursor.fetchone()
             current_balance = float(balance_row[0]) if balance_row else 0.0
             
-            # Check if enough stock (considering trim waste)
-            total_required = batch_data.initial_weight
-            if batch_data.trim_waste and batch_data.trim_waste > 0:
-                total_required += batch_data.trim_waste
-            
-            if current_balance < total_required:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Insufficient stock for {ingredient_name}. "
-                           f"Available: {current_balance:.2f} kg, Required: {total_required:.2f} kg"
-                )
+            if current_balance < required_qty:
+                insufficient_materials.append({
+                    'name': ingredient_name,
+                    'required': required_qty,
+                    'available': current_balance
+                })
+        
+        # If any material is insufficient, raise error
+        if insufficient_materials:
+            error_details = "; ".join([
+                f"{m['name']}: потрібно {m['required']:.2f} кг, доступно {m['available']:.2f} кг"
+                for m in insufficient_materials
+            ])
+            raise HTTPException(
+                status_code=400,
+                detail=f"Недостатньо сировини на складі: {error_details}"
+            )
         
         # Generate batch number with product code
         today = datetime.now().strftime("%d%m%Y")
