@@ -878,7 +878,7 @@ async def consume_materials(batch_id: int, materials: dict):
             "consumed_materials": consumed
         }
 
-
+@router.put("/batches/{batch_id}/complete")
 async def complete_batch(batch_id: int, completion: BatchComplete):
     """Complete a batch and create stock movements"""
     with get_db_connection() as conn:
