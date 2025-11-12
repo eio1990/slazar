@@ -334,6 +334,12 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 2,
   },
+  quantityInline: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+    marginBottom: 4,
+  },
   dateText: {
     fontSize: 12,
     color: '#999',
