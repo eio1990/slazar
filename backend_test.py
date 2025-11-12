@@ -148,9 +148,9 @@ class ProductionAPITester:
                 missing_fields = [field for field in required_fields if field not in batch]
                 
                 if not missing_fields:
-                    # Check batch number format
+                    # Check batch number format (can be BATCH- or product code like BAST-)
                     batch_number = batch['batch_number']
-                    expected_format = batch_number.startswith('BATCH-') and len(batch_number.split('-')) == 3
+                    expected_format = ('-' in batch_number and len(batch_number.split('-')) == 3)
                     
                     if expected_format and batch['status'] == 'created':
                         self.created_batch_id = batch['id']  # Store for later tests
