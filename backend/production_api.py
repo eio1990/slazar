@@ -338,7 +338,7 @@ async def create_batch(batch_data: BatchCreate):
             batch_data.initial_weight, batch_data.trim_waste,
             batch_data.trim_returned, batch_data.operator_notes)
         
-        batch_id = cursor.execute("SELECT @@IDENTITY").fetchone()[0]
+        batch_id = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
         
         # Automatically consume raw materials (списання сировини)
         # Get main ingredient (first one with highest quantity) for auto-consumption
