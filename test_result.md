@@ -224,7 +224,8 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Production API endpoints - Spice deduction during mix production"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
