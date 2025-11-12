@@ -341,13 +341,25 @@ async def create_batch(batch_data: BatchCreate):
         batch_id = cursor.execute("SELECT @@IDENTITY").fetchone()[0]
         
         # Automatically consume raw materials (списання сировини)
-        if main_ingredient:
+        # Get main ingredient (first one with highest quantity) for auto-consumption
+        if ingredients:
+            main_ingredient = ingredients[0]  # Already ordered by quantity_per_100kg DESC
             ingredient_id = main_ingredient.nomenclature_id
             quantity_to_consume = batch_data.initial_weight
             
             # Add trim waste if not returned to stock
             if batch_data.trim_waste and batch_data.trim_waste > 0 and not batch_data.trim_returned:
                 quantity_to_consume += batch_data.trim_waste
+            
+            # Get current balance for main ingredient
+            cursor.execute("""
+                SELECT COALESCE(quantity, 0) as quantity
+                FROM stock_balances
+                WHERE nomenclature_id = ?
+            """, ingredient_id)
+            
+            balance_row = cursor.fetchone()
+            current_balance = float(balance_row[0]) if balance_row else 0.0
             
             # Create idempotency key for material consumption
             material_key = f"batch-{batch_id}-raw-material-{datetime.now().timestamp()}"
