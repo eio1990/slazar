@@ -940,9 +940,9 @@ async def complete_batch(batch_id: int, completion: BatchComplete):
             batch.target_product_id, completion.final_weight,
             batch.batch_number, completion.idempotency_key,
             json.dumps({
-                'batch_id': batch_id,
+                'batch_id': int(batch_id),
                 'batch_number': batch.batch_number,
-                'yield_percent': round(yield_percent, 2)
+                'yield_percent': round(float(yield_percent), 2)
             }))
         
         # Update stock balance
