@@ -1013,6 +1013,364 @@ async def process_salting(batch_id: int, salting_data: BatchSalting):
             "water_quantity": salting_data.water_quantity
         }
 
+@router.post("/batches/{batch_id}/sugar")
+async def process_sugar_massage(batch_id: int, sugar_data: BatchSugar):
+    """Process sugar massage step (for horse basturma)"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Get batch
+        cursor.execute("SELECT * FROM batches WHERE id = ?", batch_id)
+        batch = cursor.fetchone()
+        if not batch:
+            raise HTTPException(status_code=404, detail="Batch not found")
+        
+        if batch.status == 'completed':
+            raise HTTPException(status_code=400, detail="Batch already completed")
+        
+        # Check idempotency
+        cursor.execute(
+            "SELECT id FROM batch_operations WHERE idempotency_key = ?",
+            sugar_data.idempotency_key
+        )
+        if cursor.fetchone():
+            return {"message": "Sugar massage already processed", "batch_id": batch_id}
+        
+        # Get sugar nomenclature ID (assuming "Цукор" exists)
+        cursor.execute("SELECT id FROM nomenclature WHERE name = N'Цукор'")
+        sugar_result = cursor.fetchone()
+        if not sugar_result:
+            raise HTTPException(status_code=404, detail="Nomenclature 'Цукор' not found")
+        
+        sugar_id = sugar_result[0]
+        
+        # Round to 0.1 kg
+        sugar_quantity = round(sugar_data.sugar_quantity, 1)
+        
+        # Check stock availability for sugar
+        cursor.execute(
+            "SELECT quantity FROM stock_balances WHERE nomenclature_id = ?",
+            sugar_id
+        )
+        result = cursor.fetchone()
+        sugar_balance = float(result[0]) if result else 0
+        
+        if sugar_balance < sugar_quantity:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Недостатньо цукру на складі. Доступно: {sugar_balance:.1f} кг, Потрібно: {sugar_quantity:.1f} кг"
+            )
+        
+        # Deduct sugar from stock
+        sugar_key = f"sugar-{batch_id}-{sugar_data.idempotency_key}"
+        new_sugar_balance = sugar_balance - sugar_quantity
+        
+        cursor.execute("""
+            INSERT INTO stock_movements (
+                nomenclature_id, operation_type, quantity, balance_after,
+                source_operation_type, source_operation_id,
+                idempotency_key, operation_date, metadata
+            )
+            VALUES (?, 'withdrawal', ?, ?, 'production_sugar', ?, ?, GETUTCDATE(), ?)
+        """, sugar_id, sugar_quantity, new_sugar_balance, batch.batch_number, sugar_key,
+            json.dumps({
+                'batch_id': batch_id,
+                'batch_number': batch.batch_number,
+                'step_type': 'sugar'
+            }))
+        
+        cursor.execute("""
+            UPDATE stock_balances
+            SET quantity = ?,
+                last_updated = GETUTCDATE()
+            WHERE nomenclature_id = ?
+        """, new_sugar_balance, sugar_id)
+        
+        # Find the sugar step
+        cursor.execute("""
+            SELECT rs.id, rs.step_order, rs.step_name
+            FROM recipe_steps rs
+            WHERE rs.recipe_id = (SELECT recipe_id FROM batches WHERE id = ?)
+                AND rs.step_type = 'sugar'
+            ORDER BY rs.step_order
+        """, batch_id)
+        
+        sugar_step_row = cursor.fetchone()
+        if sugar_step_row:
+            sugar_step_id = sugar_step_row[0]
+            sugar_step_order = sugar_step_row[1]
+            
+            # Create operation record
+            cursor.execute("""
+                INSERT INTO batch_operations (
+                    batch_id, step_id, operation_type, status,
+                    weight_before, weight_after, parameters, notes, idempotency_key
+                )
+                VALUES (?, ?, 'sugar', 'completed', NULL, NULL, ?, ?, ?)
+            """, batch_id, sugar_step_id,
+                json.dumps({'sugar_quantity': sugar_quantity}),
+                sugar_data.notes or f"Масажер з цукром: {sugar_quantity} кг",
+                sugar_data.idempotency_key)
+            
+            # Update batch current_step
+            cursor.execute("""
+                UPDATE batches
+                SET current_step = ?,
+                    status = 'in_progress',
+                    updated_at = GETUTCDATE()
+                WHERE id = ?
+            """, sugar_step_order, batch_id)
+        
+        conn.commit()
+        
+        return {
+            "message": "Sugar massage processed successfully",
+            "batch_id": batch_id,
+            "sugar_quantity": sugar_quantity
+        }
+
+@router.post("/batches/{batch_id}/massage")
+async def process_water_massage(batch_id: int, massage_data: BatchMassage):
+    """Process water massage step (for Sudjuk)"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Get batch
+        cursor.execute("SELECT * FROM batches WHERE id = ?", batch_id)
+        batch = cursor.fetchone()
+        if not batch:
+            raise HTTPException(status_code=404, detail="Batch not found")
+        
+        if batch.status == 'completed':
+            raise HTTPException(status_code=400, detail="Batch already completed")
+        
+        # Check idempotency
+        cursor.execute(
+            "SELECT id FROM batch_operations WHERE idempotency_key = ?",
+            massage_data.idempotency_key
+        )
+        if cursor.fetchone():
+            return {"message": "Water massage already processed", "batch_id": batch_id}
+        
+        # Round to 0.1 l
+        water_quantity = round(massage_data.water_quantity, 1)
+        
+        # Check stock availability for water
+        cursor.execute(
+            "SELECT quantity FROM stock_balances WHERE nomenclature_id = ?",
+            WATER_ID
+        )
+        result = cursor.fetchone()
+        water_balance = float(result[0]) if result else 0
+        
+        if water_balance < water_quantity:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Недостатньо води на складі. Доступно: {water_balance:.1f} л, Потрібно: {water_quantity:.1f} л"
+            )
+        
+        # Deduct water from stock
+        water_key = f"massage-{batch_id}-{massage_data.idempotency_key}"
+        new_water_balance = water_balance - water_quantity
+        
+        cursor.execute("""
+            INSERT INTO stock_movements (
+                nomenclature_id, operation_type, quantity, balance_after,
+                source_operation_type, source_operation_id,
+                idempotency_key, operation_date, metadata
+            )
+            VALUES (?, 'withdrawal', ?, ?, 'production_massage', ?, ?, GETUTCDATE(), ?)
+        """, WATER_ID, water_quantity, new_water_balance, batch.batch_number, water_key,
+            json.dumps({
+                'batch_id': batch_id,
+                'batch_number': batch.batch_number,
+                'step_type': 'massage'
+            }))
+        
+        cursor.execute("""
+            UPDATE stock_balances
+            SET quantity = ?,
+                last_updated = GETUTCDATE()
+            WHERE nomenclature_id = ?
+        """, new_water_balance, WATER_ID)
+        
+        # Find the massage step
+        cursor.execute("""
+            SELECT rs.id, rs.step_order, rs.step_name
+            FROM recipe_steps rs
+            WHERE rs.recipe_id = (SELECT recipe_id FROM batches WHERE id = ?)
+                AND rs.step_type = 'massage'
+            ORDER BY rs.step_order
+        """, batch_id)
+        
+        massage_step_row = cursor.fetchone()
+        if massage_step_row:
+            massage_step_id = massage_step_row[0]
+            massage_step_order = massage_step_row[1]
+            
+            # Create operation record
+            cursor.execute("""
+                INSERT INTO batch_operations (
+                    batch_id, step_id, operation_type, status,
+                    weight_before, weight_after, parameters, notes, idempotency_key
+                )
+                VALUES (?, ?, 'massage', 'completed', NULL, NULL, ?, ?, ?)
+            """, batch_id, massage_step_id,
+                json.dumps({'water_quantity': water_quantity}),
+                massage_data.notes or f"Масажер з водою: {water_quantity} л",
+                massage_data.idempotency_key)
+            
+            # Update batch current_step
+            cursor.execute("""
+                UPDATE batches
+                SET current_step = ?,
+                    status = 'in_progress',
+                    updated_at = GETUTCDATE()
+                WHERE id = ?
+            """, massage_step_order, batch_id)
+        
+        conn.commit()
+        
+        return {
+            "message": "Water massage processed successfully",
+            "batch_id": batch_id,
+            "water_quantity": water_quantity
+        }
+
+@router.post("/batches/{batch_id}/stuff")
+async def process_stuffing(batch_id: int, stuff_data: BatchStuff):
+    """Process stuffing step (for Sudjuk, Mahan) - casing and threads"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Get batch
+        cursor.execute("SELECT * FROM batches WHERE id = ?", batch_id)
+        batch = cursor.fetchone()
+        if not batch:
+            raise HTTPException(status_code=404, detail="Batch not found")
+        
+        if batch.status == 'completed':
+            raise HTTPException(status_code=400, detail="Batch already completed")
+        
+        # Check idempotency
+        cursor.execute(
+            "SELECT id FROM batch_operations WHERE idempotency_key = ?",
+            stuff_data.idempotency_key
+        )
+        if cursor.fetchone():
+            return {"message": "Stuffing already processed", "batch_id": batch_id}
+        
+        # Process each material
+        materials_summary = []
+        
+        for material in stuff_data.materials:
+            material_id = material.material_id
+            quantity = material.quantity
+            unit = material.unit
+            
+            # Apply rounding based on unit
+            if unit == 'м':
+                # Meters - round to 0.1 (TODO: confirm precision)
+                quantity = round(quantity, 1)
+            elif unit == 'шт':
+                # Pieces - round to whole numbers
+                quantity = int(round(quantity))
+            else:
+                # Default rounding to 0.1
+                quantity = round(quantity, 1)
+            
+            # Check stock availability
+            cursor.execute(
+                "SELECT quantity FROM stock_balances WHERE nomenclature_id = ?",
+                material_id
+            )
+            result = cursor.fetchone()
+            balance = float(result[0]) if result else 0
+            
+            cursor.execute("SELECT name FROM nomenclature WHERE id = ?", material_id)
+            material_name = cursor.fetchone()[0]
+            
+            if balance < quantity:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Недостатньо матеріалу '{material_name}'. Доступно: {balance} {unit}, Потрібно: {quantity} {unit}"
+                )
+            
+            # Deduct material from stock
+            material_key = f"stuff-{batch_id}-{material_id}-{stuff_data.idempotency_key}"
+            new_balance = balance - quantity
+            
+            cursor.execute("""
+                INSERT INTO stock_movements (
+                    nomenclature_id, operation_type, quantity, balance_after,
+                    source_operation_type, source_operation_id,
+                    idempotency_key, operation_date, metadata
+                )
+                VALUES (?, 'withdrawal', ?, ?, 'production_stuff', ?, ?, GETUTCDATE(), ?)
+            """, material_id, quantity, new_balance, batch.batch_number, material_key,
+                json.dumps({
+                    'batch_id': batch_id,
+                    'batch_number': batch.batch_number,
+                    'material_name': material_name,
+                    'unit': unit
+                }))
+            
+            cursor.execute("""
+                UPDATE stock_balances
+                SET quantity = ?,
+                    last_updated = GETUTCDATE()
+                WHERE nomenclature_id = ?
+            """, new_balance, material_id)
+            
+            materials_summary.append({
+                'material_name': material_name,
+                'quantity': quantity,
+                'unit': unit
+            })
+        
+        # Find the stuff step
+        cursor.execute("""
+            SELECT rs.id, rs.step_order, rs.step_name
+            FROM recipe_steps rs
+            WHERE rs.recipe_id = (SELECT recipe_id FROM batches WHERE id = ?)
+                AND rs.step_type = 'stuff'
+            ORDER BY rs.step_order
+        """, batch_id)
+        
+        stuff_step_row = cursor.fetchone()
+        if stuff_step_row:
+            stuff_step_id = stuff_step_row[0]
+            stuff_step_order = stuff_step_row[1]
+            
+            # Create operation record
+            cursor.execute("""
+                INSERT INTO batch_operations (
+                    batch_id, step_id, operation_type, status,
+                    weight_before, weight_after, parameters, notes, idempotency_key
+                )
+                VALUES (?, ?, 'stuff', 'completed', NULL, NULL, ?, ?, ?)
+            """, batch_id, stuff_step_id,
+                json.dumps({'materials': materials_summary}),
+                stuff_data.notes or f"Заправка в кишку виконана",
+                stuff_data.idempotency_key)
+            
+            # Update batch current_step
+            cursor.execute("""
+                UPDATE batches
+                SET current_step = ?,
+                    status = 'in_progress',
+                    updated_at = GETUTCDATE()
+                WHERE id = ?
+            """, stuff_step_order, batch_id)
+        
+        conn.commit()
+        
+        return {
+            "message": "Stuffing processed successfully",
+            "batch_id": batch_id,
+            "materials": materials_summary
+        }
+
 @router.post("/batches/{batch_id}/materials/consume")
 async def consume_materials(batch_id: int, materials: dict):
     """Consume materials (raw materials and spices) for batch production"""
