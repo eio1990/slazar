@@ -727,10 +727,10 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
                 WHERE nomenclature_id = ?
             """, new_balance, mix_data.mix_nomenclature_id)
         
-        # Update batch current_step to move to next step after mix
-        # Find the mix step order and move to next
+        # Create batch_operations record for mix step
+        # Find the mix step
         cursor.execute("""
-            SELECT rs.step_order
+            SELECT rs.id, rs.step_order, rs.step_name
             FROM recipe_steps rs
             WHERE rs.recipe_id = (SELECT recipe_id FROM batches WHERE id = ?)
                 AND rs.step_type = 'mix'
@@ -739,16 +739,36 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
         
         mix_step_row = cursor.fetchone()
         if mix_step_row:
-            current_step_order = mix_step_row[0]
+            mix_step_id = mix_step_row[0]
+            mix_step_order = mix_step_row[1]
+            mix_step_name = mix_step_row[2]
             
-            # Update batch to move to next step
+            # Create operation record
+            operation_key = f"mix-operation-{batch_id}-{mix_data.idempotency_key}"
+            cursor.execute("""
+                INSERT INTO batch_operations (
+                    batch_id, step_id, operation_type, status,
+                    weight_before, weight_after, parameters, notes, idempotency_key
+                )
+                VALUES (?, ?, 'mix', 'completed', NULL, NULL, ?, ?, ?)
+            """, batch_id, mix_step_id,
+                json.dumps({
+                    'produced_quantity': mix_data.produced_quantity,
+                    'used_quantity': mix_data.used_quantity,
+                    'leftover_quantity': mix_data.leftover_quantity,
+                    'warehouse_mix_used': mix_data.warehouse_mix_used
+                }),
+                f"Мікс виготовлено: {mix_data.produced_quantity} кг",
+                operation_key)
+            
+            # Update batch current_step to indicate this step is completed
             cursor.execute("""
                 UPDATE batches
                 SET current_step = ?,
                     status = 'in_progress',
                     updated_at = GETUTCDATE()
                 WHERE id = ?
-            """, current_step_order, batch_id)
+            """, mix_step_order, batch_id)
         
         conn.commit()
         
