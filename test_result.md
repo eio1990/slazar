@@ -181,6 +181,18 @@ frontend:
         agent: "main"
         comment: "Not yet implemented. Planned for Phase 2."
 
+  - task: "Operations module - Mass receipt functionality"
+    implemented: true
+    working: "NA"
+    file: "frontend/app/(tabs)/operations.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing mass receipt operation: adding 100 units to all nomenclature items except 'Готова продукція' category. Need to verify modal functionality, form submission, and bulk operations handling."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
