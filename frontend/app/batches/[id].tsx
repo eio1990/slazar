@@ -314,6 +314,10 @@ export default function BatchDetailScreen() {
                               const mixParams = step.parameters || {};
                               const mixId = mixParams.mix_id || (batch.recipe_name?.includes('конини') ? 135 : 134);
                               router.push(`/batches/mix-form?batchId=${id}&stepId=${step.id}&recipeId=${batch.recipe_id}&mixId=${mixId}` as any);
+                            } else if (step.step_type === 'salt') {
+                              // Special handling for salting step
+                              const saltParams = step.parameters || {};
+                              router.push(`/batches/salting-form?batchId=${id}&stepId=${step.id}&saltPer100kg=${saltParams.salt_per_100kg || 20}&waterPer100kg=${saltParams.water_per_100kg || 60}&initialWeight=${batch.initial_weight}` as any);
                             } else {
                               // Regular step - open modal for weight input
                               setCurrentStep(step);
@@ -324,7 +328,7 @@ export default function BatchDetailScreen() {
                         >
                           <MaterialCommunityIcons name="play-circle" size={20} color="#4CAF50" />
                           <Text style={styles.progressStepButtonText}>
-                            {step.step_type === 'mix' ? 'Відкрити форму' : 'Почати'}
+                            {step.step_type === 'mix' ? 'Відкрити форму' : step.step_type === 'salt' ? 'Засолити' : 'Почати'}
                           </Text>
                         </TouchableOpacity>
                       )}
