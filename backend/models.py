@@ -180,6 +180,26 @@ class BatchSalting(BaseModel):
     notes: Optional[str] = None
     idempotency_key: str
 
+class BatchSugar(BaseModel):
+    sugar_quantity: float
+    notes: Optional[str] = None
+    idempotency_key: str
+
+class BatchMassage(BaseModel):
+    water_quantity: float
+    notes: Optional[str] = None
+    idempotency_key: str
+
+class BatchStuffMaterial(BaseModel):
+    material_id: int
+    quantity: float
+    unit: str  # 'м', 'шт', etc.
+
+class BatchStuff(BaseModel):
+    materials: List[BatchStuffMaterial]
+    notes: Optional[str] = None
+    idempotency_key: str
+
 # ========== PACKAGING MODULE MODELS ==========
 
 class PackagingRecipeMaterial(BaseModel):
