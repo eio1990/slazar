@@ -15,9 +15,13 @@ import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import { useStore } from '../../stores/useStore';
 
+interface MovementWithName extends StockMovement {
+  nomenclature_name?: string;
+}
+
 export default function HistoryScreen() {
   const { isOnline, isSyncing, setIsSyncing, setPendingOperationsCount } = useStore();
-  const [movements, setMovements] = useState<StockMovement[]>([]);
+  const [movements, setMovements] = useState<MovementWithName[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [pendingOpsCount, setPendingOps] = useState(0);
@@ -33,8 +37,23 @@ export default function HistoryScreen() {
       const online = await checkNetworkConnectivity();
       
       if (online) {
-        const data = await apiService.getMovements({ limit: 100 });
-        setMovements(data);
+        const [movementsData, nomenclature] = await Promise.all([
+          apiService.getMovements({ limit: 100 }),
+          apiService.getNomenclature(),
+        ]);
+        
+        // Create a map of nomenclature names
+        const nomenclatureMap = new Map(
+          nomenclature.map(n => [n.id, n.name])
+        );
+        
+        // Add nomenclature names to movements
+        const movementsWithNames = movementsData.map(m => ({
+          ...m,
+          nomenclature_name: nomenclatureMap.get(m.nomenclature_id) || `ID: ${m.nomenclature_id}`,
+        }));
+        
+        setMovements(movementsWithNames);
       }
     } catch (error) {
       console.error('Error loading movements:', error);
