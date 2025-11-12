@@ -401,6 +401,87 @@ export default function BatchDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Weight Input Modal */}
+      <Modal
+        visible={weightModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setWeightModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setWeightModalVisible(false)}
+          />
+          <View style={styles.weightModalContainer}>
+            <View style={styles.weightModalHeader}>
+              <Text style={styles.weightModalTitle}>
+                {currentStep ? `Завершити: ${currentStep.step_name}` : 'Введіть вагу'}
+              </Text>
+              <TouchableOpacity onPress={() => setWeightModalVisible(false)}>
+                <MaterialCommunityIcons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.weightModalContent}>
+              <Text style={styles.label}>Вага після кроку (кг):</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="0.00"
+                value={weightInput}
+                onChangeText={setWeightInput}
+                keyboardType="decimal-pad"
+                autoFocus
+              />
+
+              <View style={styles.weightModalButtons}>
+                <TouchableOpacity
+                  style={[styles.weightModalButton, styles.weightModalButtonCancel]}
+                  onPress={() => setWeightModalVisible(false)}
+                >
+                  <Text style={styles.weightModalButtonTextCancel}>Скасувати</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.weightModalButton, styles.weightModalButtonConfirm]}
+                  onPress={() => {
+                    if (weightInput && parseFloat(weightInput) > 0 && currentStep) {
+                      fetch(`${API_URL}/api/production/batches/${id}/operations`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          step_id: currentStep.id,
+                          weight_after: parseFloat(weightInput),
+                          notes: `Крок ${currentStep.step_order} завершено`,
+                          idempotency_key: `step-${id}-${currentStep.id}-${Date.now()}`,
+                        }),
+                      })
+                        .then(() => {
+                          setWeightModalVisible(false);
+                          setWeightInput('');
+                          refetch();
+                          queryClient.invalidateQueries({ queryKey: ['batch-operations', id] });
+                        })
+                        .catch((err) => {
+                          Alert.alert('Помилка', 'Не вдалося додати операцію');
+                        });
+                    } else {
+                      Alert.alert('Помилка', 'Введіть коректну вагу');
+                    }
+                  }}
+                >
+                  <Text style={styles.weightModalButtonTextConfirm}>Підтвердити</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
