@@ -499,43 +499,40 @@ class ProductionAPITester:
             success = all("✅" in result for result in verification_results)
             self.log_test("Spice Deduction - Balance Verification", success, "; ".join(verification_results))
             
-            # Step 6: Verify stock movements were created
-            response = self.session.get(f"{self.base_url}/stock/movements?limit=50", timeout=10)
-            if response.status_code == 200:
-                movements = response.json()
-                
-                # Look for withdrawal movements for spices related to our batch
-                spice_movements = []
-                for movement in movements:
-                    if (movement.get('operation_type') == 'withdrawal' and 
-                        movement.get('metadata')):
-                        try:
-                            import json
-                            metadata = json.loads(movement.get('metadata', '{}'))
-                            if (metadata.get('batch_id') == test_batch_id and 
-                                'spice_name' in metadata):
-                                spice_movements.append(movement)
-                        except Exception as e:
-                            # If metadata parsing fails, check string contains batch_id
-                            if str(test_batch_id) in str(movement.get('metadata', '')):
-                                spice_movements.append(movement)
-                
-                if len(spice_movements) >= 5:
-                    spice_names = []
-                    for mov in spice_movements:
-                        try:
-                            metadata = json.loads(mov.get('metadata', '{}'))
-                            spice_names.append(metadata.get('spice_name', 'Unknown'))
-                        except:
-                            spice_names.append('Unknown')
-                    self.log_test("Spice Deduction - Stock Movements", True, f"Found {len(spice_movements)} spice withdrawal movements: {', '.join(spice_names)}")
-                else:
-                    # Debug: show what movements we found
-                    debug_info = f"Looking for batch_id={test_batch_id}. Found {len(spice_movements)} movements"
-                    if spice_movements:
-                        for mov in spice_movements:
-                            debug_info += f"; Movement ID {mov['id']}: {mov.get('metadata', 'No metadata')}"
-                    self.log_test("Spice Deduction - Stock Movements", False, f"Expected at least 5 spice movements, found {len(spice_movements)}. {debug_info}")
+            # Step 6: Verify stock movements were created by checking each spice individually
+            spice_movements_found = []
+            spice_ids = [31, 19, 20, 22, 25]  # Борошно, Пажитник, Паприка, Перець чілі, Часник
+            
+            for spice_id in spice_ids:
+                response = self.session.get(f"{self.base_url}/stock/movements?nomenclature_id={spice_id}&limit=5", timeout=10)
+                if response.status_code == 200:
+                    movements = response.json()
+                    
+                    # Look for the most recent withdrawal for this batch
+                    for movement in movements:
+                        if (movement.get('operation_type') == 'withdrawal' and 
+                            movement.get('metadata')):
+                            try:
+                                import json
+                                metadata = json.loads(movement.get('metadata', '{}'))
+                                if (metadata.get('batch_id') == test_batch_id and 
+                                    'spice_name' in metadata):
+                                    spice_movements_found.append({
+                                        'spice_id': spice_id,
+                                        'spice_name': metadata.get('spice_name'),
+                                        'quantity': movement.get('quantity'),
+                                        'movement_id': movement.get('id')
+                                    })
+                                    break
+                            except:
+                                continue
+            
+            if len(spice_movements_found) >= 5:
+                spice_details = [f"{mov['spice_name']} ({mov['quantity']} кг)" for mov in spice_movements_found]
+                self.log_test("Spice Deduction - Stock Movements", True, f"Found {len(spice_movements_found)} spice withdrawal movements: {', '.join(spice_details)}")
+            else:
+                found_spices = [mov['spice_name'] for mov in spice_movements_found]
+                self.log_test("Spice Deduction - Stock Movements", False, f"Expected 5 spice movements, found {len(spice_movements_found)}: {', '.join(found_spices)}")
             
             return success
             
