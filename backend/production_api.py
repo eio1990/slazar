@@ -193,7 +193,51 @@ async def get_recipe_spices(recipe_id: int):
 @router.get("/recipes/{recipe_id}/materials")
 async def get_recipe_materials(recipe_id: int):
     """Get recipe materials (ingredients + spices) with nomenclature IDs"""
-    return get_recipe_spices_and_ingredients(recipe_id)
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Get spices
+        cursor.execute("""
+            SELECT rs.id, rs.nomenclature_id, n.name, rs.quantity_per_100kg, rs.is_fenugreek
+            FROM recipe_spices rs
+            JOIN nomenclature n ON rs.nomenclature_id = n.id
+            WHERE rs.recipe_id = ?
+            ORDER BY n.name
+        """, recipe_id)
+        
+        spices = []
+        for row in cursor.fetchall():
+            spices.append({
+                'id': row.id,
+                'nomenclature_id': row.nomenclature_id,
+                'name': row.name,
+                'quantity_per_100kg': float(row.quantity_per_100kg) if row.quantity_per_100kg else 0,
+                'is_fenugreek': bool(row.is_fenugreek)
+            })
+        
+        # Get ingredients
+        cursor.execute("""
+            SELECT ri.id, ri.nomenclature_id, n.name, ri.quantity_per_100kg, ri.is_optional
+            FROM recipe_ingredients ri
+            JOIN nomenclature n ON ri.nomenclature_id = n.id
+            WHERE ri.recipe_id = ?
+            ORDER BY n.name
+        """, recipe_id)
+        
+        ingredients = []
+        for row in cursor.fetchall():
+            ingredients.append({
+                'id': row.id,
+                'nomenclature_id': row.nomenclature_id,
+                'name': row.name,
+                'quantity_per_100kg': float(row.quantity_per_100kg) if row.quantity_per_100kg else 0,
+                'is_optional': bool(row.is_optional)
+            })
+        
+        return {
+            'spices': spices,
+            'ingredients': ingredients
+        }
 
 @router.post("/batches", response_model=Batch)
 async def create_batch(batch_data: BatchCreate):
