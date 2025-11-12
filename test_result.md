@@ -144,7 +144,7 @@ backend:
     file: "backend/production_api.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
@@ -152,6 +152,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Comprehensive testing completed successfully. All 8 API endpoints working correctly: ✅ GET /production/recipes (returns 8 recipes with proper fields), ✅ GET /production/recipes/{id} (returns recipe with ordered steps), ✅ POST /production/batches (creates batch with proper batch number format), ✅ GET /production/batches (lists all batches), ✅ GET /production/batches?status=created (filters correctly), ✅ GET /production/batches/{id} (returns batch details), ✅ PUT /production/batches/{id}/complete (completes batch, creates stock movements, calculates yield). Fixed minor type conversion issue in yield calculation. Edge cases tested: invalid recipe/batch IDs return 404, duplicate completion returns 400. Database verification: stock movements created correctly, finished product balance updated (75.0 KG for Бастурма класична вагова). Idempotency working properly."
+      - working: "NA"
+        agent: "main"
+        comment: "MAJOR ENHANCEMENT: Implemented automatic spice deduction during mix production. When POST /api/production/batches/{batch_id}/mix is called, the system now: (1) Retrieves ALL spices from recipe_spices table for the batch's recipe, (2) Calculates required quantity for each spice based on batch initial_weight, (3) Checks stock availability for each spice before processing, (4) Creates withdrawal stock_movements records for each spice, (5) Updates stock_balances for all spices. Also added missing ingredients to Basturma recipe (Перець чілі: 1.54 кг, Борошно: 3.08 кг). Needs comprehensive testing to verify spice deduction logic works correctly with real production scenarios."
 
   - task: "ODBC driver installation"
     implemented: true
