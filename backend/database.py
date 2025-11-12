@@ -315,5 +315,105 @@ def init_database():
         )
         """)
         
+        # ========== PACKAGING MODULE TABLES ==========
+        
+        # Create packaging_recipes table (нормы расхода материалов для фасовки)
+        cursor.execute("""
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='packaging_recipes' AND xtype='U')
+        CREATE TABLE packaging_recipes (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            source_product_id INT NOT NULL,
+            target_product_id INT NOT NULL,
+            packaging_type NVARCHAR(50) NOT NULL,
+            target_weight_grams INT NOT NULL,
+            is_active BIT NOT NULL DEFAULT 1,
+            notes NVARCHAR(MAX),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
+            updated_at DATETIME2 DEFAULT GETUTCDATE(),
+            FOREIGN KEY (source_product_id) REFERENCES nomenclature(id),
+            FOREIGN KEY (target_product_id) REFERENCES nomenclature(id),
+            CONSTRAINT UQ_packaging_recipe UNIQUE(source_product_id, target_product_id, packaging_type)
+        )
+        """)
+        
+        # Create packaging_recipe_materials table (материалы для конкретного рецепта фасовки)
+        cursor.execute("""
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='packaging_recipe_materials' AND xtype='U')
+        CREATE TABLE packaging_recipe_materials (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            recipe_id INT NOT NULL,
+            material_id INT NOT NULL,
+            quantity_per_unit DECIMAL(18, 6) NOT NULL,
+            rounding_precision DECIMAL(18, 6),
+            material_type NVARCHAR(50) NOT NULL,
+            notes NVARCHAR(MAX),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
+            FOREIGN KEY (recipe_id) REFERENCES packaging_recipes(id) ON DELETE CASCADE,
+            FOREIGN KEY (material_id) REFERENCES nomenclature(id)
+        )
+        """)
+        
+        # Create packaging_batches table (партии фасовки)
+        cursor.execute("""
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='packaging_batches' AND xtype='U')
+        CREATE TABLE packaging_batches (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            batch_number NVARCHAR(50) NOT NULL,
+            recipe_id INT NOT NULL,
+            source_product_id INT NOT NULL,
+            target_product_id INT NOT NULL,
+            status NVARCHAR(50) NOT NULL DEFAULT 'in_progress',
+            planned_quantity INT,
+            source_weight_taken DECIMAL(18, 6) NOT NULL,
+            actual_packed_quantity INT DEFAULT 0,
+            actual_source_used DECIMAL(18, 6) DEFAULT 0,
+            waste_quantity DECIMAL(18, 6) DEFAULT 0,
+            started_at DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+            completed_at DATETIME2,
+            operator_notes NVARCHAR(MAX),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
+            updated_at DATETIME2 DEFAULT GETUTCDATE(),
+            FOREIGN KEY (recipe_id) REFERENCES packaging_recipes(id),
+            FOREIGN KEY (source_product_id) REFERENCES nomenclature(id),
+            FOREIGN KEY (target_product_id) REFERENCES nomenclature(id),
+            CONSTRAINT UQ_packaging_batch_number UNIQUE(batch_number)
+        )
+        """)
+        
+        # Create packaging_operations table (операции фасовки в рамках партии)
+        cursor.execute("""
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='packaging_operations' AND xtype='U')
+        CREATE TABLE packaging_operations (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            batch_id INT NOT NULL,
+            operation_type NVARCHAR(50) NOT NULL,
+            packed_quantity INT NOT NULL,
+            source_used DECIMAL(18, 6) NOT NULL,
+            waste_quantity DECIMAL(18, 6) DEFAULT 0,
+            notes NVARCHAR(MAX),
+            idempotency_key NVARCHAR(255) NOT NULL,
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
+            FOREIGN KEY (batch_id) REFERENCES packaging_batches(id) ON DELETE CASCADE,
+            CONSTRAINT UQ_packaging_operation_key UNIQUE(idempotency_key)
+        )
+        """)
+        
+        # Create packaging_material_consumption table (расход материалов в операциях)
+        cursor.execute("""
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='packaging_material_consumption' AND xtype='U')
+        CREATE TABLE packaging_material_consumption (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            operation_id INT NOT NULL,
+            material_id INT NOT NULL,
+            quantity_used DECIMAL(18, 6) NOT NULL,
+            movement_id INT,
+            notes NVARCHAR(MAX),
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
+            FOREIGN KEY (operation_id) REFERENCES packaging_operations(id) ON DELETE CASCADE,
+            FOREIGN KEY (material_id) REFERENCES nomenclature(id),
+            FOREIGN KEY (movement_id) REFERENCES stock_movements(id)
+        )
+        """)
+        
         conn.commit()
         print("Database schema initialized successfully")
