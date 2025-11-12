@@ -26,7 +26,7 @@ import { useStore } from '../../stores/useStore';
 type OperationType = 'receipt' | 'withdrawal';
 
 export default function OperationsScreen() {
-  const { balances, setPendingOperationsCount } = useStore();
+  const { setPendingOperationsCount } = useStore();
   const [operationType, setOperationType] = useState<OperationType>('receipt');
   const [selectedItem, setSelectedItem] = useState<Nomenclature | null>(null);
   const [quantity, setQuantity] = useState('');
@@ -34,6 +34,7 @@ export default function OperationsScreen() {
   const [notes, setNotes] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [nomenclature, setNomenclature] = useState<Nomenclature[]>([]);
+  const [balances, setBalances] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,17 +43,29 @@ export default function OperationsScreen() {
 
   useEffect(() => {
     loadNomenclature();
+    loadBalances();
   }, []);
 
   useEffect(() => {
     if (selectedItem && operationType === 'withdrawal') {
       // Get available balance for selected item
       const balance = balances.find(b => b.nomenclature_id === selectedItem.id);
+      console.log('Selected item:', selectedItem.id, 'Balance found:', balance);
       setAvailableBalance(balance ? balance.quantity : 0);
     } else {
       setAvailableBalance(null);
     }
   }, [selectedItem, operationType, balances]);
+
+  const loadBalances = async () => {
+    try {
+      const data = await apiService.getBalances();
+      console.log('Loaded balances:', data.length);
+      setBalances(data);
+    } catch (error) {
+      console.error('Error loading balances:', error);
+    }
+  };
 
   const loadNomenclature = async () => {
     try {
