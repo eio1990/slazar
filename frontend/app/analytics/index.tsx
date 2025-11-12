@@ -13,9 +13,6 @@ import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import Constants from 'expo-constants';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-
 const API_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
 export default function AnalyticsScreen() {
