@@ -97,7 +97,10 @@ export default function BatchDetailScreen() {
       );
     },
     onError: (error: any) => {
-      Alert.alert('Помилка', error.message || 'Не вдалося завершити партію');
+      console.error('Complete batch error:', error);
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Не вдалося завершити партію';
+      const displayMessage = typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage);
+      Alert.alert('Помилка', displayMessage);
     },
   });
 
