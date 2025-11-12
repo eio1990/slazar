@@ -162,6 +162,18 @@ backend:
         agent: "testing"
         comment: "✅ SPICE DEDUCTION FUNCTIONALITY FULLY TESTED AND WORKING: Comprehensive testing completed successfully for automatic spice deduction during mix production. Key findings: (1) Recipe verification: All 5 expected spices found with correct quantities - Борошно (3.08 кг), Пажитник (9.23 кг), Паприка (4.62 кг), Перець чілі (1.54 кг), Часник (6.15 кг) per 100kg batch, (2) Stock deduction accuracy: All spices correctly deducted based on batch initial_weight calculation (initial_weight / 100 * quantity_per_100kg), (3) Stock movements verification: All 5 spice withdrawal movements created with correct metadata including batch_id, batch_number, spice_name, recipe_id, and initial_weight, (4) Error handling: Insufficient stock properly detected and rejected with appropriate error messages, (5) Idempotency: Duplicate mix production calls handled correctly, (6) Edge cases: Zero initial weight handled gracefully. The spice deduction system is production-ready and accurately implements the business logic for automatic spice consumption during mix production."
 
+  - task: "Salting step implementation"
+    implemented: true
+    working: "NA"
+    file: "backend/production_api.py, frontend/app/batches/salting-form.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented complete salting step workflow: Backend endpoint POST /api/production/batches/{batch_id}/salting processes salt and water consumption with stock deduction. Frontend salting-form.tsx provides UI for entering actual quantities with recommended values display. Batch detail screen updated to recognize 'salt' step_type and route to salting form. Water added to nomenclature (ID=136) with 1000л initial stock. Ready for comprehensive testing."
+
   - task: "ODBC driver installation"
     implemented: true
     working: true
