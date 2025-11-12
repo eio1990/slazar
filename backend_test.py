@@ -557,8 +557,8 @@ class ProductionAPITester:
                 # Try to produce mix - should fail due to insufficient spices
                 mix_payload = {
                     "mix_nomenclature_id": 72,
-                    "produced_quantity": 2462.0,  # 24.62 * 100 for 10000kg batch
-                    "used_quantity": 2462.0,
+                    "produced_quantity": 1231.0,  # 24.62 * 50 for 5000kg batch
+                    "used_quantity": 1231.0,
                     "leftover_quantity": 0.0,
                     "warehouse_mix_used": 0.0,
                     "idempotency_key": f"test-insufficient-{test_batch_id}-{int(time.time())}"
