@@ -244,14 +244,21 @@ async def create_batch(batch_data: BatchCreate):
                            f"Available: {current_balance:.2f} kg, Required: {total_required:.2f} kg"
                 )
         
-        # Generate batch number
+        # Generate batch number with product code
         today = datetime.now().strftime("%d%m%Y")
-        cursor.execute("""
-            SELECT COUNT(*) FROM batches 
-            WHERE batch_number LIKE ?
-        """, f"BATCH-{today}%")
-        count = cursor.fetchone()[0] + 1
-        batch_number = f"BATCH-{today}-{count:03d}"
+        
+        # Find product code from recipe/product name
+        recipe_name = recipe.name
+        product_name = recipe.product_name
+        product_code = 'BATCH'  # Default fallback
+        
+        # Try to match recipe name first, then product name
+        for key, code in PRODUCT_CODE_MAP.items():
+            if key in recipe_name or key in product_name:
+                product_code = code
+                break
+        
+        batch_number = f"{product_code}-{today}"
         
         # Create batch
         cursor.execute("""
