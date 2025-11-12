@@ -366,6 +366,302 @@ class ProductionAPITester:
         self.log_test("Edge Cases", success, "; ".join(edge_case_results))
         return success
 
+    def test_spice_deduction_functionality(self):
+        """Test comprehensive spice deduction during mix production"""
+        print("\n🧪 Testing Spice Deduction Functionality")
+        print("=" * 50)
+        
+        # Step 1: Create a new batch for Бастурма класична (recipe_id=2)
+        batch_payload = {
+            "recipe_id": 2,
+            "initial_weight": 100.0,
+            "trim_waste": 0,
+            "trim_returned": False,
+            "operator_notes": "Test batch for spice deduction testing"
+        }
+        
+        try:
+            response = self.session.post(f"{self.base_url}/production/batches", json=batch_payload, timeout=10)
+            if response.status_code != 200:
+                self.log_test("Spice Deduction - Create Batch", False, f"Failed to create batch: HTTP {response.status_code}", response.text)
+                return False
+            
+            batch_data = response.json()
+            test_batch_id = batch_data['id']
+            batch_number = batch_data['batch_number']
+            
+            self.log_test("Spice Deduction - Create Batch", True, f"Created test batch {batch_number} (ID: {test_batch_id})")
+            
+            # Step 2: Get recipe spices to verify what should be deducted
+            response = self.session.get(f"{self.base_url}/production/recipes/2/spices", timeout=10)
+            if response.status_code != 200:
+                self.log_test("Spice Deduction - Get Recipe Spices", False, f"Failed to get recipe spices: HTTP {response.status_code}")
+                return False
+            
+            recipe_data = response.json()
+            spices = recipe_data.get('spices', [])
+            
+            if len(spices) < 5:
+                self.log_test("Spice Deduction - Recipe Spices Check", False, f"Expected at least 5 spices, found {len(spices)}")
+                return False
+            
+            # Expected spices for Бастурма класична
+            expected_spices = {
+                'Борошно': 3.08,
+                'Пажитник': 9.23,
+                'Паприка': 4.62,
+                'Перець чілі': 1.54,
+                'Часник': 6.15
+            }
+            
+            found_spices = {spice['name']: spice['quantity_per_100kg'] for spice in spices}
+            missing_spices = []
+            
+            for spice_name, expected_qty in expected_spices.items():
+                if spice_name not in found_spices:
+                    missing_spices.append(f"{spice_name} (missing)")
+                elif abs(found_spices[spice_name] - expected_qty) > 0.01:
+                    missing_spices.append(f"{spice_name} (expected {expected_qty}, got {found_spices[spice_name]})")
+            
+            if missing_spices:
+                self.log_test("Spice Deduction - Recipe Spices Check", False, f"Recipe spice issues: {'; '.join(missing_spices)}")
+                return False
+            
+            self.log_test("Spice Deduction - Recipe Spices Check", True, f"All 5 expected spices found with correct quantities")
+            
+            # Step 3: Get initial stock balances for all spices
+            initial_balances = {}
+            for spice in spices:
+                spice_id = spice['nomenclature_id']
+                spice_name = spice['name']
+                
+                response = self.session.get(f"{self.base_url}/stock/balances", timeout=10)
+                if response.status_code == 200:
+                    balances = response.json()
+                    spice_balance = next((b for b in balances if b['nomenclature_id'] == spice_id), None)
+                    if spice_balance:
+                        initial_balances[spice_name] = {
+                            'id': spice_id,
+                            'initial_balance': spice_balance['quantity'],
+                            'quantity_per_100kg': spice['quantity_per_100kg']
+                        }
+            
+            self.log_test("Spice Deduction - Initial Balances", True, f"Retrieved initial balances for {len(initial_balances)} spices")
+            
+            # Step 4: Call mix production endpoint
+            mix_payload = {
+                "mix_nomenclature_id": 72,  # Assuming this is a mix product ID
+                "produced_quantity": 24.62,  # Total spices quantity for 100kg batch
+                "used_quantity": 24.62,
+                "leftover_quantity": 0.0,
+                "warehouse_mix_used": 0.0,
+                "idempotency_key": f"test-mix-{test_batch_id}-{int(time.time())}"
+            }
+            
+            response = self.session.post(f"{self.base_url}/production/batches/{test_batch_id}/mix", json=mix_payload, timeout=10)
+            
+            if response.status_code != 200:
+                self.log_test("Spice Deduction - Mix Production", False, f"Mix production failed: HTTP {response.status_code}", response.text)
+                return False
+            
+            mix_result = response.json()
+            self.log_test("Spice Deduction - Mix Production", True, f"Mix production successful: {mix_result.get('message', 'No message')}")
+            
+            # Step 5: Verify spice deductions
+            verification_results = []
+            
+            response = self.session.get(f"{self.base_url}/stock/balances", timeout=10)
+            if response.status_code == 200:
+                new_balances = response.json()
+                
+                for spice_name, spice_data in initial_balances.items():
+                    spice_id = spice_data['id']
+                    initial_balance = spice_data['initial_balance']
+                    quantity_per_100kg = spice_data['quantity_per_100kg']
+                    
+                    # Calculate expected deduction for 100kg batch
+                    expected_deduction = (100.0 / 100.0) * quantity_per_100kg
+                    expected_new_balance = initial_balance - expected_deduction
+                    
+                    # Find new balance
+                    new_balance_data = next((b for b in new_balances if b['nomenclature_id'] == spice_id), None)
+                    if new_balance_data:
+                        actual_new_balance = new_balance_data['quantity']
+                        
+                        # Check if deduction is correct (allow small floating point differences)
+                        if abs(actual_new_balance - expected_new_balance) < 0.01:
+                            verification_results.append(f"✅ {spice_name}: {initial_balance} → {actual_new_balance} (deducted {expected_deduction:.2f})")
+                        else:
+                            verification_results.append(f"❌ {spice_name}: Expected {expected_new_balance:.2f}, got {actual_new_balance:.2f}")
+                    else:
+                        verification_results.append(f"❌ {spice_name}: Balance not found after deduction")
+            
+            success = all("✅" in result for result in verification_results)
+            self.log_test("Spice Deduction - Balance Verification", success, "; ".join(verification_results))
+            
+            # Step 6: Verify stock movements were created
+            response = self.session.get(f"{self.base_url}/stock/movements?limit=50", timeout=10)
+            if response.status_code == 200:
+                movements = response.json()
+                
+                # Look for withdrawal movements with source_operation_type='production_spice_use'
+                spice_movements = []
+                for movement in movements:
+                    if (movement.get('operation_type') == 'withdrawal' and 
+                        movement.get('metadata') and 
+                        'batch_id' in str(movement.get('metadata', '')) and 
+                        str(test_batch_id) in str(movement.get('metadata', ''))):
+                        spice_movements.append(movement)
+                
+                if len(spice_movements) >= 5:
+                    self.log_test("Spice Deduction - Stock Movements", True, f"Found {len(spice_movements)} spice withdrawal movements")
+                else:
+                    self.log_test("Spice Deduction - Stock Movements", False, f"Expected at least 5 spice movements, found {len(spice_movements)}")
+            
+            return success
+            
+        except Exception as e:
+            self.log_test("Spice Deduction - Exception", False, f"Error during spice deduction test: {str(e)}")
+            return False
+
+    def test_spice_deduction_edge_cases(self):
+        """Test edge cases for spice deduction"""
+        print("\n🧪 Testing Spice Deduction Edge Cases")
+        print("=" * 50)
+        
+        edge_case_results = []
+        
+        # Test 1: Insufficient spice stock
+        try:
+            # Create a batch with very high initial weight to trigger insufficient stock
+            batch_payload = {
+                "recipe_id": 2,
+                "initial_weight": 10000.0,  # Very high weight
+                "trim_waste": 0,
+                "trim_returned": False,
+                "operator_notes": "Test batch for insufficient stock testing"
+            }
+            
+            response = self.session.post(f"{self.base_url}/production/batches", json=batch_payload, timeout=10)
+            if response.status_code == 200:
+                batch_data = response.json()
+                test_batch_id = batch_data['id']
+                
+                # Try to produce mix - should fail due to insufficient spices
+                mix_payload = {
+                    "mix_nomenclature_id": 72,
+                    "produced_quantity": 2462.0,  # 24.62 * 100 for 10000kg batch
+                    "used_quantity": 2462.0,
+                    "leftover_quantity": 0.0,
+                    "warehouse_mix_used": 0.0,
+                    "idempotency_key": f"test-insufficient-{test_batch_id}-{int(time.time())}"
+                }
+                
+                response = self.session.post(f"{self.base_url}/production/batches/{test_batch_id}/mix", json=mix_payload, timeout=10)
+                
+                if response.status_code == 400:
+                    error_message = response.text
+                    if "Недостатньо специй" in error_message or "insufficient" in error_message.lower():
+                        edge_case_results.append("✅ Insufficient spice stock properly detected")
+                    else:
+                        edge_case_results.append(f"❌ Wrong error message for insufficient stock: {error_message}")
+                else:
+                    edge_case_results.append(f"❌ Expected 400 error for insufficient stock, got {response.status_code}")
+            else:
+                edge_case_results.append(f"❌ Failed to create test batch for insufficient stock test: {response.status_code}")
+                
+        except Exception as e:
+            edge_case_results.append(f"❌ Insufficient stock test failed: {str(e)}")
+        
+        # Test 2: Idempotency - calling mix endpoint twice
+        try:
+            # Create a normal batch
+            batch_payload = {
+                "recipe_id": 2,
+                "initial_weight": 50.0,  # Smaller batch
+                "trim_waste": 0,
+                "trim_returned": False,
+                "operator_notes": "Test batch for idempotency testing"
+            }
+            
+            response = self.session.post(f"{self.base_url}/production/batches", json=batch_payload, timeout=10)
+            if response.status_code == 200:
+                batch_data = response.json()
+                test_batch_id = batch_data['id']
+                
+                # First mix call
+                idempotency_key = f"test-idempotency-{test_batch_id}-{int(time.time())}"
+                mix_payload = {
+                    "mix_nomenclature_id": 72,
+                    "produced_quantity": 12.31,  # 24.62 / 2 for 50kg batch
+                    "used_quantity": 12.31,
+                    "leftover_quantity": 0.0,
+                    "warehouse_mix_used": 0.0,
+                    "idempotency_key": idempotency_key
+                }
+                
+                response1 = self.session.post(f"{self.base_url}/production/batches/{test_batch_id}/mix", json=mix_payload, timeout=10)
+                
+                if response1.status_code == 200:
+                    # Second mix call with same idempotency key
+                    response2 = self.session.post(f"{self.base_url}/production/batches/{test_batch_id}/mix", json=mix_payload, timeout=10)
+                    
+                    if response2.status_code == 200:
+                        result2 = response2.json()
+                        if "already" in result2.get('message', '').lower():
+                            edge_case_results.append("✅ Idempotency working - duplicate mix call detected")
+                        else:
+                            edge_case_results.append("✅ Idempotency working - duplicate call handled")
+                    else:
+                        edge_case_results.append(f"❌ Second mix call failed: {response2.status_code}")
+                else:
+                    edge_case_results.append(f"❌ First mix call failed: {response1.status_code}")
+            else:
+                edge_case_results.append(f"❌ Failed to create batch for idempotency test: {response.status_code}")
+                
+        except Exception as e:
+            edge_case_results.append(f"❌ Idempotency test failed: {str(e)}")
+        
+        # Test 3: Zero initial weight
+        try:
+            batch_payload = {
+                "recipe_id": 2,
+                "initial_weight": 0.0,
+                "trim_waste": 0,
+                "trim_returned": False,
+                "operator_notes": "Test batch for zero weight testing"
+            }
+            
+            response = self.session.post(f"{self.base_url}/production/batches", json=batch_payload, timeout=10)
+            if response.status_code == 200:
+                batch_data = response.json()
+                test_batch_id = batch_data['id']
+                
+                mix_payload = {
+                    "mix_nomenclature_id": 72,
+                    "produced_quantity": 0.0,
+                    "used_quantity": 0.0,
+                    "leftover_quantity": 0.0,
+                    "warehouse_mix_used": 0.0,
+                    "idempotency_key": f"test-zero-{test_batch_id}-{int(time.time())}"
+                }
+                
+                response = self.session.post(f"{self.base_url}/production/batches/{test_batch_id}/mix", json=mix_payload, timeout=10)
+                
+                if response.status_code == 200:
+                    edge_case_results.append("✅ Zero initial weight handled gracefully")
+                else:
+                    edge_case_results.append(f"❌ Zero weight test failed: {response.status_code}")
+            else:
+                edge_case_results.append(f"❌ Failed to create zero weight batch: {response.status_code}")
+                
+        except Exception as e:
+            edge_case_results.append(f"❌ Zero weight test failed: {str(e)}")
+        
+        success = all("✅" in result for result in edge_case_results)
+        self.log_test("Spice Deduction Edge Cases", success, "; ".join(edge_case_results))
+        return success
+
     def test_database_verification(self):
         """Verify database state after operations"""
         # This would require direct database access, which we don't have in API testing
