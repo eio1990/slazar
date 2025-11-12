@@ -158,10 +158,6 @@ backend:
       - working: "NA"
         agent: "main"
         comment: "NEW ENDPOINT ADDED: POST /api/production/batches/{batch_id}/salting for processing salting production step. Implementation includes: (1) Automatic calculation of required salt and water based on recipe parameters (salt_per_100kg, water_per_100kg) and batch initial_weight, (2) Stock availability checks for both salt (ID=28) and water (ID=136), (3) Automatic withdrawal from stock with proper stock_movements records (source_operation_type='production_salting'), (4) batch_operations record creation with step completion tracking, (5) Batch current_step update, (6) Full idempotency support. Needs comprehensive testing."
-      - working: true
-        agent: "testing"
-        comment: "✅ SPICE DEDUCTION FUNCTIONALITY FULLY TESTED AND WORKING: Comprehensive testing completed successfully for automatic spice deduction during mix production. Key findings: (1) Recipe verification: All 5 expected spices found with correct quantities - Борошно (3.08 кг), Пажитник (9.23 кг), Паприка (4.62 кг), Перець чілі (1.54 кг), Часник (6.15 кг) per 100kg batch, (2) Stock deduction accuracy: All spices correctly deducted based on batch initial_weight calculation (initial_weight / 100 * quantity_per_100kg), (3) Stock movements verification: All 5 spice withdrawal movements created with correct metadata including batch_id, batch_number, spice_name, recipe_id, and initial_weight, (4) Error handling: Insufficient stock properly detected and rejected with appropriate error messages, (5) Idempotency: Duplicate mix production calls handled correctly, (6) Edge cases: Zero initial weight handled gracefully. The spice deduction system is production-ready and accurately implements the business logic for automatic spice consumption during mix production."
-
   - task: "Salting step implementation"
     implemented: true
     working: "NA"
