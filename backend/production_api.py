@@ -727,6 +727,29 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
                 WHERE nomenclature_id = ?
             """, new_balance, mix_data.mix_nomenclature_id)
         
+        # Update batch current_step to move to next step after mix
+        # Find the mix step order and move to next
+        cursor.execute("""
+            SELECT rs.step_order
+            FROM recipe_steps rs
+            WHERE rs.recipe_id = (SELECT recipe_id FROM batches WHERE id = ?)
+                AND rs.step_type = 'mix'
+            ORDER BY rs.step_order
+        """, batch_id)
+        
+        mix_step_row = cursor.fetchone()
+        if mix_step_row:
+            current_step_order = mix_step_row[0]
+            
+            # Update batch to move to next step
+            cursor.execute("""
+                UPDATE batches
+                SET current_step = ?,
+                    status = 'in_progress',
+                    updated_at = GETUTCDATE()
+                WHERE id = ?
+            """, current_step_order, batch_id)
+        
         conn.commit()
         
         return {
