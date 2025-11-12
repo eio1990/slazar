@@ -73,26 +73,23 @@ export default function TabLayout() {
             ),
           }}
         />
-        {/* Hidden tabs */}
+        {/* Hidden tabs - no longer shown in tab bar */}
         <Tabs.Screen
           name="index"
           options={{
             href: null,
-            tabBarButton: () => null,
           }}
         />
         <Tabs.Screen
           name="inventory"
           options={{
             href: null,
-            tabBarButton: () => null,
           }}
         />
         <Tabs.Screen
           name="history"
           options={{
             href: null,
-            tabBarButton: () => null,
           }}
         />
       </Tabs>
