@@ -206,10 +206,10 @@ async def get_packaging_batches(
             query += " AND pb.source_product_id = ?"
             params.append(source_product_id)
         
-        query += " ORDER BY pb.started_at DESC"
-        
         if limit:
-            query = f"SELECT TOP {limit} * FROM ({query}) AS subquery ORDER BY started_at DESC"
+            query = f"SELECT TOP {limit} pb.* FROM ({query.replace('pb.*', 'pb.*')}) AS pb_sub ORDER BY pb_sub.started_at DESC"
+        else:
+            query += " ORDER BY pb.started_at DESC"
         
         cursor.execute(query, *params)
         
