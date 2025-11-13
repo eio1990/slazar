@@ -331,7 +331,9 @@ export default function BatchDetailScreen() {
                         >
                           <MaterialCommunityIcons name="play-circle" size={20} color="#4CAF50" />
                           <Text style={styles.progressStepButtonText}>
-                            {step.step_type === 'mix' ? 'Відкрити форму' : step.step_type === 'salt' ? 'Засолити' : 'Почати'}
+                            {step.step_type === 'mix' ? 'Відкрити форму' : 
+                             step.step_type === 'salt' ? 'Засолити' :
+                             step.step_type === 'stuff' ? 'Заправити' : 'Почати'}
                           </Text>
                         </TouchableOpacity>
                       )}
