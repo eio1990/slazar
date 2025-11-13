@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for Production Module
-Tests all production endpoints systematically
+Backend Testing for Weight-based Casing Accounting for Stuffing Step
+Tests the new weight-based accounting logic for sausage casings (кишки) in the stuffing step.
 """
 
 import requests
 import json
-import time
+import uuid
 from datetime import datetime
-from typing import Dict, Any
+import time
 
-# Backend URL from environment
+# Configuration
 BACKEND_URL = "https://butcherflow.preview.emergentagent.com/api"
+
+# Test constants
+SUDJUK_RECIPE_ID = 7  # Sudjuk recipe
+MAHAN_RECIPE_ID = 8   # Mahan recipe
+CASING_SUDJUK_ID = 42  # Casing for Sudjuk
+CASING_MAHAN_ID = 43   # Casing for Mahan
 
 class ProductionAPITester:
     def __init__(self):
