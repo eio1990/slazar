@@ -251,7 +251,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Production API endpoints - All functionality tested and working"
+    - "Weight-based casing accounting for stuffing - NEW implementation needs comprehensive testing"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
