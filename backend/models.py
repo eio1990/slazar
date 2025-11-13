@@ -236,12 +236,12 @@ class PackagingBatchCreate(BaseModel):
     idempotency_key: str
 
 class PackagingOperationCreate(BaseModel):
-    packed_quantity: int  # кількість запакованих одиниць
+    packed_quantity: int  # кількість запакованих одиниць (шт)
     source_used: float  # фактично використано весового продукту (кг)
     waste_quantity: float = 0  # відходи (кг)
-    materials_used: List[dict]  # [{'material_id': int, 'quantity': float}]
     notes: Optional[str] = None
     idempotency_key: str
+    # materials_used розраховується автоматично на основі recipe і packed_quantity
 
 class PackagingOperation(BaseModel):
     id: int
