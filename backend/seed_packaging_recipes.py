@@ -70,7 +70,7 @@ PACKAGING_RECIPES = [
     },
     # 5. Суджук 50г скін
     {
-        "source": "Суджук ваговий",
+        "source": "Суджук",
         "target": "Суджук 50г скін",
         "type": "skin",
         "weight_grams": 50,
@@ -83,7 +83,7 @@ PACKAGING_RECIPES = [
     },
     # 6. Банкетна 50г вакуум
     {
-        "source": "Банкетна вагова",
+        "source": "Банкетна",
         "target": "Банкетна 50г вакуум",
         "type": "vacuum",
         "weight_grams": 50,
@@ -94,7 +94,7 @@ PACKAGING_RECIPES = [
     },
     # 7. Банкетна 50г скін
     {
-        "source": "Банкетна вагова",
+        "source": "Банкетна",
         "target": "Банкетна 50г скін",
         "type": "skin",
         "weight_grams": 50,
@@ -107,7 +107,7 @@ PACKAGING_RECIPES = [
     },
     # 8. Банкетна 60г скін
     {
-        "source": "Банкетна вагова",
+        "source": "Банкетна",
         "target": "Банкетна 60г скін",
         "type": "skin",
         "weight_grams": 60,
@@ -166,7 +166,7 @@ PACKAGING_RECIPES = [
     },
     # 13. Махан 50г вакуум
     {
-        "source": "Махан ваговий",
+        "source": "Махан",
         "target": "Махан 50г вакуум",
         "type": "vacuum",
         "weight_grams": 50,
@@ -177,7 +177,7 @@ PACKAGING_RECIPES = [
     },
     # 14. Махан 50г скін
     {
-        "source": "Махан ваговий",
+        "source": "Махан",
         "target": "Махан 50г скін",
         "type": "skin",
         "weight_grams": 50,
@@ -201,7 +201,7 @@ PACKAGING_RECIPES = [
         ]
     },
     {
-        "source": "Суджук ваговий",
+        "source": "Суджук",
         "target": "Суджук весовий фасований",
         "type": "vacuum_bulk",
         "weight_grams": 0,
@@ -212,7 +212,7 @@ PACKAGING_RECIPES = [
         ]
     },
     {
-        "source": "Махан ваговий",
+        "source": "Махан",
         "target": "Махан весовий фасований",
         "type": "vacuum_bulk",
         "weight_grams": 0,
@@ -234,7 +234,7 @@ PACKAGING_RECIPES = [
         ]
     },
     {
-        "source": "Банкетна вагова",
+        "source": "Банкетна",
         "target": "Банкетна весова фасована",
         "type": "vacuum_bulk",
         "weight_grams": 0,
