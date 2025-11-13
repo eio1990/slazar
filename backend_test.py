@@ -185,7 +185,7 @@ def test_validation_end_greater_than_start(results):
     print("\n🧪 Test 2: Validation - End Weight Greater Than Start")
     
     # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 50.0)
+    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 5.0)
     if error:
         results.add_fail("Create test batch for validation", error)
         return
@@ -224,7 +224,7 @@ def test_validation_zero_usage(results):
     print("\n🧪 Test 3: Validation - Zero Usage")
     
     # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 50.0)
+    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 5.0)
     if error:
         results.add_fail("Create test batch for zero usage", error)
         return
@@ -263,7 +263,7 @@ def test_insufficient_stock(results):
     print("\n🧪 Test 4: Stock Availability Check")
     
     # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 50.0)
+    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 5.0)
     if error:
         results.add_fail("Create test batch for stock check", error)
         return
@@ -309,7 +309,7 @@ def test_idempotency(results):
     print("\n🧪 Test 5: Idempotency")
     
     # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 50.0)
+    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 5.0)
     if error:
         results.add_fail("Create test batch for idempotency", error)
         return
@@ -378,7 +378,7 @@ def test_backward_compatibility(results):
     print("\n🧪 Test 6: Backward Compatibility")
     
     # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 50.0)
+    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 5.0)
     if error:
         results.add_fail("Create test batch for backward compatibility", error)
         return
@@ -493,7 +493,7 @@ def test_rounding_precision(results):
     print("\n🧪 Test 8: Proper Rounding (2 decimal places)")
     
     # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 50.0)
+    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 5.0)
     if error:
         results.add_fail("Create test batch for rounding", error)
         return
