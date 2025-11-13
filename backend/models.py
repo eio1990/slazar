@@ -195,8 +195,15 @@ class BatchStuffMaterial(BaseModel):
     quantity: float
     unit: str  # 'м', 'шт', etc.
 
+class CasingWeight(BaseModel):
+    """Weight-based casing accounting"""
+    casing_id: int  # nomenclature ID of casing
+    start_weight: float  # kg - initial weight of bundle
+    end_weight: float  # kg - remaining weight after use
+    
 class BatchStuff(BaseModel):
-    materials: List[BatchStuffMaterial]
+    materials: List[BatchStuffMaterial] = []  # Other materials like threads
+    casing: Optional[CasingWeight] = None  # Weight-based casing accounting
     notes: Optional[str] = None
     idempotency_key: str
 
