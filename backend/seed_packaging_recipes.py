@@ -59,7 +59,7 @@ PACKAGING_RECIPES = [
     },
     # 4. Суджук 50г вакуум
     {
-        "source": "Суджук ваговий",
+        "source": "Суджук",
         "target": "Суджук 50г вакуум",
         "type": "vacuum",
         "weight_grams": 50,
