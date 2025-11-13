@@ -92,7 +92,7 @@ def test_happy_path_stuffing(results):
     print("\n🧪 Test 1: Happy Path - Normal Stuffing Operation")
     
     # Create test batch for Sudjuk
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 100.0)
+    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 10.0)
     if error:
         results.add_fail("Create test batch", error)
         return
