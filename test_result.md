@@ -170,6 +170,18 @@ backend:
         agent: "main"
         comment: "Implemented complete salting step workflow: Backend endpoint POST /api/production/batches/{batch_id}/salting processes salt and water consumption with stock deduction. Frontend salting-form.tsx provides UI for entering actual quantities with recommended values display. Batch detail screen updated to recognize 'salt' step_type and route to salting form. Water added to nomenclature (ID=136) with 1000л initial stock. Ready for comprehensive testing."
 
+  - task: "Weight-based casing accounting for stuffing"
+    implemented: true
+    working: "NA"
+    file: "backend/models.py, backend/production_api.py, frontend/app/batches/stuffing-form.tsx, frontend/app/batches/[id].tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented user-approved weight-based casing accounting logic. Backend: (1) Added CasingWeight model (casing_id, start_weight, end_weight), (2) Modified BatchStuff to support optional casing field, (3) Enhanced /stuff endpoint to calculate usage (start - end), validate inputs, check stock, deduct from inventory, store detailed metadata with waste tracking. Frontend: (1) Created stuffing-form.tsx with casing selector, weight inputs (start/end), real-time calculation, stock display, comprehensive validation, (2) Updated [id].tsx navigation to route 'stuff' step to new form. Logic: operator weighs bundle before use, weighs remainder after, system calculates and deducts difference. Ready for backend testing."
+
   - task: "ODBC driver installation"
     implemented: true
     working: true
