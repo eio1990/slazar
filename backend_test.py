@@ -14,8 +14,8 @@ import time
 BACKEND_URL = "https://butcherflow.preview.emergentagent.com/api"
 
 # Test constants
-SUDJUK_RECIPE_ID = 7  # Sudjuk recipe
-MAHAN_RECIPE_ID = 8   # Mahan recipe
+SUDJUK_RECIPE_ID = 8  # Sudjuk recipe
+MAHAN_RECIPE_ID = 9   # Mahan recipe
 CASING_SUDJUK_ID = 42  # Casing for Sudjuk
 CASING_MAHAN_ID = 43   # Casing for Mahan
 
