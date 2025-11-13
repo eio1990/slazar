@@ -394,8 +394,8 @@ async def record_packaging_operation(batch_id: int, operation_data: PackagingOpe
         
         operation_id = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
         
-        # Списываем материалы
-        for material in operation_data.materials_used:
+        # Списываем материалы (автоматически рассчитанные)
+        for material in calculated_materials:
             material_id = material['material_id']
             quantity = material['quantity']
             
