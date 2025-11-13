@@ -321,6 +321,17 @@ export default function BatchDetailScreen() {
                             } else if (step.step_type === 'stuff') {
                               // Special handling for stuffing step (weight-based casing accounting)
                               router.push(`/batches/stuffing-form?batchId=${id}&stepId=${step.id}&recipeName=${encodeURIComponent(batch.recipe_name || '')}` as any);
+                            } else if (step.step_type === 'trim') {
+                              // Trim/cutting step
+                              router.push(`/batches/trim-form?batchId=${id}&stepId=${step.id}&initialWeight=${batch.initial_weight}` as any);
+                            } else if (step.step_type === 'sugar') {
+                              // Sugar massage step
+                              const currentW = batch.current_weight || batch.initial_weight;
+                              router.push(`/batches/sugar-form?batchId=${id}&stepId=${step.id}&currentWeight=${currentW}` as any);
+                            } else if (step.step_type === 'massage') {
+                              // Water massage step
+                              const currentW = batch.current_weight || batch.initial_weight;
+                              router.push(`/batches/massage-form?batchId=${id}&stepId=${step.id}&currentWeight=${currentW}` as any);
                             } else {
                               // Regular step - open modal for weight input
                               setCurrentStep(step);
