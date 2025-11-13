@@ -427,7 +427,7 @@ def test_database_verification(results):
     print("\n🧪 Test 7: Database Verification")
     
     # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 75.0)
+    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 7.5)
     if error:
         results.add_fail("Create test batch for DB verification", error)
         return
