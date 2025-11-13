@@ -457,7 +457,8 @@ async def record_packaging_operation(batch_id: int, operation_data: PackagingOpe
             "message": "Операція записана успішно",
             "batch_id": batch_id,
             "operation_id": operation_id,
-            "packed_quantity": operation_data.packed_quantity
+            "packed_quantity": operation_data.packed_quantity,
+            "materials_used": calculated_materials  # Показываем что было автоматически рассчитано
         }
 
 
