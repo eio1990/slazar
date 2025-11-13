@@ -1239,7 +1239,12 @@ async def process_water_massage(batch_id: int, massage_data: BatchMassage):
 
 @router.post("/batches/{batch_id}/stuff")
 async def process_stuffing(batch_id: int, stuff_data: BatchStuff):
-    """Process stuffing step (for Sudjuk, Mahan) - casing and threads"""
+    """
+    Process stuffing step (for Sudjuk, Mahan) - casing and threads
+    Supports weight-based casing accounting: 
+    - Operator weighs bundle at start, weighs remaining after use
+    - System calculates and deducts usage (start_weight - end_weight)
+    """
     with get_db_connection() as conn:
         cursor = conn.cursor()
         
@@ -1260,7 +1265,91 @@ async def process_stuffing(batch_id: int, stuff_data: BatchStuff):
         if cursor.fetchone():
             return {"message": "Stuffing already processed", "batch_id": batch_id}
         
-        # Process each material
+        # WEIGHT-BASED CASING ACCOUNTING
+        casing_summary = None
+        if stuff_data.casing:
+            casing_id = stuff_data.casing.casing_id
+            start_weight = round(stuff_data.casing.start_weight, 2)
+            end_weight = round(stuff_data.casing.end_weight, 2)
+            
+            # Calculate usage
+            usage = start_weight - end_weight
+            
+            if usage < 0:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Кінцева вага ({end_weight} кг) не може бути більшою за початкову ({start_weight} кг)"
+                )
+            
+            if usage == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Використано 0 кг кишки. Перевірте введені дані."
+                )
+            
+            usage = round(usage, 2)
+            
+            # Get casing details
+            cursor.execute("SELECT name, unit FROM nomenclature WHERE id = ?", casing_id)
+            casing_row = cursor.fetchone()
+            if not casing_row:
+                raise HTTPException(status_code=404, detail=f"Кишка з ID {casing_id} не знайдена")
+            
+            casing_name = casing_row[0]
+            casing_unit = casing_row[1]
+            
+            # Check stock availability
+            cursor.execute(
+                "SELECT quantity FROM stock_balances WHERE nomenclature_id = ?",
+                casing_id
+            )
+            result = cursor.fetchone()
+            balance = float(result[0]) if result else 0
+            
+            if balance < usage:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Недостатньо кишки '{casing_name}'. Доступно: {balance} {casing_unit}, Потрібно: {usage} {casing_unit}"
+                )
+            
+            # Deduct casing from stock
+            casing_key = f"stuff-casing-{batch_id}-{casing_id}-{stuff_data.idempotency_key}"
+            new_balance = balance - usage
+            
+            cursor.execute("""
+                INSERT INTO stock_movements (
+                    nomenclature_id, operation_type, quantity, balance_after,
+                    source_operation_type, source_operation_id,
+                    idempotency_key, operation_date, metadata
+                )
+                VALUES (?, 'withdrawal', ?, ?, 'production_stuff', ?, ?, GETUTCDATE(), ?)
+            """, casing_id, usage, new_balance, batch.batch_number, casing_key,
+                json.dumps({
+                    'batch_id': batch_id,
+                    'batch_number': batch.batch_number,
+                    'casing_name': casing_name,
+                    'start_weight_kg': start_weight,
+                    'end_weight_kg': end_weight,
+                    'usage_kg': usage,
+                    'waste_kg': end_weight  # Remaining is considered waste/trim
+                }))
+            
+            cursor.execute("""
+                UPDATE stock_balances
+                SET quantity = ?,
+                    last_updated = GETUTCDATE()
+                WHERE nomenclature_id = ?
+            """, new_balance, casing_id)
+            
+            casing_summary = {
+                'casing_name': casing_name,
+                'start_weight_kg': start_weight,
+                'end_weight_kg': end_weight,
+                'usage_kg': usage,
+                'unit': casing_unit
+            }
+        
+        # Process other materials (threads, etc.)
         materials_summary = []
         
         for material in stuff_data.materials:
