@@ -318,6 +318,9 @@ export default function BatchDetailScreen() {
                               // Special handling for salting step
                               const saltParams = step.parameters || {};
                               router.push(`/batches/salting-form?batchId=${id}&stepId=${step.id}&saltPer100kg=${saltParams.salt_per_100kg || 20}&waterPer100kg=${saltParams.water_per_100kg || 60}&initialWeight=${batch.initial_weight}` as any);
+                            } else if (step.step_type === 'stuff') {
+                              // Special handling for stuffing step (weight-based casing accounting)
+                              router.push(`/batches/stuffing-form?batchId=${id}&stepId=${step.id}&recipeName=${encodeURIComponent(batch.recipe_name || '')}` as any);
                             } else {
                               // Regular step - open modal for weight input
                               setCurrentStep(step);
