@@ -33,7 +33,7 @@ PACKAGING_RECIPES = [
     },
     # 2. Бастурма 50г скін
     {
-        "source": "Бастурма класична",
+        "source": "Бастурма",
         "target": "Бастурма 50г скін",
         "type": "skin",
         "weight_grams": 50,
@@ -46,7 +46,7 @@ PACKAGING_RECIPES = [
     },
     # 3. Бастурма 60г скін
     {
-        "source": "Бастурма класична",
+        "source": "Бастурма",
         "target": "Бастурма 60г скін",
         "type": "skin",
         "weight_grams": 60,
