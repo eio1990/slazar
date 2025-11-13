@@ -1432,6 +1432,10 @@ async def process_stuffing(batch_id: int, stuff_data: BatchStuff):
             stuff_step_order = stuff_step_row[1]
             
             # Create operation record
+            operation_params = {'materials': materials_summary}
+            if casing_summary:
+                operation_params['casing'] = casing_summary
+                
             cursor.execute("""
                 INSERT INTO batch_operations (
                     batch_id, step_id, operation_type, status,
@@ -1439,7 +1443,7 @@ async def process_stuffing(batch_id: int, stuff_data: BatchStuff):
                 )
                 VALUES (?, ?, 'stuff', 'completed', NULL, NULL, ?, ?, ?)
             """, batch_id, stuff_step_id,
-                json.dumps({'materials': materials_summary}),
+                json.dumps(operation_params),
                 stuff_data.notes or f"Заправка в кишку виконана",
                 stuff_data.idempotency_key)
             
