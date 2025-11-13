@@ -692,7 +692,7 @@ index 552bee8..e69de29 100644
 -+from datetime import datetime
 -+
 -+# Backend URL from environment
--+BACKEND_URL = "https://recipe-factory-1.preview.emergentagent.com/api"
+-+BACKEND_URL = "https://butcherflow.preview.emergentagent.com/api"
 -+
 -+def test_spice_deduction_comprehensive():
 -+    """Comprehensive test of spice deduction functionality"""
