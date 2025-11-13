@@ -289,7 +289,10 @@ async def get_packaging_batch(batch_id: int):
 
 @router.post("/batches/{batch_id}/operations")
 async def record_packaging_operation(batch_id: int, operation_data: PackagingOperationCreate):
-    """Записать операцию фасовки (фиксация факта)"""
+    """
+    Записать операцию фасовки с АВТОМАТИЧЕСКИМ расчетом материалов
+    Система сама рассчитывает расход материалов: норма × packed_quantity
+    """
     with get_db_connection() as conn:
         cursor = conn.cursor()
         
@@ -297,10 +300,10 @@ async def record_packaging_operation(batch_id: int, operation_data: PackagingOpe
         cursor.execute("SELECT * FROM packaging_batches WHERE id = ?", batch_id)
         batch = cursor.fetchone()
         if not batch:
-            raise HTTPException(status_code=404, detail="Партия фасовки не найдена")
+            raise HTTPException(status_code=404, detail="Партія фасування не знайдена")
         
         if batch.status == 'completed':
-            raise HTTPException(status_code=400, detail="Партия уже завершена")
+            raise HTTPException(status_code=400, detail="Партія вже завершена")
         
         # Проверяем idempotency
         cursor.execute("""
@@ -308,14 +311,61 @@ async def record_packaging_operation(batch_id: int, operation_data: PackagingOpe
         """, operation_data.idempotency_key)
         
         if cursor.fetchone():
-            return {"message": "Операция уже записана", "batch_id": batch_id}
+            return {"message": "Операція вже записана", "batch_id": batch_id}
         
-        # Получаем рецепт
+        # Получаем рецепт фасовки
         cursor.execute("SELECT * FROM packaging_recipes WHERE id = ?", batch.recipe_id)
         recipe = cursor.fetchone()
+        if not recipe:
+            raise HTTPException(status_code=404, detail="Рецепт фасування не знайдено")
         
-        # Проверяем доступность материалов
-        for material in operation_data.materials_used:
+        # Получаем материалы рецепта с нормами
+        cursor.execute("""
+            SELECT prm.material_id, prm.quantity_per_unit, prm.rounding_precision, 
+                   prm.material_type, n.name, n.unit
+            FROM packaging_recipe_materials prm
+            JOIN nomenclature n ON prm.material_id = n.id
+            WHERE prm.recipe_id = ?
+        """, batch.recipe_id)
+        
+        recipe_materials = cursor.fetchall()
+        if not recipe_materials:
+            raise HTTPException(status_code=400, detail="У рецепті не вказано матеріали")
+        
+        # АВТОМАТИЧЕСКИЙ РАСЧЕТ материалов: норма × кількість
+        calculated_materials = []
+        
+        for mat_row in recipe_materials:
+            material_id = mat_row.material_id
+            quantity_per_unit = float(mat_row.quantity_per_unit)
+            rounding_precision = float(mat_row.rounding_precision) if mat_row.rounding_precision else None
+            material_type = mat_row.material_type
+            material_name = mat_row.name
+            material_unit = mat_row.unit
+            
+            # Рассчитываем количество
+            calculated_qty = quantity_per_unit * operation_data.packed_quantity
+            
+            # Применяем округление
+            if rounding_precision:
+                calculated_qty = round(calculated_qty / rounding_precision) * rounding_precision
+            elif material_unit in ['шт', 'од']:
+                # Для штук - округление до целых
+                calculated_qty = int(round(calculated_qty))
+            else:
+                # Для метров и прочего - до 0.1
+                calculated_qty = round(calculated_qty, 1)
+            
+            calculated_materials.append({
+                'material_id': material_id,
+                'material_name': material_name,
+                'quantity': calculated_qty,
+                'unit': material_unit,
+                'material_type': material_type
+            })
+        
+        # Проверяем доступность ВСЕХ материалов перед списанием
+        for material in calculated_materials:
             material_id = material['material_id']
             quantity = material['quantity']
             
@@ -327,11 +377,9 @@ async def record_packaging_operation(batch_id: int, operation_data: PackagingOpe
             balance = float(balance_row[0]) if balance_row else 0
             
             if balance < quantity:
-                cursor.execute("SELECT name FROM nomenclature WHERE id = ?", material_id)
-                name = cursor.fetchone()[0]
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Недостатньо матеріалу '{name}'. Доступно: {balance:.2f}, Потрібно: {quantity:.2f}"
+                    detail=f"Недостатньо '{material['material_name']}'. Доступно: {balance:.2f} {material['unit']}, Потрібно: {quantity:.2f} {material['unit']}"
                 )
         
         # Создаем операцию
