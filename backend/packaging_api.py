@@ -206,10 +206,12 @@ async def get_packaging_batches(
             query += " AND pb.source_product_id = ?"
             params.append(source_product_id)
         
-        query += " ORDER BY pb.started_at DESC"
-        
         if limit:
-            query = f"SELECT TOP {limit} * FROM ({query}) AS subquery"
+            # SQL Server вимагає TOP разом з ORDER BY в одному запиті
+            query = query.replace("SELECT", f"SELECT TOP {limit}", 1)
+            query += " ORDER BY pb.started_at DESC"
+        else:
+            query += " ORDER BY pb.started_at DESC"
         
         cursor.execute(query, *params)
         
