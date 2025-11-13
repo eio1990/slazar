@@ -22,7 +22,7 @@ WEIGHT_PRODUCTS = {
 PACKAGING_RECIPES = [
     # 1. Бастурма 50г вакуум
     {
-        "source": "Бастурма класична",
+        "source": "Бастурма",
         "target": "Бастурма 50г вакуум",
         "type": "vacuum",
         "weight_grams": 50,
