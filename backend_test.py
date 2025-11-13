@@ -75,7 +75,7 @@ def get_stock_balance(nomenclature_id):
             return item['quantity'], None
     return 0, None
 
-def create_test_batch(recipe_id, initial_weight=100.0):
+def create_test_batch(recipe_id, initial_weight=10.0):
     """Create a test batch for stuffing tests"""
     batch_data = {
         "recipe_id": recipe_id,
