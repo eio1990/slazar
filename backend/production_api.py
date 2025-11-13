@@ -1454,11 +1454,16 @@ async def process_stuffing(batch_id: int, stuff_data: BatchStuff):
         
         conn.commit()
         
-        return {
+        result = {
             "message": "Stuffing processed successfully",
             "batch_id": batch_id,
             "materials": materials_summary
         }
+        
+        if casing_summary:
+            result["casing"] = casing_summary
+        
+        return result
 
 @router.post("/batches/{batch_id}/materials/consume")
 async def consume_materials(batch_id: int, materials: dict):
