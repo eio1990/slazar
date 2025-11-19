@@ -297,7 +297,7 @@ async def get_butchery_operation(operation_id: int):
                    bo.input_weight, bo.status, bo.started_at, bo.completed_at,
                    bo.operator_notes
             FROM butchery_operations bo
-            JOIN butchery_recipes br ON bo.recipe_id = br.recipe_id
+            JOIN butchery_recipes br ON bo.recipe_id = br.id
             JOIN nomenclature n ON bo.source_nomenclature_id = n.id
             WHERE bo.id = ?
         """, operation_id)
