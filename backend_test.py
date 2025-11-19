@@ -11,7 +11,7 @@ from datetime import datetime
 import time
 
 # Configuration
-BACKEND_URL = "https://butcherflow.preview.emergentagent.com/api"
+BACKEND_URL = "https://carcasstech.preview.emergentagent.com/api"
 
 # Test constants
 SUDJUK_RECIPE_ID = 8  # Sudjuk recipe
