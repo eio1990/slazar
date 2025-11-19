@@ -282,7 +282,9 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Butchery API endpoints"
+    - "Butchery module UI - Complete implementation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
