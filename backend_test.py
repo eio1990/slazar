@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Backend Testing for Weight-based Casing Accounting for Stuffing Step
-Tests the new weight-based accounting logic for sausage casings (кишки) in the stuffing step.
+Comprehensive Backend Testing for Butchery API Module
+Tests all 6 endpoints with edge cases and database validation
 """
 
 import requests
@@ -10,14 +10,19 @@ import uuid
 from datetime import datetime
 import time
 
-# Configuration
-BACKEND_URL = "https://carcasstech.preview.emergentagent.com/api"
+# Get backend URL from frontend env
+try:
+    with open('/app/frontend/.env', 'r') as f:
+        for line in f:
+            if line.startswith('EXPO_PUBLIC_BACKEND_URL='):
+                BACKEND_URL = line.split('=')[1].strip()
+                break
+    else:
+        BACKEND_URL = "https://carcasstech.preview.emergentagent.com"
+except:
+    BACKEND_URL = "https://carcasstech.preview.emergentagent.com"
 
-# Test constants
-SUDJUK_RECIPE_ID = 8  # Sudjuk recipe
-MAHAN_RECIPE_ID = 9   # Mahan recipe
-CASING_SUDJUK_ID = 42  # Casing for Sudjuk
-CASING_MAHAN_ID = 43   # Casing for Mahan
+API_BASE = f"{BACKEND_URL}/api"
 
 class TestResults:
     def __init__(self):
