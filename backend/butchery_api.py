@@ -436,7 +436,19 @@ async def complete_butchery_operation(operation_id: int, completion: ButcheryOpe
             """, operation_id, output.output_nomenclature_id, expected_weight,
                 output.actual_weight, output.notes)
             
-            # Оприбуткувати на склад
+            # Перевірити чи це стек (liquid-waste) - не оприбутковувати
+            cursor.execute("""
+                SELECT nomenclature_type FROM nomenclature WHERE id = ?
+            """, output.output_nomenclature_id)
+            
+            nomenclature_type_row = cursor.fetchone()
+            nomenclature_type = nomenclature_type_row[0] if nomenclature_type_row else None
+            
+            # Стек (кров і вода) не оприбутковується, тільки фіксується для аналітики
+            if nomenclature_type == 'liquid-waste':
+                continue
+            
+            # Оприбуткувати на склад (всі інші виходи)
             cursor.execute("""
                 SELECT COALESCE(quantity, 0) FROM stock_balances 
                 WHERE nomenclature_id = ?
