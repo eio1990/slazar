@@ -16,14 +16,16 @@ from models import (
 )
 from production_api import router as production_router
 from packaging_api import router as packaging_router
+from butchery_api import router as butchery_router
 
 load_dotenv()
 
 app = FastAPI(title="Склад API")
 
-# Include production router
+# Include routers
 app.include_router(production_router)
 app.include_router(packaging_router)
+app.include_router(butchery_router)
 
 # CORS middleware
 app.add_middleware(
