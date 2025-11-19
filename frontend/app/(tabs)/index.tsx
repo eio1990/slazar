@@ -1,3 +1,12 @@
+import { Redirect } from 'expo-router';
+
+// Redirect to operations tab as default screen
+export default function Index() {
+  return <Redirect href="/(tabs)/operations" />;
+}
+
+// Old balances screen code kept below for reference if needed
+/*
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -15,7 +24,7 @@ import { apiService, checkNetworkConnectivity, getOfflineQueue } from '../../ser
 import { useStore } from '../../stores/useStore';
 import NetInfo from '@react-native-community/netinfo';
 
-export default function BalancesScreen() {
+function BalancesScreen() {
   const { balances, setBalances, setIsOnline, setPendingOperationsCount } = useStore();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
