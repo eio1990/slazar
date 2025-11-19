@@ -204,6 +204,18 @@ backend:
       - working: true
         agent: "main"
         comment: "Installed unixODBC and msodbcsql18. Backend now starts successfully and connects to MS SQL Server."
+  
+  - task: "Butchery API endpoints"
+    implemented: true
+    working: "NA"
+    file: "backend/butchery_api.py, backend/butchery_models.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented complete Butchery API with 6 endpoints: (1) GET /api/butchery/recipes - list all butchery recipes with filters, (2) GET /api/butchery/recipes/{id} - recipe details with outputs, (3) POST /api/butchery/operations - create new butchery operation (validates stock, deducts carcass, generates operation number), (4) GET /api/butchery/operations - list operations with status filter, (5) GET /api/butchery/operations/{id} - operation details with expected and actual outputs, (6) PUT /api/butchery/operations/{id}/complete - complete operation with actual weights (adds primal cuts to stock, handles liquid-waste as non-inventory). Backend fully implemented with idempotency support, stock validation, and proper error handling. Ready for comprehensive testing."
 
 frontend:
   - task: "Production module UI"
