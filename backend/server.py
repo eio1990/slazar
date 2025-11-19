@@ -25,7 +25,7 @@ app = FastAPI(title="Склад API")
 # Include routers
 app.include_router(production_router)
 app.include_router(packaging_router)
-app.include_router(butchery_router)
+app.include_router(butchery_router, prefix="/api")
 
 # CORS middleware
 app.add_middleware(
