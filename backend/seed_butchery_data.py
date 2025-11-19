@@ -20,13 +20,8 @@ def get_connection():
     )
     return pyodbc.connect(conn_str)
 
-# Нова номенклатура
+# Нова номенклатура (тільки для яловичини та конини - туші)
 NEW_NOMENCLATURE = [
-    # Туші для всіх типів м'яса (якщо ще немає)
-    {'name': 'Свиняча туша', 'category': 'Сировина - М\'ясо', 'unit': 'кг', 'type': 'raw'},
-    {'name': 'Туша курки', 'category': 'Сировина - М\'ясо', 'unit': 'кг', 'type': 'raw'},
-    {'name': 'Туша індика', 'category': 'Сировина - М\'ясо', 'unit': 'кг', 'type': 'raw'},
-    
     # Спеціальна нарізка для яловичини
     {'name': 'Яловичина на бастурму', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
     {'name': 'Яловичина на пластини', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
@@ -35,19 +30,6 @@ NEW_NOMENCLATURE = [
     # Спеціальна нарізка для конини
     {'name': 'Конина на махан', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
     {'name': 'Конина на суджук', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
-    
-    # Спеціальна нарізка для свинини
-    {'name': 'Свинина на пластини', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
-    {'name': 'Свинина на суджук', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
-    {'name': 'Свинина вищий сорт', 'category': 'Сировина - М\'ясо', 'unit': 'кг', 'type': 'semi'},
-    {'name': 'Свинина перший сорт', 'category': 'Сировина - М\'ясо', 'unit': 'кг', 'type': 'semi'},
-    {'name': 'Свинина другий сорт', 'category': 'Сировина - М\'ясо', 'unit': 'кг', 'type': 'semi'},
-    
-    # Спеціальна нарізка для курки
-    {'name': 'Курка на пластини', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
-    
-    # Спеціальна нарізка для індика
-    {'name': 'Індик на пластини', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
     
     # Побічні продукти - яловичина
     {'name': 'Кістки яловичі', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
@@ -59,25 +41,6 @@ NEW_NOMENCLATURE = [
     {'name': 'Кістки кінські', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
     {'name': 'Стек кінський', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'liquid-waste'},  # Кров і вода - не зберігаються
     {'name': 'Відходи кінські', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'waste'},
-    
-    # Побічні продукти - свинина
-    {'name': 'Кістки свинячі', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
-    {'name': 'Жир свинячий', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
-    {'name': 'Шкіра свиняча', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
-    {'name': 'Стек свинячий', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'liquid-waste'},
-    {'name': 'Відходи свинячі', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'waste'},
-    
-    # Побічні продукти - курка
-    {'name': 'Кістки курячі', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
-    {'name': 'Шкіра куряча', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
-    {'name': 'Стек курячий', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'liquid-waste'},
-    {'name': 'Відходи курячі', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'waste'},
-    
-    # Побічні продукти - індик
-    {'name': 'Кістки індичі', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
-    {'name': 'Шкіра індича', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
-    {'name': 'Стек індичий', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'liquid-waste'},
-    {'name': 'Відходи індичі', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'waste'},
 ]
 
 # Рецепти розділки
