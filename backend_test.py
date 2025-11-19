@@ -17,8 +17,8 @@ try:
             if line.startswith('EXPO_PUBLIC_BACKEND_URL='):
                 BACKEND_URL = line.split('=')[1].strip()
                 break
-    else:
-        BACKEND_URL = "https://carcasstech.preview.emergentagent.com"
+        else:
+            BACKEND_URL = "https://carcasstech.preview.emergentagent.com"
 except:
     BACKEND_URL = "https://carcasstech.preview.emergentagent.com"
 
