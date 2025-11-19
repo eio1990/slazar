@@ -286,7 +286,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Butchery API endpoints"
     - "Butchery module UI - Complete implementation"
   stuck_tasks: []
   test_all: false
