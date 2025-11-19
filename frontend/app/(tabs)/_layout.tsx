@@ -54,6 +54,16 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="butchery"
+          options={{
+            title: 'Різання',
+            href: '/(tabs)/butchery',
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="knife" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="production"
           options={{
             title: 'Виробництво',
@@ -70,16 +80,6 @@ export default function TabLayout() {
             href: '/(tabs)/packaging',
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="package-variant-closed" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="butchery"
-          options={{
-            title: 'Різання',
-            href: '/(tabs)/butchery',
-            tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="knife" size={size} color={color} />
             ),
           }}
         />
