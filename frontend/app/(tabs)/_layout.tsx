@@ -73,6 +73,16 @@ export default function TabLayout() {
             ),
           }}
         />
+        <Tabs.Screen
+          name="butchery"
+          options={{
+            title: 'Різання',
+            href: '/(tabs)/butchery',
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="knife" size={size} color={color} />
+            ),
+          }}
+        />
         {/* Hidden tabs - no longer shown in tab bar */}
         <Tabs.Screen
           name="index"
