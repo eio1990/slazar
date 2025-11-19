@@ -39,7 +39,7 @@ NEW_NOMENCLATURE = [
     
     # Побічні продукти - конина
     {'name': 'Кістки кінські', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
-    {'name': 'Стек кінський', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
+    {'name': 'Стек кінський', 'category': 'Аналітика', 'unit': 'кг', 'type': 'liquid-waste'},  # Кров і вода - не зберігаються
     {'name': 'Відходи кінські', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'waste'},
 ]
 
