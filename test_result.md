@@ -207,15 +207,18 @@ backend:
   
   - task: "Butchery API endpoints"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/butchery_api.py, backend/butchery_models.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented complete Butchery API with 6 endpoints: (1) GET /api/butchery/recipes - list all butchery recipes with filters, (2) GET /api/butchery/recipes/{id} - recipe details with outputs, (3) POST /api/butchery/operations - create new butchery operation (validates stock, deducts carcass, generates operation number), (4) GET /api/butchery/operations - list operations with status filter, (5) GET /api/butchery/operations/{id} - operation details with expected and actual outputs, (6) PUT /api/butchery/operations/{id}/complete - complete operation with actual weights (adds primal cuts to stock, handles liquid-waste as non-inventory). Backend fully implemented with idempotency support, stock validation, and proper error handling. Ready for comprehensive testing."
+      - working: true
+        agent: "testing"
+        comment: "✅ BUTCHERY API COMPREHENSIVE TESTING COMPLETED SUCCESSFULLY: All 6 endpoints tested with 100% success rate (26/26 tests passed). Key test results: (1) ✅ GET /api/butchery/recipes: Retrieved 7 recipes with proper structure, source_id and level filters working correctly, (2) ✅ GET /api/butchery/recipes/{id}: Valid recipe retrieval with outputs, 404 for invalid IDs, (3) ✅ POST /api/butchery/operations: Operation creation with proper number format (BUT-YYMMDD-XXX), stock validation working, insufficient stock correctly rejected, idempotency working, invalid recipe IDs rejected, (4) ✅ GET /api/butchery/operations: Operations listing with status filters and limit parameters working, (5) ✅ GET /api/butchery/operations/{id}: Operation details with expected outputs calculation (100% yield verified), 404 for invalid IDs, (6) ✅ PUT /api/butchery/operations/{id}/complete: Operation completion working, status updated to 'completed', duplicate completion rejected, invalid IDs rejected. ✅ STOCK INTEGRATION VERIFIED: 6 stock movements created correctly (1 withdrawal for carcass input, 5 receipts for primal cuts output), proper metadata stored with expected vs actual weights. ✅ LIQUID WASTE HANDLING VERIFIED: Liquid waste items (Стек яловичий, Стек кінський) correctly excluded from stock movements as per business requirements. All business logic working correctly: operation number generation, stock deduction/addition, yield calculations, error handling, idempotency. The Butchery API module is PRODUCTION-READY."
 
 frontend:
   - task: "Production module UI"
