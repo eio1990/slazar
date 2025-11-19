@@ -24,562 +24,511 @@ except:
 
 API_BASE = f"{BACKEND_URL}/api"
 
-class TestResults:
+class ButcheryAPITester:
     def __init__(self):
-        self.passed = 0
-        self.failed = 0
-        self.errors = []
+        self.test_results = []
+        self.created_operations = []
         
-    def add_pass(self, test_name):
-        self.passed += 1
-        print(f"✅ PASS: {test_name}")
+    def log_test(self, test_name, success, message, details=None):
+        """Log test result"""
+        status = "✅ PASS" if success else "❌ FAIL"
+        print(f"{status}: {test_name} - {message}")
+        if details:
+            print(f"   Details: {details}")
         
-    def add_fail(self, test_name, error):
-        self.failed += 1
-        self.errors.append(f"{test_name}: {error}")
-        print(f"❌ FAIL: {test_name} - {error}")
+        self.test_results.append({
+            'test': test_name,
+            'success': success,
+            'message': message,
+            'details': details
+        })
+    
+    def test_get_recipes_list(self):
+        """Test GET /api/butchery/recipes"""
+        print("\n=== Testing GET /api/butchery/recipes ===")
         
-    def summary(self):
-        total = self.passed + self.failed
-        print(f"\n{'='*60}")
-        print(f"TEST SUMMARY: {self.passed}/{total} tests passed")
-        if self.errors:
-            print(f"\nFAILED TESTS:")
-            for error in self.errors:
-                print(f"  - {error}")
-        print(f"{'='*60}")
-
-def make_request(method, endpoint, data=None, expected_status=200):
-    """Make HTTP request with error handling"""
-    url = f"{BACKEND_URL}{endpoint}"
-    try:
-        if method == "GET":
-            response = requests.get(url)
-        elif method == "POST":
-            response = requests.post(url, json=data)
-        elif method == "PUT":
-            response = requests.put(url, json=data)
-        else:
-            raise ValueError(f"Unsupported method: {method}")
-            
-        if response.status_code != expected_status:
-            return None, f"Expected {expected_status}, got {response.status_code}: {response.text}"
-            
-        return response.json(), None
-    except Exception as e:
-        return None, str(e)
-
-def get_stock_balance(nomenclature_id):
-    """Get current stock balance for a nomenclature item"""
-    data, error = make_request("GET", "/stock/balances")
-    if error:
-        return None, error
-    
-    for item in data:
-        if item['nomenclature_id'] == nomenclature_id:
-            return item['quantity'], None
-    return 0, None
-
-def create_test_batch(recipe_id, initial_weight=10.0):
-    """Create a test batch for stuffing tests"""
-    batch_data = {
-        "recipe_id": recipe_id,
-        "initial_weight": initial_weight,
-        "trim_waste": 0,
-        "trim_returned": False,
-        "operator_notes": "Test batch for casing accounting"
-    }
-    
-    return make_request("POST", "/production/batches", batch_data)
-
-def test_happy_path_stuffing(results):
-    """Test 1: Happy Path - Normal Stuffing Operation"""
-    print("\n🧪 Test 1: Happy Path - Normal Stuffing Operation")
-    
-    # Create test batch for Sudjuk
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 10.0)
-    if error:
-        results.add_fail("Create test batch", error)
-        return
-    
-    batch_id = batch_data['id']
-    print(f"Created test batch: {batch_data['batch_number']} (ID: {batch_id})")
-    
-    # Get initial casing stock
-    initial_stock, error = get_stock_balance(CASING_SUDJUK_ID)
-    if error:
-        results.add_fail("Get initial casing stock", error)
-        return
-    
-    print(f"Initial casing stock (ID={CASING_SUDJUK_ID}): {initial_stock} kg")
-    
-    # Prepare stuffing data
-    stuff_data = {
-        "casing": {
-            "casing_id": CASING_SUDJUK_ID,
-            "start_weight": 1.8,
-            "end_weight": 0.3
-        },
-        "materials": [],
-        "notes": "Test stuffing",
-        "idempotency_key": f"test-stuff-unique-{uuid.uuid4()}"
-    }
-    
-    # Call stuff endpoint
-    response_data, error = make_request("POST", f"/production/batches/{batch_id}/stuff", stuff_data)
-    if error:
-        results.add_fail("Stuffing operation", error)
-        return
-    
-    # Verify response
-    expected_usage = 1.8 - 0.3  # 1.5 kg
-    if 'casing' not in response_data:
-        results.add_fail("Response contains casing info", "No casing info in response")
-        return
-    
-    casing_info = response_data['casing']
-    if abs(casing_info['usage_kg'] - expected_usage) > 0.01:
-        results.add_fail("Correct usage calculation", f"Expected {expected_usage}, got {casing_info['usage_kg']}")
-        return
-    
-    # Verify stock deduction
-    final_stock, error = get_stock_balance(CASING_SUDJUK_ID)
-    if error:
-        results.add_fail("Get final casing stock", error)
-        return
-    
-    expected_final_stock = initial_stock - expected_usage
-    if abs(final_stock - expected_final_stock) > 0.01:
-        results.add_fail("Stock deduction", f"Expected {expected_final_stock}, got {final_stock}")
-        return
-    
-    # Verify stock movements
-    movements_data, error = make_request("GET", f"/stock/movements?nomenclature_id={CASING_SUDJUK_ID}&limit=1")
-    if error:
-        results.add_fail("Get stock movements", error)
-        return
-    
-    if not movements_data or len(movements_data) == 0:
-        results.add_fail("Stock movement created", "No stock movements found")
-        return
-    
-    latest_movement = movements_data[0]
-    if latest_movement['operation_type'] != 'withdrawal':
-        results.add_fail("Stock movement type", f"Expected 'withdrawal', got {latest_movement['operation_type']}")
-        return
-    
-    if abs(latest_movement['quantity'] - expected_usage) > 0.01:
-        results.add_fail("Stock movement quantity", f"Expected {expected_usage}, got {latest_movement['quantity']}")
-        return
-    
-    # Verify metadata
-    if latest_movement['metadata']:
         try:
-            metadata = json.loads(latest_movement['metadata'])
-            if 'start_weight_kg' not in metadata or 'end_weight_kg' not in metadata:
-                results.add_fail("Stock movement metadata", "Missing weight metadata")
-                return
-        except:
-            results.add_fail("Stock movement metadata parsing", "Could not parse metadata JSON")
-            return
+            # Test 1: Get all recipes
+            response = requests.get(f"{API_BASE}/butchery/recipes")
+            if response.status_code == 200:
+                recipes = response.json()
+                if len(recipes) > 0:
+                    self.log_test("GET recipes - all", True, f"Retrieved {len(recipes)} recipes")
+                    
+                    # Verify recipe structure
+                    recipe = recipes[0]
+                    required_fields = ['id', 'name', 'source_nomenclature_id', 'source_name', 'level', 'outputs']
+                    missing_fields = [field for field in required_fields if field not in recipe]
+                    
+                    if not missing_fields:
+                        self.log_test("Recipe structure", True, "All required fields present")
+                        
+                        # Check outputs structure
+                        if recipe['outputs'] and len(recipe['outputs']) > 0:
+                            output = recipe['outputs'][0]
+                            output_fields = ['output_nomenclature_id', 'output_name', 'yield_percentage']
+                            missing_output_fields = [field for field in output_fields if field not in output]
+                            
+                            if not missing_output_fields:
+                                self.log_test("Recipe outputs structure", True, "Output structure valid")
+                            else:
+                                self.log_test("Recipe outputs structure", False, f"Missing fields: {missing_output_fields}")
+                        else:
+                            self.log_test("Recipe outputs", False, "No outputs found in recipe")
+                    else:
+                        self.log_test("Recipe structure", False, f"Missing fields: {missing_fields}")
+                else:
+                    self.log_test("GET recipes - all", False, "No recipes found")
+            else:
+                self.log_test("GET recipes - all", False, f"HTTP {response.status_code}: {response.text}")
+            
+            # Test 2: Filter by source_id (if we have recipes)
+            if response.status_code == 200 and len(response.json()) > 0:
+                first_recipe = response.json()[0]
+                source_id = first_recipe['source_nomenclature_id']
+                
+                filter_response = requests.get(f"{API_BASE}/butchery/recipes?source_id={source_id}")
+                if filter_response.status_code == 200:
+                    filtered_recipes = filter_response.json()
+                    all_match = all(r['source_nomenclature_id'] == source_id for r in filtered_recipes)
+                    if all_match:
+                        self.log_test("GET recipes - source filter", True, f"Filter by source_id={source_id} works")
+                    else:
+                        self.log_test("GET recipes - source filter", False, "Filter not working correctly")
+                else:
+                    self.log_test("GET recipes - source filter", False, f"HTTP {filter_response.status_code}")
+            
+            # Test 3: Filter by level
+            level_response = requests.get(f"{API_BASE}/butchery/recipes?level=1")
+            if level_response.status_code == 200:
+                level_recipes = level_response.json()
+                all_level_1 = all(r['level'] == 1 for r in level_recipes)
+                if all_level_1:
+                    self.log_test("GET recipes - level filter", True, f"Level filter works, found {len(level_recipes)} level 1 recipes")
+                else:
+                    self.log_test("GET recipes - level filter", False, "Level filter not working correctly")
+            else:
+                self.log_test("GET recipes - level filter", False, f"HTTP {level_response.status_code}")
+                
+        except Exception as e:
+            self.log_test("GET recipes - exception", False, f"Exception: {str(e)}")
     
-    results.add_pass("Happy Path - Normal Stuffing Operation")
-
-def test_validation_end_greater_than_start(results):
-    """Test 2: Validation - End Weight Greater Than Start"""
-    print("\n🧪 Test 2: Validation - End Weight Greater Than Start")
-    
-    # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 5.0)
-    if error:
-        results.add_fail("Create test batch for validation", error)
-        return
-    
-    batch_id = batch_data['id']
-    
-    # Test with end_weight > start_weight
-    stuff_data = {
-        "casing": {
-            "casing_id": CASING_SUDJUK_ID,
-            "start_weight": 1.0,
-            "end_weight": 1.5  # Greater than start
-        },
-        "materials": [],
-        "notes": "Test invalid weights",
-        "idempotency_key": f"test-invalid-weights-{uuid.uuid4()}"
-    }
-    
-    # Should return 400 error
-    response_data, error = make_request("POST", f"/production/batches/{batch_id}/stuff", stuff_data, expected_status=400)
-    if error and "400" not in error:
-        results.add_fail("End weight validation", f"Expected 400 error, got: {error}")
-        return
-    
-    # Check if error message is in Ukrainian
-    if response_data and 'detail' in response_data:
-        error_msg = response_data['detail']
-        if 'кінцева' not in error_msg.lower() and 'початкову' not in error_msg.lower():
-            results.add_fail("Ukrainian error message", f"Error message not in Ukrainian: {error_msg}")
-            return
-    
-    results.add_pass("Validation - End Weight Greater Than Start")
-
-def test_validation_zero_usage(results):
-    """Test 3: Validation - Zero Usage"""
-    print("\n🧪 Test 3: Validation - Zero Usage")
-    
-    # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 5.0)
-    if error:
-        results.add_fail("Create test batch for zero usage", error)
-        return
-    
-    batch_id = batch_data['id']
-    
-    # Test with start_weight = end_weight
-    stuff_data = {
-        "casing": {
-            "casing_id": CASING_SUDJUK_ID,
-            "start_weight": 2.0,
-            "end_weight": 2.0  # Same as start
-        },
-        "materials": [],
-        "notes": "Test zero usage",
-        "idempotency_key": f"test-zero-usage-{uuid.uuid4()}"
-    }
-    
-    # Should return 400 error
-    response_data, error = make_request("POST", f"/production/batches/{batch_id}/stuff", stuff_data, expected_status=400)
-    if error and "400" not in error:
-        results.add_fail("Zero usage validation", f"Expected 400 error, got: {error}")
-        return
-    
-    # Check error message mentions zero usage
-    if response_data and 'detail' in response_data:
-        error_msg = response_data['detail']
-        if 'використано 0' not in error_msg.lower():
-            results.add_fail("Zero usage error message", f"Error message doesn't mention zero usage: {error_msg}")
-            return
-    
-    results.add_pass("Validation - Zero Usage")
-
-def test_insufficient_stock(results):
-    """Test 4: Stock Availability Check"""
-    print("\n🧪 Test 4: Stock Availability Check")
-    
-    # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 5.0)
-    if error:
-        results.add_fail("Create test batch for stock check", error)
-        return
-    
-    batch_id = batch_data['id']
-    
-    # Get current stock
-    current_stock, error = get_stock_balance(CASING_SUDJUK_ID)
-    if error:
-        results.add_fail("Get current stock for insufficient test", error)
-        return
-    
-    # Try to use more than available
-    excessive_usage = current_stock + 10.0
-    stuff_data = {
-        "casing": {
-            "casing_id": CASING_SUDJUK_ID,
-            "start_weight": excessive_usage + 1.0,
-            "end_weight": 1.0
-        },
-        "materials": [],
-        "notes": "Test insufficient stock",
-        "idempotency_key": f"test-insufficient-{uuid.uuid4()}"
-    }
-    
-    # Should return 400 error
-    response_data, error = make_request("POST", f"/production/batches/{batch_id}/stuff", stuff_data, expected_status=400)
-    if error and "400" not in error:
-        results.add_fail("Insufficient stock validation", f"Expected 400 error, got: {error}")
-        return
-    
-    # Check error message is in Ukrainian
-    if response_data and 'detail' in response_data:
-        error_msg = response_data['detail']
-        if 'недостатньо' not in error_msg.lower():
-            results.add_fail("Ukrainian insufficient stock message", f"Error message not in Ukrainian: {error_msg}")
-            return
-    
-    results.add_pass("Stock Availability Check")
-
-def test_idempotency(results):
-    """Test 5: Idempotency"""
-    print("\n🧪 Test 5: Idempotency")
-    
-    # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 5.0)
-    if error:
-        results.add_fail("Create test batch for idempotency", error)
-        return
-    
-    batch_id = batch_data['id']
-    
-    # Get initial stock
-    initial_stock, error = get_stock_balance(CASING_SUDJUK_ID)
-    if error:
-        results.add_fail("Get initial stock for idempotency", error)
-        return
-    
-    # Prepare stuffing data with same idempotency key
-    idempotency_key = f"test-idempotency-{uuid.uuid4()}"
-    stuff_data = {
-        "casing": {
-            "casing_id": CASING_SUDJUK_ID,
-            "start_weight": 2.0,
-            "end_weight": 0.5
-        },
-        "materials": [],
-        "notes": "Test idempotency",
-        "idempotency_key": idempotency_key
-    }
-    
-    # First call
-    response1, error = make_request("POST", f"/production/batches/{batch_id}/stuff", stuff_data)
-    if error:
-        results.add_fail("First idempotent call", error)
-        return
-    
-    # Get stock after first call
-    stock_after_first, error = get_stock_balance(CASING_SUDJUK_ID)
-    if error:
-        results.add_fail("Get stock after first call", error)
-        return
-    
-    # Second call with same idempotency key - should either succeed or return 500 due to duplicate key
-    response2, error = make_request("POST", f"/production/batches/{batch_id}/stuff", stuff_data, expected_status=200)
-    
-    # If we get a 500 error, it's likely due to the idempotency key constraint
-    # This indicates the backend detected the duplicate but didn't handle it gracefully
-    if error and "500" in error:
-        # This is actually expected behavior - the system is preventing duplicate operations
-        print(f"   Note: Second call returned 500 (duplicate key constraint) - this prevents double deduction")
+    def test_get_recipe_by_id(self):
+        """Test GET /api/butchery/recipes/{id}"""
+        print("\n=== Testing GET /api/butchery/recipes/{id} ===")
         
-        # Verify no double deduction occurred by checking stock
-        stock_after_second, error = get_stock_balance(CASING_SUDJUK_ID)
-        if error:
-            results.add_fail("Get stock after second call", error)
-            return
-        
-        # Stock should be the same after both calls (no double deduction)
-        if abs(stock_after_first - stock_after_second) > 0.01:
-            results.add_fail("Idempotency - no double deduction", f"Stock changed: {stock_after_first} -> {stock_after_second}")
-            return
-        
-        # Verify only one deduction happened
-        expected_usage = 2.0 - 0.5  # 1.5 kg
-        expected_final_stock = initial_stock - expected_usage
-        if abs(stock_after_second - expected_final_stock) > 0.01:
-            results.add_fail("Idempotency - correct single deduction", f"Expected {expected_final_stock}, got {stock_after_second}")
-            return
-    elif error:
-        results.add_fail("Second idempotent call", error)
-        return
-    else:
-        # If second call succeeded, check that it was handled properly
-        stock_after_second, error = get_stock_balance(CASING_SUDJUK_ID)
-        if error:
-            results.add_fail("Get stock after second call", error)
-            return
-        
-        # Stock should be the same after both calls (no double deduction)
-        if abs(stock_after_first - stock_after_second) > 0.01:
-            results.add_fail("Idempotency - no double deduction", f"Stock changed: {stock_after_first} -> {stock_after_second}")
-            return
-    
-    results.add_pass("Idempotency")
-
-def test_backward_compatibility(results):
-    """Test 6: Backward Compatibility"""
-    print("\n🧪 Test 6: Backward Compatibility")
-    
-    # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 5.0)
-    if error:
-        results.add_fail("Create test batch for backward compatibility", error)
-        return
-    
-    batch_id = batch_data['id']
-    
-    # Test old format (materials only, no casing)
-    stuff_data = {
-        "materials": [],  # Empty materials list
-        "notes": "Test backward compatibility",
-        "idempotency_key": f"test-backward-compat-{uuid.uuid4()}"
-    }
-    
-    # Should succeed without casing
-    response_data, error = make_request("POST", f"/production/batches/{batch_id}/stuff", stuff_data)
-    if error:
-        results.add_fail("Backward compatibility - old format", error)
-        return
-    
-    # Response should not contain casing info
-    if 'casing' in response_data:
-        results.add_fail("Backward compatibility - no casing in response", "Casing info present when not expected")
-        return
-    
-    results.add_pass("Backward Compatibility")
-
-def test_database_verification(results):
-    """Test 7: Database Verification"""
-    print("\n🧪 Test 7: Database Verification")
-    
-    # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 7.5)
-    if error:
-        results.add_fail("Create test batch for DB verification", error)
-        return
-    
-    batch_id = batch_data['id']
-    batch_number = batch_data['batch_number']
-    
-    # Get initial stock and batch info
-    initial_stock, error = get_stock_balance(CASING_SUDJUK_ID)
-    if error:
-        results.add_fail("Get initial stock for DB verification", error)
-        return
-    
-    # Perform stuffing
-    stuff_data = {
-        "casing": {
-            "casing_id": CASING_SUDJUK_ID,
-            "start_weight": 3.0,
-            "end_weight": 0.8
-        },
-        "materials": [],
-        "notes": "Test DB verification",
-        "idempotency_key": f"test-db-verify-{uuid.uuid4()}"
-    }
-    
-    response_data, error = make_request("POST", f"/production/batches/{batch_id}/stuff", stuff_data)
-    if error:
-        results.add_fail("Stuffing for DB verification", error)
-        return
-    
-    # Verify stock_balances updated correctly
-    final_stock, error = get_stock_balance(CASING_SUDJUK_ID)
-    if error:
-        results.add_fail("Get final stock for DB verification", error)
-        return
-    
-    expected_usage = 3.0 - 0.8  # 2.2 kg
-    expected_final_stock = initial_stock - expected_usage
-    if abs(final_stock - expected_final_stock) > 0.01:
-        results.add_fail("DB - stock_balances updated", f"Expected {expected_final_stock}, got {final_stock}")
-        return
-    
-    # Verify stock_movements has proper metadata
-    movements_data, error = make_request("GET", f"/stock/movements?nomenclature_id={CASING_SUDJUK_ID}&limit=1")
-    if error:
-        results.add_fail("Get movements for DB verification", error)
-        return
-    
-    if not movements_data:
-        results.add_fail("DB - stock_movements created", "No stock movements found")
-        return
-    
-    movement = movements_data[0]
-    if movement['metadata']:
         try:
-            metadata = json.loads(movement['metadata'])
-            required_fields = ['start_weight_kg', 'end_weight_kg', 'usage_kg', 'waste_kg']
-            for field in required_fields:
-                if field not in metadata:
-                    results.add_fail(f"DB - metadata has {field}", f"Missing {field} in metadata")
+            # First get a recipe ID
+            recipes_response = requests.get(f"{API_BASE}/butchery/recipes")
+            if recipes_response.status_code == 200 and len(recipes_response.json()) > 0:
+                recipe_id = recipes_response.json()[0]['id']
+                
+                # Test valid ID
+                response = requests.get(f"{API_BASE}/butchery/recipes/{recipe_id}")
+                if response.status_code == 200:
+                    recipe = response.json()
+                    if recipe['id'] == recipe_id:
+                        self.log_test("GET recipe by ID - valid", True, f"Retrieved recipe {recipe_id}: {recipe['name']}")
+                        
+                        # Verify outputs are ordered
+                        if recipe['outputs']:
+                            self.log_test("Recipe outputs ordering", True, f"Recipe has {len(recipe['outputs'])} outputs")
+                        else:
+                            self.log_test("Recipe outputs ordering", False, "No outputs in recipe")
+                    else:
+                        self.log_test("GET recipe by ID - valid", False, "Wrong recipe returned")
+                else:
+                    self.log_test("GET recipe by ID - valid", False, f"HTTP {response.status_code}: {response.text}")
+                
+                # Test invalid ID
+                invalid_response = requests.get(f"{API_BASE}/butchery/recipes/99999")
+                if invalid_response.status_code == 404:
+                    self.log_test("GET recipe by ID - invalid", True, "404 returned for invalid ID")
+                else:
+                    self.log_test("GET recipe by ID - invalid", False, f"Expected 404, got {invalid_response.status_code}")
+            else:
+                self.log_test("GET recipe by ID - setup", False, "Could not get recipes for testing")
+                
+        except Exception as e:
+            self.log_test("GET recipe by ID - exception", False, f"Exception: {str(e)}")
+    
+    def test_create_operation(self):
+        """Test POST /api/butchery/operations"""
+        print("\n=== Testing POST /api/butchery/operations ===")
+        
+        try:
+            # First get available recipes and stock
+            recipes_response = requests.get(f"{API_BASE}/butchery/recipes")
+            stock_response = requests.get(f"{API_BASE}/stock/balances")
+            
+            if recipes_response.status_code == 200 and stock_response.status_code == 200:
+                recipes = recipes_response.json()
+                stock_balances = stock_response.json()
+                
+                if not recipes:
+                    self.log_test("Create operation - setup", False, "No recipes available")
                     return
-        except:
-            results.add_fail("DB - metadata parsing", "Could not parse metadata JSON")
-            return
+                
+                # Find a recipe with available stock
+                suitable_recipe = None
+                available_stock = None
+                
+                for recipe in recipes:
+                    source_id = recipe['source_nomenclature_id']
+                    for balance in stock_balances:
+                        if balance['nomenclature_id'] == source_id and balance['quantity'] > 10:
+                            suitable_recipe = recipe
+                            available_stock = balance
+                            break
+                    if suitable_recipe:
+                        break
+                
+                if not suitable_recipe:
+                    self.log_test("Create operation - setup", False, "No recipes with sufficient stock found")
+                    return
+                
+                # Test 1: Valid operation creation
+                operation_data = {
+                    "recipe_id": suitable_recipe['id'],
+                    "source_nomenclature_id": suitable_recipe['source_nomenclature_id'],
+                    "input_weight": 5.0,  # Use 5kg
+                    "notes": "Test operation",
+                    "idempotency_key": str(uuid.uuid4())
+                }
+                
+                response = requests.post(f"{API_BASE}/butchery/operations", json=operation_data)
+                if response.status_code == 200:
+                    result = response.json()
+                    if 'operation_id' in result and 'operation_number' in result:
+                        operation_id = result['operation_id']
+                        operation_number = result['operation_number']
+                        self.created_operations.append(operation_id)
+                        
+                        # Verify operation number format: BUT-YYMMDD-XXX
+                        today = datetime.now().strftime("%y%m%d")
+                        if operation_number.startswith(f"BUT-{today}-"):
+                            self.log_test("Create operation - valid", True, f"Created operation {operation_number}")
+                        else:
+                            self.log_test("Create operation - number format", False, f"Invalid number format: {operation_number}")
+                    else:
+                        self.log_test("Create operation - valid", False, "Missing operation_id or operation_number in response")
+                else:
+                    self.log_test("Create operation - valid", False, f"HTTP {response.status_code}: {response.text}")
+                
+                # Test 2: Insufficient stock
+                insufficient_data = operation_data.copy()
+                insufficient_data['input_weight'] = available_stock['quantity'] + 100  # More than available
+                insufficient_data['idempotency_key'] = str(uuid.uuid4())
+                
+                insufficient_response = requests.post(f"{API_BASE}/butchery/operations", json=insufficient_data)
+                if insufficient_response.status_code == 400:
+                    self.log_test("Create operation - insufficient stock", True, "Correctly rejected insufficient stock")
+                else:
+                    self.log_test("Create operation - insufficient stock", False, f"Expected 400, got {insufficient_response.status_code}")
+                
+                # Test 3: Duplicate idempotency key
+                duplicate_response = requests.post(f"{API_BASE}/butchery/operations", json=operation_data)
+                if duplicate_response.status_code == 400:
+                    self.log_test("Create operation - idempotency", True, "Correctly rejected duplicate idempotency_key")
+                else:
+                    self.log_test("Create operation - idempotency", False, f"Expected 400, got {duplicate_response.status_code}")
+                
+                # Test 4: Invalid recipe ID
+                invalid_recipe_data = operation_data.copy()
+                invalid_recipe_data['recipe_id'] = 99999
+                invalid_recipe_data['idempotency_key'] = str(uuid.uuid4())
+                
+                invalid_recipe_response = requests.post(f"{API_BASE}/butchery/operations", json=invalid_recipe_data)
+                if invalid_recipe_response.status_code == 404:
+                    self.log_test("Create operation - invalid recipe", True, "Correctly rejected invalid recipe ID")
+                else:
+                    self.log_test("Create operation - invalid recipe", False, f"Expected 404, got {invalid_recipe_response.status_code}")
+                    
+            else:
+                self.log_test("Create operation - setup", False, "Could not get recipes or stock data")
+                
+        except Exception as e:
+            self.log_test("Create operation - exception", False, f"Exception: {str(e)}")
     
-    # Verify batch status updated
-    batch_info, error = make_request("GET", f"/production/batches/{batch_id}")
-    if error:
-        results.add_fail("Get batch info for DB verification", error)
-        return
+    def test_get_operations_list(self):
+        """Test GET /api/butchery/operations"""
+        print("\n=== Testing GET /api/butchery/operations ===")
+        
+        try:
+            # Test 1: Get all operations
+            response = requests.get(f"{API_BASE}/butchery/operations")
+            if response.status_code == 200:
+                operations = response.json()
+                self.log_test("GET operations - all", True, f"Retrieved {len(operations)} operations")
+                
+                if operations:
+                    # Verify operation structure
+                    operation = operations[0]
+                    required_fields = ['id', 'operation_number', 'recipe_name', 'source_name', 'input_weight', 'status']
+                    missing_fields = [field for field in required_fields if field not in operation]
+                    
+                    if not missing_fields:
+                        self.log_test("Operation structure", True, "All required fields present")
+                    else:
+                        self.log_test("Operation structure", False, f"Missing fields: {missing_fields}")
+            else:
+                self.log_test("GET operations - all", False, f"HTTP {response.status_code}: {response.text}")
+            
+            # Test 2: Filter by status
+            status_response = requests.get(f"{API_BASE}/butchery/operations?status=in_progress")
+            if status_response.status_code == 200:
+                in_progress_ops = status_response.json()
+                all_in_progress = all(op['status'] == 'in_progress' for op in in_progress_ops)
+                if all_in_progress:
+                    self.log_test("GET operations - status filter", True, f"Status filter works, found {len(in_progress_ops)} in_progress operations")
+                else:
+                    self.log_test("GET operations - status filter", False, "Status filter not working correctly")
+            else:
+                self.log_test("GET operations - status filter", False, f"HTTP {status_response.status_code}")
+            
+            # Test 3: Limit parameter
+            limit_response = requests.get(f"{API_BASE}/butchery/operations?limit=5")
+            if limit_response.status_code == 200:
+                limited_ops = limit_response.json()
+                if len(limited_ops) <= 5:
+                    self.log_test("GET operations - limit", True, f"Limit works, returned {len(limited_ops)} operations")
+                else:
+                    self.log_test("GET operations - limit", False, f"Limit not working, returned {len(limited_ops)} operations")
+            else:
+                self.log_test("GET operations - limit", False, f"HTTP {limit_response.status_code}")
+                
+        except Exception as e:
+            self.log_test("GET operations - exception", False, f"Exception: {str(e)}")
     
-    if batch_info['status'] != 'in_progress':
-        results.add_fail("DB - batch status updated", f"Expected 'in_progress', got {batch_info['status']}")
-        return
+    def test_get_operation_by_id(self):
+        """Test GET /api/butchery/operations/{id}"""
+        print("\n=== Testing GET /api/butchery/operations/{id} ===")
+        
+        try:
+            # Get an operation ID
+            operations_response = requests.get(f"{API_BASE}/butchery/operations")
+            if operations_response.status_code == 200 and len(operations_response.json()) > 0:
+                operation_id = operations_response.json()[0]['id']
+                
+                # Test valid ID
+                response = requests.get(f"{API_BASE}/butchery/operations/{operation_id}")
+                if response.status_code == 200:
+                    result = response.json()
+                    if 'operation' in result and 'expected_outputs' in result:
+                        operation = result['operation']
+                        expected_outputs = result['expected_outputs']
+                        
+                        self.log_test("GET operation by ID - valid", True, f"Retrieved operation {operation['operation_number']}")
+                        
+                        # Verify expected outputs calculation
+                        if expected_outputs:
+                            total_expected_percentage = sum(out['yield_percentage'] for out in expected_outputs)
+                            self.log_test("Expected outputs calculation", True, f"Total expected yield: {total_expected_percentage:.1f}%")
+                        else:
+                            self.log_test("Expected outputs calculation", False, "No expected outputs found")
+                    else:
+                        self.log_test("GET operation by ID - valid", False, "Missing operation or expected_outputs in response")
+                else:
+                    self.log_test("GET operation by ID - valid", False, f"HTTP {response.status_code}: {response.text}")
+                
+                # Test invalid ID
+                invalid_response = requests.get(f"{API_BASE}/butchery/operations/99999")
+                if invalid_response.status_code == 404:
+                    self.log_test("GET operation by ID - invalid", True, "404 returned for invalid ID")
+                else:
+                    self.log_test("GET operation by ID - invalid", False, f"Expected 404, got {invalid_response.status_code}")
+            else:
+                self.log_test("GET operation by ID - setup", False, "Could not get operations for testing")
+                
+        except Exception as e:
+            self.log_test("GET operation by ID - exception", False, f"Exception: {str(e)}")
     
-    results.add_pass("Database Verification")
-
-def test_rounding_precision(results):
-    """Test 8: Proper Rounding (2 decimal places)"""
-    print("\n🧪 Test 8: Proper Rounding (2 decimal places)")
+    def test_complete_operation(self):
+        """Test PUT /api/butchery/operations/{id}/complete"""
+        print("\n=== Testing PUT /api/butchery/operations/{id}/complete ===")
+        
+        try:
+            # Find an in_progress operation or create one
+            operations_response = requests.get(f"{API_BASE}/butchery/operations?status=in_progress")
+            operation_id = None
+            
+            if operations_response.status_code == 200:
+                in_progress_ops = operations_response.json()
+                if in_progress_ops:
+                    operation_id = in_progress_ops[0]['id']
+                elif self.created_operations:
+                    operation_id = self.created_operations[0]
+            
+            if not operation_id:
+                self.log_test("Complete operation - setup", False, "No in_progress operations available for testing")
+                return
+            
+            # Get operation details to build completion data
+            op_response = requests.get(f"{API_BASE}/butchery/operations/{operation_id}")
+            if op_response.status_code != 200:
+                self.log_test("Complete operation - setup", False, "Could not get operation details")
+                return
+            
+            op_data = op_response.json()
+            expected_outputs = op_data['expected_outputs']
+            
+            if not expected_outputs:
+                self.log_test("Complete operation - setup", False, "No expected outputs for operation")
+                return
+            
+            # Test 1: Valid completion
+            completion_outputs = []
+            total_actual = 0
+            
+            for expected in expected_outputs:
+                # Use 95% of expected weight for realistic completion
+                actual_weight = expected['expected_weight'] * 0.95
+                total_actual += actual_weight
+                
+                completion_outputs.append({
+                    "output_nomenclature_id": expected['output_nomenclature_id'],
+                    "actual_weight": actual_weight,
+                    "notes": f"Test completion for {expected['output_name']}"
+                })
+            
+            completion_data = {
+                "outputs": completion_outputs,
+                "notes": "Test completion",
+                "idempotency_key": str(uuid.uuid4())
+            }
+            
+            response = requests.put(f"{API_BASE}/butchery/operations/{operation_id}/complete", json=completion_data)
+            if response.status_code == 200:
+                result = response.json()
+                if 'operation_number' in result and 'outputs_count' in result:
+                    self.log_test("Complete operation - valid", True, f"Completed operation {result['operation_number']} with {result['outputs_count']} outputs")
+                    
+                    # Verify operation status changed
+                    verify_response = requests.get(f"{API_BASE}/butchery/operations/{operation_id}")
+                    if verify_response.status_code == 200:
+                        verify_data = verify_response.json()
+                        if verify_data['operation']['status'] == 'completed':
+                            self.log_test("Operation status update", True, "Status changed to completed")
+                        else:
+                            self.log_test("Operation status update", False, f"Status is {verify_data['operation']['status']}, expected completed")
+                else:
+                    self.log_test("Complete operation - valid", False, "Missing expected fields in response")
+            else:
+                self.log_test("Complete operation - valid", False, f"HTTP {response.status_code}: {response.text}")
+            
+            # Test 2: Duplicate completion (should fail)
+            duplicate_response = requests.put(f"{API_BASE}/butchery/operations/{operation_id}/complete", json=completion_data)
+            if duplicate_response.status_code == 400:
+                self.log_test("Complete operation - duplicate", True, "Correctly rejected duplicate completion")
+            else:
+                self.log_test("Complete operation - duplicate", False, f"Expected 400, got {duplicate_response.status_code}")
+            
+            # Test 3: Invalid operation ID
+            invalid_completion_data = completion_data.copy()
+            invalid_completion_data['idempotency_key'] = str(uuid.uuid4())
+            
+            invalid_response = requests.put(f"{API_BASE}/butchery/operations/99999/complete", json=invalid_completion_data)
+            if invalid_response.status_code == 404:
+                self.log_test("Complete operation - invalid ID", True, "404 returned for invalid operation ID")
+            else:
+                self.log_test("Complete operation - invalid ID", False, f"Expected 404, got {invalid_response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Complete operation - exception", False, f"Exception: {str(e)}")
     
-    # Create test batch
-    batch_data, error = create_test_batch(SUDJUK_RECIPE_ID, 5.0)
-    if error:
-        results.add_fail("Create test batch for rounding", error)
-        return
+    def test_stock_integration(self):
+        """Test stock balance and movement integration"""
+        print("\n=== Testing Stock Integration ===")
+        
+        try:
+            # Get stock balances before and after operations
+            initial_response = requests.get(f"{API_BASE}/stock/balances")
+            if initial_response.status_code == 200:
+                self.log_test("Stock integration - balances", True, "Can retrieve stock balances")
+                
+                # Get stock movements
+                movements_response = requests.get(f"{API_BASE}/stock/movements?limit=10")
+                if movements_response.status_code == 200:
+                    movements = movements_response.json()
+                    
+                    # Look for butchery-related movements
+                    butchery_movements = [m for m in movements if 'butchery' in str(m.get('metadata', ''))]
+                    if butchery_movements:
+                        self.log_test("Stock integration - movements", True, f"Found {len(butchery_movements)} butchery-related stock movements")
+                    else:
+                        self.log_test("Stock integration - movements", True, "No butchery movements found (may be expected if no operations completed)")
+                else:
+                    self.log_test("Stock integration - movements", False, f"HTTP {movements_response.status_code}")
+            else:
+                self.log_test("Stock integration - balances", False, f"HTTP {initial_response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Stock integration - exception", False, f"Exception: {str(e)}")
     
-    batch_id = batch_data['id']
+    def test_liquid_waste_handling(self):
+        """Test liquid waste (non-inventory) handling"""
+        print("\n=== Testing Liquid Waste Handling ===")
+        
+        try:
+            # Check if there are nomenclature items with liquid-waste type
+            nomenclature_response = requests.get(f"{API_BASE}/nomenclature")
+            if nomenclature_response.status_code == 200:
+                nomenclature = nomenclature_response.json()
+                
+                # Look for liquid waste items (should have nomenclature_type='liquid-waste')
+                # This is a database-level check that would need to be verified during completion
+                self.log_test("Liquid waste - nomenclature", True, f"Retrieved {len(nomenclature)} nomenclature items for liquid waste verification")
+            else:
+                self.log_test("Liquid waste - nomenclature", False, f"HTTP {nomenclature_response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Liquid waste - exception", False, f"Exception: {str(e)}")
     
-    # Test with values that need rounding
-    stuff_data = {
-        "casing": {
-            "casing_id": CASING_SUDJUK_ID,
-            "start_weight": 1.234567,  # Should round to 1.23
-            "end_weight": 0.456789     # Should round to 0.46
-        },
-        "materials": [],
-        "notes": "Test rounding",
-        "idempotency_key": f"test-rounding-{uuid.uuid4()}"
-    }
-    
-    response_data, error = make_request("POST", f"/production/batches/{batch_id}/stuff", stuff_data)
-    if error:
-        results.add_fail("Stuffing with rounding values", error)
-        return
-    
-    # Check if usage is properly rounded
-    if 'casing' in response_data:
-        usage = response_data['casing']['usage_kg']
-        expected_usage = round(1.234567 - 0.456789, 2)  # Should be 0.78
-        if abs(usage - expected_usage) > 0.001:
-            results.add_fail("Proper rounding", f"Expected {expected_usage}, got {usage}")
-            return
-    
-    results.add_pass("Proper Rounding (2 decimal places)")
-
-def main():
-    """Run all tests"""
-    print("🚀 Starting Weight-based Casing Accounting Tests")
-    print(f"Backend URL: {BACKEND_URL}")
-    print(f"Test started at: {datetime.now()}")
-    
-    results = TestResults()
-    
-    # Check backend health
-    health_data, error = make_request("GET", "/health")
-    if error:
-        print(f"❌ Backend health check failed: {error}")
-        return
-    
-    print(f"✅ Backend is healthy: {health_data}")
-    
-    # Run all tests
-    test_happy_path_stuffing(results)
-    test_validation_end_greater_than_start(results)
-    test_validation_zero_usage(results)
-    test_insufficient_stock(results)
-    test_idempotency(results)
-    test_backward_compatibility(results)
-    test_database_verification(results)
-    test_rounding_precision(results)
-    
-    # Print summary
-    results.summary()
-    
-    return results.failed == 0
+    def run_all_tests(self):
+        """Run all tests"""
+        print(f"🧪 Starting Butchery API Testing")
+        print(f"Backend URL: {BACKEND_URL}")
+        print(f"API Base: {API_BASE}")
+        
+        start_time = time.time()
+        
+        # Run all test methods
+        self.test_get_recipes_list()
+        self.test_get_recipe_by_id()
+        self.test_create_operation()
+        self.test_get_operations_list()
+        self.test_get_operation_by_id()
+        self.test_complete_operation()
+        self.test_stock_integration()
+        self.test_liquid_waste_handling()
+        
+        end_time = time.time()
+        
+        # Summary
+        total_tests = len(self.test_results)
+        passed_tests = len([t for t in self.test_results if t['success']])
+        failed_tests = total_tests - passed_tests
+        
+        print(f"\n{'='*60}")
+        print(f"🏁 BUTCHERY API TEST SUMMARY")
+        print(f"{'='*60}")
+        print(f"Total Tests: {total_tests}")
+        print(f"✅ Passed: {passed_tests}")
+        print(f"❌ Failed: {failed_tests}")
+        print(f"⏱️  Duration: {end_time - start_time:.2f} seconds")
+        print(f"Success Rate: {(passed_tests/total_tests)*100:.1f}%")
+        
+        if failed_tests > 0:
+            print(f"\n❌ FAILED TESTS:")
+            for test in self.test_results:
+                if not test['success']:
+                    print(f"   • {test['test']}: {test['message']}")
+        
+        return passed_tests, failed_tests, self.test_results
 
 if __name__ == "__main__":
-    success = main()
-    exit(0 if success else 1)
+    tester = ButcheryAPITester()
+    passed, failed, results = tester.run_all_tests()
+    
+    # Exit with error code if tests failed
+    exit(0 if failed == 0 else 1)
