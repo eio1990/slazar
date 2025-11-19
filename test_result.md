@@ -103,15 +103,20 @@
 #====================================================================================================
 
 user_problem_statement: |
-  Implement "Recipes for Finished Weight Products Module" (Модуль рецепти готової весової продукції).
-  This module manages recipes for production, including ingredients, spices, production steps, and batch operations.
+  Implement "Butchery Module" (Модуль розділки) - NEW MAJOR FEATURE
+  This module manages the breakdown of raw carcasses into primal cuts and by-products.
+  The butchery module is positioned BEFORE the production module in the workflow:
+  Flow: Raw Carcasses (Туша) → Butchery → Primal Cuts → Production → Finished Products
+  
   Key features:
-  - Recipe management (read-only in app, stored in DB)
-  - Production batch lifecycle (create, track steps, complete)
-  - Mix production logic (Chaman, Marinade with fenugreek water rule)
-  - Trim waste handling
-  - Stock movements for raw materials and finished products
+  - Butchery recipe management (recipes define expected yields from carcasses)
+  - Butchery operation lifecycle (create, track, complete with actual outputs)
+  - Multi-level processing support (Level 1: carcass → primary cuts, Level 2: cuts → refined cuts)
+  - Non-inventory yield loss tracking (liquid waste like blood/water runoff)
+  - Stock movements for inputs (carcass deduction) and outputs (primal cuts addition)
   - Idempotency for offline sync
+  
+  Previous modules (Production, Operations, Packaging) remain unchanged and operational.
 
 backend:
   - task: "Database schema for recipes module"
