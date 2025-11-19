@@ -263,6 +263,18 @@ frontend:
         agent: "testing"
         comment: "✅ WITHDRAWAL FUNCTIONALITY WORKING: Successfully tested withdrawal operations with comprehensive validation. Key findings: (1) Withdrawal operation type selection working correctly, (2) All 5 test items found with correct available balances: Яловичина вищій ґатунок (225.5 кг), Паприка (80 кг), Сіль (80 кг), Пакет вакуумний 110*400 (80 од), Коробка 150*300*400 (80 од), (3) Balance display ('Доступно на складі') shows correctly for withdrawal operations, (4) API integration working - POST /api/stock/withdrawal returns 200 OK, (5) Form resets after successful withdrawal indicating backend processing, (6) Balance updates correctly after withdrawal (verified by re-selecting items). Minor: Success alert messages not displaying but operations are processed successfully as confirmed by API responses and balance changes. Core withdrawal functionality is working correctly for production use."
 
+  - task: "Butchery module UI - Complete implementation"
+    implemented: true
+    working: "NA"
+    file: "frontend/app/(tabs)/butchery.tsx, frontend/app/(tabs)/_layout.tsx, frontend/app/butchery/select-recipe.tsx, frontend/app/butchery/[id].tsx, frontend/app/butchery/complete-form.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented complete Butchery module UI with 4 screens: (1) MAIN TAB (butchery.tsx): Lists all butchery operations with status filtering (Всі, В процесі, Завершені), displays operation cards with operation number, recipe name, source carcass, input weight, status badges, timestamps. Added 'Різання' tab to main navigation with knife icon. (2) RECIPE SELECTION (select-recipe.tsx): Displays all available butchery recipes with multi-level support, shows expected output percentages for each recipe, real-time calculation of expected outputs based on entered carcass weight, input validation and notes field, creates new butchery operation via POST /api/butchery/operations. (3) OPERATION DETAILS ([id].tsx): Shows operation information (number, recipe, source, weights, timestamps), displays expected outputs with percentages, shows actual outputs (if completed) with comparison to expected, visual diff indicators (green/red) for actual vs expected, 'Complete' button for in-progress operations. (4) COMPLETION FORM (complete-form.tsx): Input fields for all expected outputs with 'Fill with expected' quick-action buttons, real-time difference calculation with color coding, validation (prevents total > 105% of input), notes fields per output and general notes, submits to PUT /api/butchery/operations/{id}/complete. All screens mobile-optimized with proper keyboard handling, loading states, and error handling. Ready for comprehensive testing."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
