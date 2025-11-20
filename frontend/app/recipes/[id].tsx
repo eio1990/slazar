@@ -132,22 +132,37 @@ export default function RecipeDetailScreen() {
   });
 
   const handleCreateBatch = () => {
-    if (!initialWeight || parseFloat(initialWeight) <= 0) {
-      Alert.alert('Помилка', 'Введіть початкову вагу');
+    const weight = parseFloat(initialWeight);
+    
+    if (!initialWeight || weight <= 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: 'Введіть початкову вагу',
+        position: 'top',
+        visibilityTime: 3000,
+      });
       return;
     }
 
-    if (hasTrim && (trimWaste === '' || trimWaste === null || parseFloat(trimWaste) < 0)) {
-      Alert.alert('Помилка', 'Введіть вагу обрізків (0 або більше)');
+    // Check if enough material in stock
+    if (availableStock > 0 && weight > availableStock) {
+      Toast.show({
+        type: 'error',
+        text1: 'Недостатньо матеріалу на складі!',
+        text2: `Потрібно: ${weight.toFixed(2)} кг, На складі: ${availableStock.toFixed(2)} кг`,
+        position: 'top',
+        visibilityTime: 4000,
+      });
       return;
     }
 
     createBatchMutation.mutate({
       recipe_id: parseInt(id as string),
-      initial_weight: parseFloat(initialWeight),
-      trim_waste: hasTrim ? parseFloat(trimWaste) : 0,
-      trim_returned: trimReturned,
-      operator_notes: hasTrim ? 'Обрізки зафіксовано' : '',
+      initial_weight: weight,
+      trim_waste: 0,
+      trim_returned: false,
+      operator_notes: '',
     });
   };
 
