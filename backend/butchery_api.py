@@ -180,7 +180,7 @@ async def create_butchery_operation(operation: ButcheryOperationCreate):
         today = datetime.now().strftime("%y%m%d")
         cursor.execute("""
             SELECT COUNT(*) FROM butchery_operations 
-            WHERE CONVERT(date, started_at) = CONVERT(date, GETUTCDATE())
+            WHERE CONVERT(date, started_at) = CONVERT(date, GETDATE())
         """)
         count = cursor.fetchone()[0] + 1
         operation_number = f"BUT-{today}-{count:03d}"
