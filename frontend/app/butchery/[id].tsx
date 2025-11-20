@@ -625,6 +625,25 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#007AFF',
   },
+  liquidWasteRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  liquidWasteLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  liquidWasteValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#999',
+  },
   totalDifference: {
     fontSize: 12,
     textAlign: 'right',
