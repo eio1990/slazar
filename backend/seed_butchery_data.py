@@ -20,27 +20,49 @@ def get_connection():
     )
     return pyodbc.connect(conn_str)
 
-# Нова номенклатура (тільки для яловичини та конини - туші)
+# Нова номенклатура (для всіх типів м'яса)
 NEW_NOMENCLATURE = [
-    # Спеціальна нарізка для яловичини
-    {'name': 'Яловичина на бастурму', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
-    {'name': 'Яловичина на пластини', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
-    {'name': 'Яловичина на суджук', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    # === СПЕЦІАЛЬНА НАРІЗКА (cut-specific) ===
+    # Яловичина
+    {'name': 'Яловичина для бастурми', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    {'name': 'Яловичина для пластин', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    {'name': 'Яловичина для суджука', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
     
-    # Спеціальна нарізка для конини
-    {'name': 'Конина на махан', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
-    {'name': 'Конина на суджук', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    # Конина
+    {'name': 'Конина для бастурми з конини', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    {'name': 'Конина для пластин з конини', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    {'name': 'Конина для махан', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    {'name': 'Конина для махан пластина', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    {'name': 'Конина для суджук', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
     
-    # Побічні продукти - яловичина
+    # Свинина
+    {'name': 'Свинина для бастурма банкетна', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    {'name': 'Свинина для суджука', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    
+    # Курка
+    {'name': 'Курка для весової курки', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    {'name': 'Курка для суджука', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    
+    # Індичка
+    {'name': 'Індичка для бастурми з індички', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    {'name': 'Індичка для суджука', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
+    
+    # === ПОБІЧНІ ПРОДУКТИ ===
+    # Кістки та жир
     {'name': 'Кістки яловичі', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
     {'name': 'Жир яловичий', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
-    {'name': 'Стек яловичий', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'liquid-waste'},  # Кров і вода - не зберігаються
-    {'name': 'Відходи яловичі', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'waste'},
-    
-    # Побічні продукти - конина
     {'name': 'Кістки кінські', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
-    {'name': 'Стек кінський', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'liquid-waste'},  # Кров і вода - не зберігаються
-    {'name': 'Відходи кінські', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'waste'},
+    {'name': 'Жир кінський', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'by-product'},
+    
+    # Стек (liquid-waste - не зберігається на складі)
+    {'name': 'Стек яловичий', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'liquid-waste'},
+    {'name': 'Стек кінський', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'liquid-waste'},
+    {'name': 'Стек свинячий', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'liquid-waste'},
+    {'name': 'Стек курячий', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'liquid-waste'},
+    {'name': 'Стек індичий', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'liquid-waste'},
+    
+    # Відходи (загальні для всіх)
+    {'name': 'Відходи м\'ясні', 'category': 'Побічні продукти', 'unit': 'кг', 'type': 'waste'},
 ]
 
 # Рецепти розділки
