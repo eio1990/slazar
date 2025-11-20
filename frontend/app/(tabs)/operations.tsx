@@ -122,8 +122,12 @@ export default function OperationsScreen() {
       return;
     }
 
-    // Validate price for receipt
-    if (operationType === 'receipt' && pricePerUnit) {
+    // Validate price for receipt (REQUIRED)
+    if (operationType === 'receipt') {
+      if (!pricePerUnit || pricePerUnit.trim() === '') {
+        Alert.alert('Помилка', 'Ціна за одиницю є обов\'язковим полем');
+        return;
+      }
       const price = parseFloat(pricePerUnit);
       if (isNaN(price) || price < 0) {
         Alert.alert('Помилка', 'Введіть коректну ціну');
