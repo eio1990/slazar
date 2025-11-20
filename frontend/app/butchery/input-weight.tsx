@@ -107,13 +107,37 @@ export default function InputWeightScreen() {
 
   const handleStartButchery = async () => {
     if (!selectedRecipe) {
-      Alert.alert('Помилка', 'Не знайдено рецепт для обраного типу м\'яса');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: 'Не знайдено рецепт для обраного типу м\'яса',
+        position: 'top',
+        visibilityTime: 3000,
+      });
       return;
     }
 
     const weightNum = parseFloat(weight);
     if (!weightNum || weightNum <= 0) {
-      Alert.alert('Помилка', 'Введіть коректну вагу (більше 0)');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: 'Введіть коректну вагу (більше 0)',
+        position: 'top',
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
+    // Check if enough material in stock
+    if (availableStock > 0 && weightNum > availableStock) {
+      Toast.show({
+        type: 'error',
+        text1: 'Недостатньо матеріалу на складі!',
+        text2: `Потрібно: ${weightNum.toFixed(2)} кг, На складі: ${availableStock.toFixed(2)} кг`,
+        position: 'top',
+        visibilityTime: 4000,
+      });
       return;
     }
 
