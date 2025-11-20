@@ -185,7 +185,7 @@ async def create_butchery_operation(operation: ButcheryOperationCreate):
         today = datetime.now().strftime("%y%m%d")
         cursor.execute("""
             SELECT COUNT(*) FROM butchery_operations 
-            WHERE CONVERT(date, started_at) = CONVERT(date, GETDATE())
+            WHERE CONVERT(date, started_at) = CONVERT(date, DATEADD(HOUR, 2, GETDATE()))
         """)
         count = cursor.fetchone()[0] + 1
         operation_number = f"BUT-{today}-{count:03d}"
@@ -200,7 +200,7 @@ async def create_butchery_operation(operation: ButcheryOperationCreate):
                 source_operation_type, source_operation_id,
                 idempotency_key, operation_date, metadata
             )
-            VALUES (?, 'withdrawal', ?, ?, 'butchery', ?, ?, GETDATE(), ?)
+            VALUES (?, 'withdrawal', ?, ?, 'butchery', ?, ?, DATEADD(HOUR, 2, GETDATE()), ?)
         """, operation.source_nomenclature_id, operation.input_weight, new_balance,
             operation_number, f"butchery-start-{operation.idempotency_key}",
             json.dumps({
@@ -212,7 +212,7 @@ async def create_butchery_operation(operation: ButcheryOperationCreate):
         # Оновити баланс
         cursor.execute("""
             UPDATE stock_balances
-            SET quantity = ?, last_updated = GETDATE()
+            SET quantity = ?, last_updated = DATEADD(HOUR, 2, GETDATE())
             WHERE nomenclature_id = ?
         """, new_balance, operation.source_nomenclature_id)
         
@@ -490,7 +490,7 @@ async def complete_butchery_operation(operation_id: int, completion: ButcheryOpe
                     source_operation_type, source_operation_id,
                     idempotency_key, operation_date, metadata
                 )
-                VALUES (?, 'receipt', ?, ?, 'butchery', ?, ?, GETDATE(), ?)
+                VALUES (?, 'receipt', ?, ?, 'butchery', ?, ?, DATEADD(HOUR, 2, GETDATE()), ?)
             """, output.output_nomenclature_id, output.actual_weight, new_balance,
                 operation_number, f"butchery-output-{operation_id}-{output.output_nomenclature_id}",
                 json.dumps({
@@ -504,11 +504,11 @@ async def complete_butchery_operation(operation_id: int, completion: ButcheryOpe
             cursor.execute("""
                 IF EXISTS (SELECT 1 FROM stock_balances WHERE nomenclature_id = ?)
                     UPDATE stock_balances 
-                    SET quantity = ?, last_updated = GETDATE()
+                    SET quantity = ?, last_updated = DATEADD(HOUR, 2, GETDATE())
                     WHERE nomenclature_id = ?
                 ELSE
                     INSERT INTO stock_balances (nomenclature_id, quantity, last_updated)
-                    VALUES (?, ?, GETDATE())
+                    VALUES (?, ?, DATEADD(HOUR, 2, GETDATE()))
             """, output.output_nomenclature_id, new_balance, output.output_nomenclature_id,
                 output.output_nomenclature_id, new_balance)
         
@@ -516,7 +516,7 @@ async def complete_butchery_operation(operation_id: int, completion: ButcheryOpe
         cursor.execute("""
             UPDATE butchery_operations
             SET status = 'completed',
-                completed_at = GETDATE(),
+                completed_at = DATEADD(HOUR, 2, GETDATE()),
                 operator_notes = COALESCE(?, operator_notes)
             WHERE id = ?
         """, completion.notes, operation_id)
