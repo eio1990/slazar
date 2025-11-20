@@ -511,7 +511,7 @@ async def complete_butchery_operation(operation_id: int, completion: ButcheryOpe
         cursor.execute("""
             UPDATE butchery_operations
             SET status = 'completed',
-                completed_at = GETUTCDATE(),
+                completed_at = GETDATE(),
                 operator_notes = COALESCE(?, operator_notes)
             WHERE id = ?
         """, completion.notes, operation_id)
