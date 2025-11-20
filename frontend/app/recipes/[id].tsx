@@ -243,7 +243,7 @@ export default function RecipeDetailScreen() {
               value={initialWeight}
               onChangeText={setInitialWeight}
               keyboardType="decimal-pad"
-              placeholder="Введіть вагу"
+              placeholder={availableStock > 0 ? `На складі: ${availableStock.toFixed(2)} кг` : "Введіть вагу"}
             />
 
             {/* Trim Question */}
