@@ -148,13 +148,25 @@ backend:
         agent: "main"
         comment: "Created 8 recipes with production steps: Бастурма класична, Бастурма з конини, Індичка, Курка, Свинина, Пластина, Суджук, Махан. All recipes seeded successfully with target products."
 
+  - task: "Update production recipes - remove trim step and fix nomenclature"
+    implemented: true
+    working: "NA"
+    file: "backend/update_production_recipes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created and executed update_production_recipes.py script. All 8 recipes updated: (1) Removed 'trim' step from all recipes, (2) Updated nomenclature_id in recipe_ingredients to use butchery outputs (IDs: 199, 200, 201, 202, 204, 207, 210, 211), (3) Renumbered step_order for all steps. Script executed successfully with message 'All recipes updated successfully'. Needs testing to verify: recipes have correct steps without trim, ingredient nomenclature matches butchery outputs, batch creation works with new nomenclature."
+
   - task: "Production API endpoints"
     implemented: true
     working: true
     file: "backend/production_api.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
