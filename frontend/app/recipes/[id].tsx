@@ -251,9 +251,7 @@ export default function RecipeDetailScreen() {
           
           <View style={styles.formCard}>
             <Text style={styles.label}>Початкова вага (кг) *</Text>
-            {availableStock > 0 && (
-              <Text style={styles.stockHint}>На складі: {availableStock.toFixed(2)} кг</Text>
-            )}
+            <Text style={styles.stockHint}>На складі: {availableStock.toFixed(2)} кг</Text>
             <TextInput
               style={styles.input}
               value={initialWeight}
