@@ -48,6 +48,20 @@ export default function MarinadeFormScreen() {
     },
   });
 
+  // Get stock balances
+  const { data: stockBalances } = useQuery({
+    queryKey: ['stock-balances'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/stock/balances`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+  });
+
+  const getStock = (nomenclatureId: number) => {
+    return stockBalances?.find((b: any) => b.nomenclature_id === nomenclatureId)?.quantity || 0;
+  };
+
   // Get warehouse marinade balance
   const { data: warehouseBalance } = useQuery({
     queryKey: ['warehouse-marinade'],
