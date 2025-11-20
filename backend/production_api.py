@@ -1820,7 +1820,6 @@ async def export_batches(
                 b.completed_at,
                 b.initial_weight,
                 b.final_weight,
-                b.trim_waste,
                 CASE WHEN b.final_weight > 0 AND b.initial_weight > 0 
                     THEN (b.final_weight * 100.0 / b.initial_weight) 
                     ELSE NULL END as yield_percent,
@@ -1843,11 +1842,10 @@ async def export_batches(
                 'Завершено': row[4].strftime('%d.%m.%Y %H:%M') if row[4] else '',
                 'Початкова вага (кг)': float(row[5]) if row[5] else 0,
                 'Фінальна вага (кг)': float(row[6]) if row[6] else 0,
-                'Обрізки (кг)': float(row[7]) if row[7] else 0,
-                'Вихід (%)': round(float(row[8]), 2) if row[8] else '',
-                'Очікуваний вихід мін (%)': float(row[9]) if row[9] else 0,
-                'Очікуваний вихід макс (%)': float(row[10]) if row[10] else 0,
-                'Примітки': row[11] or '',
+                'Вихід (%)': round(float(row[7]), 2) if row[7] else '',
+                'Очікуваний вихід мін (%)': float(row[8]) if row[8] else 0,
+                'Очікуваний вихід макс (%)': float(row[9]) if row[9] else 0,
+                'Примітки': row[10] or '',
             })
         
         if format == 'json':
