@@ -90,21 +90,8 @@ export default function CompleteButcheryFormScreen() {
       return;
     }
 
-    const totalActual = getTotalActualWeight();
-    const inputWeight = data.operation.input_weight;
-
-    if (totalActual > inputWeight * 1.05) {
-      Alert.alert(
-        'Увага',
-        `Сума виходів (${totalActual.toFixed(2)} кг) перевищує вхід (${inputWeight} кг) більше ніж на 5%.\n\nПродовжити?`,
-        [
-          { text: 'Скасувати', style: 'cancel' },
-          { text: 'Продовжити', onPress: () => submitCompletion() },
-        ]
-      );
-    } else {
-      submitCompletion();
-    }
+    // Просто відправити без валідації - оператор вводить реальні дані
+    submitCompletion();
   };
 
   const submitCompletion = async () => {
