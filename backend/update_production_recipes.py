@@ -19,10 +19,15 @@ def update_recipes():
         # Delete all existing steps (we'll recreate them)
         cursor.execute("DELETE FROM recipe_steps")
         cursor.execute("DELETE FROM recipe_ingredients")
+        conn.commit()
         print("✅ Cleared old steps and ingredients")
         
         # Recipe 1: Бастурма класична - uses Яловичина для бастурми
-        recipe_id = cursor.execute("SELECT id FROM recipes WHERE name = 'Бастурма класична'").fetchone()[0]
+        result = cursor.execute("SELECT id FROM recipes WHERE name = 'Бастурма класична'").fetchone()
+        if not result:
+            print("❌ Recipe 'Бастурма класична' not found")
+            return
+        recipe_id = result[0]
         
         steps_basturma = [
             (1, 'salt', 'Засолка', 3, json.dumps({'salt_per_100kg': 20.67, 'water_per_100kg': 66.67, 'massager_minutes': 40})),
