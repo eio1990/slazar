@@ -162,11 +162,6 @@ export default function ButcheryOperationDetailScreen() {
     }
   };
 
-  const totalExpectedWeight = expected_outputs.reduce(
-    (sum: number, out: any) => sum + out.expected_weight,
-    0
-  );
-
   const totalActualWeight = isCompleted
     ? actual_outputs.reduce((sum: number, out: any) => sum + out.actual_weight, 0)
     : Object.values(outputWeights).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
