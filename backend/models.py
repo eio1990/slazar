@@ -163,8 +163,6 @@ class Batch(BaseModel):
     completed_at: Optional[datetime] = None
     initial_weight: float
     final_weight: Optional[float] = None
-    trim_waste: Optional[float] = None
-    trim_returned: Optional[bool] = None
     operator_notes: Optional[str] = None
 
 class BatchComplete(BaseModel):
