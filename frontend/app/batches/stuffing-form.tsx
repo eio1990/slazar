@@ -66,7 +66,7 @@ export default function StuffingFormScreen() {
     },
   });
 
-  // Casing stock is already calculated above on line 57
+  // Casing stock is already calculated above on line 57 (removed duplicate useQuery)
 
   // Get casing nomenclature details
   const { data: nomenclature } = useQuery({
