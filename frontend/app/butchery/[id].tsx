@@ -260,12 +260,7 @@ export default function ButcheryOperationDetailScreen() {
 
             {expected_outputs.map((output: any, idx: number) => (
               <View key={idx} style={styles.inputSection}>
-                <View style={styles.outputHeader}>
-                  <Text style={styles.outputName}>{output.output_name}</Text>
-                  <Text style={styles.expectedLabel}>
-                    Очік: {output.expected_weight.toFixed(2)} кг
-                  </Text>
-                </View>
+                <Text style={styles.outputName}>{output.output_name}</Text>
                 <View style={styles.inputRow}>
                   <TextInput
                     style={styles.weightInput}
@@ -276,12 +271,6 @@ export default function ButcheryOperationDetailScreen() {
                     placeholderTextColor="#999"
                   />
                   <Text style={styles.unitText}>кг</Text>
-                  <TouchableOpacity
-                    style={styles.fillButton}
-                    onPress={() => fillWithExpected(output.output_nomenclature_id, output.expected_weight)}
-                  >
-                    <MaterialCommunityIcons name="content-copy" size={16} color="#007AFF" />
-                  </TouchableOpacity>
                 </View>
               </View>
             ))}
