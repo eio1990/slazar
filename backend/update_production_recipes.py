@@ -218,7 +218,9 @@ def update_recipes():
         print(f"✅ Updated recipe: Суджук")
         
         # Recipe 8: Махан - uses Конина для махан
-        recipe_id_makhan = cursor.execute("SELECT id FROM recipes WHERE name = 'Махан ваговий'").fetchone()[0]
+        recipe_id_makhan = 9
+        cursor.execute("DELETE FROM recipe_steps WHERE recipe_id = ?", recipe_id_makhan)
+        cursor.execute("DELETE FROM recipe_ingredients WHERE recipe_id = ?", recipe_id_makhan)
         
         steps_makhan = [
             (1, 'marinade_first', 'Перший маринад та масажер', 5, json.dumps({'marinate_days': 5, 'cold_storage': True})),
