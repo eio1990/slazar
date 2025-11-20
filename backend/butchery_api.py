@@ -13,6 +13,11 @@ from butchery_models import (
     ButcheryOperationCreate, ButcheryOperationComplete,
     ButcheryOperation, ButcheryOperationOutput
 )
+import os
+
+# Timezone offset for local time (Ukraine/Kyiv is UTC+2 in winter, UTC+3 in summer)
+# We use +2 as base offset
+TIMEZONE_OFFSET_HOURS = 2
 
 router = APIRouter(prefix="/butchery", tags=["butchery"])
 
