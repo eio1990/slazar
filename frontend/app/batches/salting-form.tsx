@@ -154,7 +154,7 @@ export default function SaltingFormScreen() {
           <View style={styles.formCard}>
             <View style={styles.labelRow}>
               <Text style={styles.label}>Сіль (кг) *</Text>
-              <Text style={styles.recommendedText}>{recommendedSalt.toFixed(2)} кг</Text>
+              <Text style={styles.recommendedText}>Рекомендована вага: {recommendedSalt.toFixed(2)} кг</Text>
             </View>
             <TextInput
               style={styles.input}
@@ -167,7 +167,7 @@ export default function SaltingFormScreen() {
 
             <View style={[styles.labelRow, { marginTop: 16 }]}>
               <Text style={styles.label}>Вода (л) *</Text>
-              <Text style={styles.recommendedText}>{recommendedWater.toFixed(2)} л</Text>
+              <Text style={styles.recommendedText}>Рекомендована вага: {recommendedWater.toFixed(2)} л</Text>
             </View>
             <TextInput
               style={styles.input}
