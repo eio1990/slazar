@@ -75,12 +75,28 @@ export default function SaltingFormScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['batch', batchId] });
       queryClient.invalidateQueries({ queryKey: ['batch-operations', batchId] });
-      Alert.alert('Успіх', 'Засолку виконано', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
+      queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Засолку виконано!',
+        text2: 'Партія успішно засолена',
+        position: 'top',
+        visibilityTime: 3000,
+      });
+      
+      setTimeout(() => {
+        router.back();
+      }, 500);
     },
     onError: (error: any) => {
-      Alert.alert('Помилка', error.message || 'Не вдалося виконати засолку');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: error.message || 'Не вдалося виконати засолку',
+        position: 'top',
+        visibilityTime: 4000,
+      });
     },
   });
 
@@ -89,12 +105,36 @@ export default function SaltingFormScreen() {
     const water = parseFloat(waterQuantity);
 
     if (isNaN(salt) || salt <= 0) {
-      Alert.alert('Помилка', 'Введіть коректну кількість солі');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: 'Введіть коректну кількість солі',
+        position: 'top',
+        visibilityTime: 3000,
+      });
       return;
     }
 
     if (isNaN(water) || water <= 0) {
-      Alert.alert('Помилка', 'Введіть коректну кількість води');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: 'Введіть коректну кількість води',
+        position: 'top',
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
+    // Check if enough salt in stock
+    if (saltStock < salt) {
+      Toast.show({
+        type: 'error',
+        text1: 'Недостатньо солі на складі!',
+        text2: `Потрібно: ${salt.toFixed(2)} кг, На складі: ${saltStock.toFixed(2)} кг`,
+        position: 'top',
+        visibilityTime: 4000,
+      });
       return;
     }
 
