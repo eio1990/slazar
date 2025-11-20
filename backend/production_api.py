@@ -336,12 +336,11 @@ async def create_batch(batch_data: BatchCreate):
         cursor.execute("""
             INSERT INTO batches (
                 batch_number, recipe_id, status, current_step,
-                initial_weight, trim_waste, trim_returned, operator_notes
+                initial_weight, operator_notes
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, batch_number, batch_data.recipe_id, 'created', 0,
-            batch_data.initial_weight, batch_data.trim_waste,
-            batch_data.trim_returned, batch_data.operator_notes)
+            batch_data.initial_weight, batch_data.operator_notes)
         
         batch_id = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
         
@@ -351,10 +350,6 @@ async def create_batch(batch_data: BatchCreate):
             main_ingredient = ingredients[0]  # Already ordered by quantity_per_100kg DESC
             ingredient_id = main_ingredient.nomenclature_id
             quantity_to_consume = batch_data.initial_weight
-            
-            # Add trim waste if not returned to stock
-            if batch_data.trim_waste and batch_data.trim_waste > 0 and not batch_data.trim_returned:
-                quantity_to_consume += batch_data.trim_waste
             
             # Get current balance for main ingredient
             cursor.execute("""
