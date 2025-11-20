@@ -44,6 +44,19 @@ export default function SaltingFormScreen() {
     },
   });
 
+  // Get stock balances
+  const { data: stockBalances } = useQuery({
+    queryKey: ['stock-balances'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/stock/balances`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+  });
+
+  // Find salt stock (nomenclature_id = 28)
+  const saltStock = stockBalances?.find((b: any) => b.nomenclature_id === 28)?.quantity || 0;
+
   const processSaltingMutation = useMutation({
     mutationFn: async (saltingData: any) => {
       const response = await fetch(`${API_URL}/api/production/batches/${batchId}/salting`, {
