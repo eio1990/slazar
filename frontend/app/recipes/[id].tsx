@@ -83,8 +83,15 @@ export default function RecipeDetailScreen() {
         router.push('/(tabs)/production' as any);
       }, 500);
     },
-    onError: (error) => {
-      Alert.alert('Помилка', 'Не вдалося створити партію');
+    onError: (error: any) => {
+      console.error('Batch creation error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка створення партії',
+        text2: error.message || 'Не вдалося створити партію',
+        position: 'top',
+        visibilityTime: 4000,
+      });
     },
   });
 
