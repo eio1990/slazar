@@ -146,23 +146,19 @@ export default function SugarFormScreen() {
             Стандартна норма: 20 г на кг м'яса (2%)\nМасажування з цукром покращує текстуру
           </Text>
 
-          <View style={styles.recommendedCard}>
-            <MaterialCommunityIcons name="lightbulb-on" size={20} color="#FF9800" />
-            <View style={styles.recommendedText}>
-              <Text style={styles.recommendedLabel}>Рекомендовано:</Text>
-              <Text style={styles.recommendedValue}>{recommendedSugar} кг цукру</Text>
-            </View>
-          </View>
-
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Фактична кількість цукру (кг) *</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Фактична кількість цукру (кг) *</Text>
+              <Text style={styles.recommendedLabel}>{recommendedSugar} кг</Text>
+            </View>
             <View style={styles.inputWrapper}>
               <MaterialCommunityIcons name="cube-outline" size={20} color="#666" />
               <TextInput
                 style={styles.input}
                 value={sugarQuantity}
                 onChangeText={setSugarQuantity}
-                placeholder={recommendedSugar}
+                placeholder={sugarStock > 0 ? `На складі: ${sugarStock.toFixed(2)} кг` : "Введіть кількість"}
+                placeholderTextColor="#999"
                 keyboardType="decimal-pad"
               />
               <Text style={styles.unit}>кг</Text>
