@@ -33,6 +33,11 @@ interface Batch {
 export default function ProductionScreen() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  // Override header right button to add analytics
+  React.useLayoutEffect(() => {
+    // This will be handled by _layout.tsx
+  }, []);
 
   const { data: batches, isLoading, error, refetch } = useQuery({
     queryKey: ['batches', statusFilter],
