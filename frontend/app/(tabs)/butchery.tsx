@@ -56,30 +56,15 @@ export default function ButcheryScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Розділка</Text>
-          <Text style={styles.headerSubtitle}>Первинна обробка сировини</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.newButton}
-          onPress={() => router.push('/butchery/select-meat-type' as any)}
-        >
-          <MaterialCommunityIcons name="plus" size={20} color="#fff" />
-          <Text style={styles.newButtonText}>Нова</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Filters */}
-      <View style={styles.filters}>
+      <View style={styles.filterContainer}>
         {filters.map((f) => (
           <TouchableOpacity
             key={f.key}
             style={[styles.filterButton, filter === f.key && styles.filterButtonActive]}
             onPress={() => setFilter(f.key)}
           >
-            <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>
+            <Text style={[styles.filterButtonText, filter === f.key && styles.filterButtonTextActive]}>
               {f.label}
             </Text>
           </TouchableOpacity>
