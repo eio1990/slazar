@@ -272,7 +272,7 @@ export default function ButcheryOperationDetailScreen() {
               <Text style={styles.cardTitle}>Введіть фактичні ваги</Text>
             </View>
 
-            {expected_outputs.map((output: any, idx: number) => (
+            {sortedExpectedOutputs.map((output: any, idx: number) => (
               <View key={idx} style={styles.inputSection}>
                 <Text style={styles.outputName}>{output.output_name}</Text>
                 <View style={styles.inputRow}>
