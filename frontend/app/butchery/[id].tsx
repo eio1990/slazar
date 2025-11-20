@@ -300,6 +300,16 @@ export default function ButcheryOperationDetailScreen() {
               <Text style={styles.totalLabel}>Загальна фактична вага:</Text>
               <Text style={styles.totalValue}>{totalActualWeight.toFixed(2)} кг</Text>
             </View>
+            
+            {/* Calculated liquid waste (стек) */}
+            {operation.input_weight && totalActualWeight > 0 && (
+              <View style={styles.liquidWasteRow}>
+                <Text style={styles.liquidWasteLabel}>Стек (автоматично):</Text>
+                <Text style={styles.liquidWasteValue}>
+                  {(operation.input_weight - totalActualWeight).toFixed(2)} кг
+                </Text>
+              </View>
+            )}
 
             {/* Notes */}
             <View style={styles.notesSection}>
