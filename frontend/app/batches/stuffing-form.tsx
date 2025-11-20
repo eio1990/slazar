@@ -44,6 +44,18 @@ export default function StuffingFormScreen() {
     ? (parseFloat(startWeight) - parseFloat(endWeight)).toFixed(2)
     : '0.00';
 
+  // Get stock balances
+  const { data: stockBalances } = useQuery({
+    queryKey: ['stock-balances'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/stock/balances`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+  });
+
+  const casingStock = stockBalances?.find((b: any) => b.nomenclature_id === casingId)?.quantity || 0;
+
   // Get batch details
   const { data: batch, isLoading: batchLoading } = useQuery({
     queryKey: ['batch', batchId],
