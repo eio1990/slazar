@@ -84,9 +84,7 @@ export default function ButcheryOperationDetailScreen() {
     setOutputWeights(prev => ({ ...prev, [outputId]: value }));
   };
 
-  const fillWithExpected = (outputId: number, expectedWeight: number) => {
-    setOutputWeights(prev => ({ ...prev, [outputId]: expectedWeight.toFixed(2) }));
-  };
+  // Removed fillWithExpected function - not needed anymore
 
   const handleComplete = async () => {
     // Validate weights
