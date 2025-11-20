@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 
 # Backend URL from environment
-BACKEND_URL = "https://butchery-app-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://meat-tracker-5.preview.emergentagent.com/api"
 
 def test_spice_deduction_comprehensive():
     """Comprehensive test of spice deduction functionality"""

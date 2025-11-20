@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://butchery-app-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://meat-tracker-5.preview.emergentagent.com/api"
 SUDJUK_RECIPE_ID = 8  # Sudjuk recipe
 CASING_SUDJUK_ID = 42  # Casing for Sudjuk
 

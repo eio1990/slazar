@@ -9,7 +9,7 @@ import sys
 from datetime import datetime
 
 # Get backend URL from environment
-BACKEND_URL = "https://butchery-app-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://meat-tracker-5.preview.emergentagent.com/api"
 
 # Expected nomenclature mappings after update
 EXPECTED_NOMENCLATURE = {
