@@ -43,7 +43,7 @@ def update_recipes():
         # Update ingredient to use "Яловичина для бастурми"
         cursor.execute("""
             INSERT INTO recipe_ingredients (recipe_id, nomenclature_id, quantity_per_100kg, is_optional, notes)
-            VALUES (?, (SELECT id FROM nomenclature WHERE name = 'Яловичина для бастурми'), 100.0, 0, 'Оброблене м''ясо після розділки')
+            VALUES (?, 199, 100.0, 0, 'Оброблене м''ясо після розділки')
         """, recipe_id)
         
         print(f"✅ Updated recipe: Бастурма класична")
