@@ -147,51 +147,35 @@ export default function SaltingFormScreen() {
           </View>
         </View>
 
-        {/* Recommended Quantities */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Рекомендована кількість</Text>
-          <View style={styles.recommendedCard}>
-            <View style={styles.recommendedRow}>
-              <MaterialCommunityIcons name="shaker" size={24} color="#2196F3" />
-              <View style={styles.recommendedInfo}>
-                <Text style={styles.recommendedLabel}>Сіль</Text>
-                <Text style={styles.recommendedValue}>{recommendedSalt.toFixed(2)} кг</Text>
-                <Text style={styles.recommendedNote}>({saltPer100} кг на 100 кг сировини)</Text>
-              </View>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.recommendedRow}>
-              <MaterialCommunityIcons name="water" size={24} color="#03A9F4" />
-              <View style={styles.recommendedInfo}>
-                <Text style={styles.recommendedLabel}>Вода</Text>
-                <Text style={styles.recommendedValue}>{recommendedWater.toFixed(2)} л</Text>
-                <Text style={styles.recommendedNote}>({waterPer100} л на 100 кг сировини)</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
         {/* Input Form */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Фактична кількість</Text>
+          <Text style={styles.sectionTitle}>Введіть фактичну кількість</Text>
           
           <View style={styles.formCard}>
-            <Text style={styles.label}>Сіль (кг) *</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Сіль (кг) *</Text>
+              <Text style={styles.recommendedText}>{recommendedSalt.toFixed(2)} кг</Text>
+            </View>
             <TextInput
               style={styles.input}
               value={saltQuantity}
               onChangeText={setSaltQuantity}
               keyboardType="decimal-pad"
-              placeholder="Введіть кількість солі"
+              placeholder={saltStock > 0 ? `На складі: ${saltStock.toFixed(2)} кг` : "Введіть кількість"}
+              placeholderTextColor="#999"
             />
 
-            <Text style={[styles.label, { marginTop: 16 }]}>Вода (л) *</Text>
+            <View style={[styles.labelRow, { marginTop: 16 }]}>
+              <Text style={styles.label}>Вода (л) *</Text>
+              <Text style={styles.recommendedText}>{recommendedWater.toFixed(2)} л</Text>
+            </View>
             <TextInput
               style={styles.input}
               value={waterQuantity}
               onChangeText={setWaterQuantity}
               keyboardType="decimal-pad"
               placeholder="Введіть кількість води"
+              placeholderTextColor="#999"
             />
 
             <Text style={[styles.label, { marginTop: 16 }]}>Примітки</Text>
