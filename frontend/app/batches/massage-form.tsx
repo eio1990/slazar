@@ -146,23 +146,19 @@ export default function MassageFormScreen() {
             Стандартна норма: 15 л на 100 кг м'яса\nМасажування з водою покращує консистенцію
           </Text>
 
-          <View style={styles.recommendedCard}>
-            <MaterialCommunityIcons name="water" size={20} color="#2196F3" />
-            <View style={styles.recommendedText}>
-              <Text style={styles.recommendedLabel}>Рекомендовано:</Text>
-              <Text style={styles.recommendedValue}>{recommendedWater} л води</Text>
-            </View>
-          </View>
-
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Фактична кількість води (л) *</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Фактична кількість води (л) *</Text>
+              <Text style={styles.recommendedLabel}>{recommendedWater} л</Text>
+            </View>
             <View style={styles.inputWrapper}>
               <MaterialCommunityIcons name="water" size={20} color="#666" />
               <TextInput
                 style={styles.input}
                 value={waterQuantity}
                 onChangeText={setWaterQuantity}
-                placeholder={recommendedWater}
+                placeholder="Введіть кількість води"
+                placeholderTextColor="#999"
                 keyboardType="decimal-pad"
               />
               <Text style={styles.unit}>л</Text>
