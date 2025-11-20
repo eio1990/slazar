@@ -58,18 +58,25 @@ export default function MixFormScreen() {
     enabled: !!recipeId,
   });
 
-  // Get warehouse mix balance
-  const { data: warehouseBalance } = useQuery({
-    queryKey: ['stock-balance', mixId],
+  // Get all stock balances
+  const { data: stockBalances } = useQuery({
+    queryKey: ['stock-balances'],
     queryFn: async () => {
       const response = await fetch(`${API_URL}/api/stock/balances`);
-      if (!response.ok) return 0;
-      const balances = await response.json();
-      const mix = balances.find((b: any) => b.nomenclature_id === parseInt(mixId as string));
-      return mix ? parseFloat(mix.quantity) : 0;
+      if (!response.ok) return [];
+      return response.json();
     },
-    enabled: !!mixId,
   });
+
+  // Get warehouse mix balance
+  const warehouseBalance = stockBalances?.find(
+    (b: any) => b.nomenclature_id === parseInt(mixId as string)
+  )?.quantity || 0;
+
+  // Helper to get stock for a nomenclature
+  const getStock = (nomenclatureId: number) => {
+    return stockBalances?.find((b: any) => b.nomenclature_id === nomenclatureId)?.quantity || 0;
+  };
 
   const produceMixMutation = useMutation({
     mutationFn: async (mixData: any) => {
