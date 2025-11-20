@@ -320,7 +320,7 @@ export default function OperationsScreen() {
         {/* Price per unit (only for receipt) */}
         {operationType === 'receipt' && (
           <View style={styles.formSection}>
-            <Text style={styles.label}>Ціна за одиницю (необов'язково)</Text>
+            <Text style={styles.label}>Ціна за одиницю *</Text>
             <TextInput
               style={styles.input}
               placeholder={`Ціна за ${selectedItem?.unit || 'одиницю'} (грн)`}
