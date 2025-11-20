@@ -220,22 +220,6 @@ export default function InputWeightScreen() {
           />
         </View>
 
-        {/* Expected outputs preview */}
-        {weight && parseFloat(weight) > 0 && selectedRecipe.outputs && (
-          <View style={styles.previewCard}>
-            <Text style={styles.previewTitle}>Очікувані виходи при {weight} кг:</Text>
-            {selectedRecipe.outputs.map((output: any, idx: number) => {
-              const expectedWeight = (parseFloat(weight) * output.yield_percentage) / 100;
-              return (
-                <View key={idx} style={styles.previewRow}>
-                  <Text style={styles.previewName}>{output.output_name}</Text>
-                  <Text style={styles.previewValue}>{expectedWeight.toFixed(2)} кг</Text>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
         {/* Start button */}
         <TouchableOpacity
           style={[styles.startButton, isSubmitting && styles.startButtonDisabled]}
