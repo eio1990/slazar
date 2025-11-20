@@ -435,8 +435,7 @@ async def get_batches(status: str = None):
         query = """
             SELECT b.id, b.batch_number, b.recipe_id, r.name as recipe_name,
                    b.status, b.current_step, b.started_at, b.completed_at,
-                   b.initial_weight, b.final_weight, b.trim_waste,
-                   b.trim_returned, b.operator_notes
+                   b.initial_weight, b.final_weight, b.operator_notes
             FROM batches b
             LEFT JOIN recipes r ON b.recipe_id = r.id
         """
@@ -460,8 +459,6 @@ async def get_batches(status: str = None):
                 completed_at=row.completed_at,
                 initial_weight=float(row.initial_weight),
                 final_weight=float(row.final_weight) if row.final_weight else None,
-                trim_waste=float(row.trim_waste) if row.trim_waste else None,
-                trim_returned=row.trim_returned,
                 operator_notes=row.operator_notes
             ))
         
