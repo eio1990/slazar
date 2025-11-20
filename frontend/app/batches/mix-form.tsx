@@ -245,7 +245,12 @@ export default function MixFormScreen() {
                   }))
                 }
                 keyboardType="decimal-pad"
-                placeholder="Введіть вагу (кг)"
+                placeholder={
+                  getStock(spice.nomenclature_id) > 0 
+                    ? `На складі: ${getStock(spice.nomenclature_id).toFixed(2)} кг` 
+                    : "Введіть вагу (кг)"
+                }
+                placeholderTextColor="#999"
               />
             </View>
           ))}
