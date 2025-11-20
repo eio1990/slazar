@@ -197,12 +197,15 @@ export default function SaltingFormScreen() {
               <Text style={styles.label}>Сіль (кг) *</Text>
               <Text style={styles.recommendedText}>Рекомендована вага: {recommendedSalt.toFixed(2)} кг</Text>
             </View>
+            {saltStock > 0 && (
+              <Text style={styles.stockHint}>На складі: {saltStock.toFixed(2)} кг</Text>
+            )}
             <TextInput
               style={styles.input}
               value={saltQuantity}
               onChangeText={setSaltQuantity}
               keyboardType="decimal-pad"
-              placeholder={saltStock > 0 ? `На складі: ${saltStock.toFixed(2)} кг` : "Введіть кількість"}
+              placeholder="Введіть кількість"
               placeholderTextColor="#999"
             />
 
