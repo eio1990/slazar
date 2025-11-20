@@ -162,8 +162,29 @@ export default function ButcheryOperationDetailScreen() {
     }
   };
 
+  // Sort outputs in specific order
+  const getSortOrder = (outputName: string): number => {
+    const name = outputName.toLowerCase();
+    if (name.includes('перший') || name.includes('першого')) return 1;
+    if (name.includes('другий') || name.includes('другого')) return 2;
+    if (name.includes('бастурм')) return 3;
+    if (name.includes('суджук') || name.includes('ковбас')) return 4;
+    if (name.includes('пластин')) return 5;
+    if (name.includes('стек')) return 6;
+    if (name.includes('відход')) return 7;
+    return 8;
+  };
+
+  const sortedExpectedOutputs = expected_outputs?.slice().sort((a: any, b: any) => 
+    getSortOrder(a.output_name) - getSortOrder(b.output_name)
+  ) || [];
+
+  const sortedActualOutputs = actual_outputs?.slice().sort((a: any, b: any) => 
+    getSortOrder(a.output_name) - getSortOrder(b.output_name)
+  ) || [];
+
   const totalActualWeight = isCompleted
-    ? actual_outputs.reduce((sum: number, out: any) => sum + out.actual_weight, 0)
+    ? sortedActualOutputs.reduce((sum: number, out: any) => sum + out.actual_weight, 0)
     : Object.values(outputWeights).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
 
   return (
