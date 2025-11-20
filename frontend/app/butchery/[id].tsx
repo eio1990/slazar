@@ -171,7 +171,6 @@ export default function ButcheryOperationDetailScreen() {
             <View key={idx} style={styles.outputRow}>
               <View style={styles.outputInfo}>
                 <Text style={styles.outputName}>{output.output_name}</Text>
-                <Text style={styles.outputPercentage}>{output.yield_percentage}%</Text>
               </View>
               <Text style={styles.outputWeight}>{output.expected_weight.toFixed(2)} кг</Text>
             </View>
