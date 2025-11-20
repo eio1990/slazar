@@ -159,7 +159,7 @@ async def create_packaging_batch(batch_data: PackagingBatchCreate):
                 status, planned_quantity, source_weight_taken,
                 operator_notes, started_at
             )
-            VALUES (?, ?, ?, ?, 'in_progress', ?, ?, ?, GETUTCDATE())
+            VALUES (?, ?, ?, ?, 'in_progress', ?, ?, ?, GETDATE())
         """, batch_number, batch_data.recipe_id, recipe.source_product_id,
             recipe.target_product_id, batch_data.planned_quantity,
             batch_data.source_weight_taken, batch_data.notes)
@@ -417,7 +417,7 @@ async def record_packaging_operation(batch_id: int, operation_data: PackagingOpe
                     source_operation_type, source_operation_id,
                     idempotency_key, operation_date, metadata
                 )
-                VALUES (?, 'withdrawal', ?, ?, 'packaging_material', ?, ?, GETUTCDATE(), ?)
+                VALUES (?, 'withdrawal', ?, ?, 'packaging_material', ?, ?, GETDATE(), ?)
             """, material_id, quantity, new_balance, batch.batch_number, movement_key,
                 json.dumps({
                     'batch_id': batch_id,
@@ -430,7 +430,7 @@ async def record_packaging_operation(batch_id: int, operation_data: PackagingOpe
             # Обновляем баланс
             cursor.execute("""
                 UPDATE stock_balances
-                SET quantity = ?, last_updated = GETUTCDATE()
+                SET quantity = ?, last_updated = GETDATE()
                 WHERE nomenclature_id = ?
             """, new_balance, material_id)
             
@@ -448,7 +448,7 @@ async def record_packaging_operation(batch_id: int, operation_data: PackagingOpe
             SET actual_packed_quantity = actual_packed_quantity + ?,
                 actual_source_used = actual_source_used + ?,
                 waste_quantity = waste_quantity + ?,
-                updated_at = GETUTCDATE()
+                updated_at = GETDATE()
             WHERE id = ?
         """, operation_data.packed_quantity, operation_data.source_used,
             operation_data.waste_quantity, batch_id)
@@ -487,8 +487,8 @@ async def complete_packaging_batch(batch_id: int, completion: PackagingBatchComp
                 actual_source_used = ?,
                 waste_quantity = ?,
                 operator_notes = ?,
-                completed_at = GETUTCDATE(),
-                updated_at = GETUTCDATE()
+                completed_at = GETDATE(),
+                updated_at = GETDATE()
             WHERE id = ?
         """, completion.final_packed_quantity, completion.final_source_used,
             completion.final_waste, completion.notes, batch_id)
@@ -517,7 +517,7 @@ async def complete_packaging_batch(batch_id: int, completion: PackagingBatchComp
                     source_operation_type, source_operation_id,
                     idempotency_key, operation_date, metadata
                 )
-                VALUES (?, 'withdrawal', ?, ?, 'packaging_source', ?, ?, GETUTCDATE(), ?)
+                VALUES (?, 'withdrawal', ?, ?, 'packaging_source', ?, ?, GETDATE(), ?)
             """, batch.source_product_id, completion.final_source_used, new_balance,
                 batch.batch_number, source_withdrawal_key,
                 json.dumps({
@@ -529,7 +529,7 @@ async def complete_packaging_batch(batch_id: int, completion: PackagingBatchComp
             # Обновляем баланс
             cursor.execute("""
                 UPDATE stock_balances
-                SET quantity = ?, last_updated = GETUTCDATE()
+                SET quantity = ?, last_updated = GETDATE()
                 WHERE nomenclature_id = ?
             """, new_balance, batch.source_product_id)
         
@@ -558,7 +558,7 @@ async def complete_packaging_batch(batch_id: int, completion: PackagingBatchComp
                     source_operation_type, source_operation_id,
                     idempotency_key, operation_date, metadata
                 )
-                VALUES (?, 'receipt', ?, ?, 'packaging_output', ?, ?, GETUTCDATE(), ?)
+                VALUES (?, 'receipt', ?, ?, 'packaging_output', ?, ?, GETDATE(), ?)
             """, batch.target_product_id, completion.final_packed_quantity, new_target_balance,
                 batch.batch_number, receipt_key,
                 json.dumps({
@@ -571,11 +571,11 @@ async def complete_packaging_batch(batch_id: int, completion: PackagingBatchComp
             cursor.execute("""
                 IF EXISTS (SELECT 1 FROM stock_balances WHERE nomenclature_id = ?)
                     UPDATE stock_balances
-                    SET quantity = ?, last_updated = GETUTCDATE()
+                    SET quantity = ?, last_updated = GETDATE()
                     WHERE nomenclature_id = ?
                 ELSE
                     INSERT INTO stock_balances (nomenclature_id, quantity, last_updated)
-                    VALUES (?, ?, GETUTCDATE())
+                    VALUES (?, ?, GETDATE())
             """, batch.target_product_id, new_target_balance, batch.target_product_id,
                 batch.target_product_id, new_target_balance)
         
