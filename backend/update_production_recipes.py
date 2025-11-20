@@ -49,7 +49,9 @@ def update_recipes():
         print(f"✅ Updated recipe: Бастурма класична")
         
         # Recipe 2: Бастурма з конини - uses Конина для бастурми
-        recipe_id_horse = cursor.execute("SELECT id FROM recipes WHERE name = 'Бастурма з конини вагова'").fetchone()[0]
+        recipe_id_horse = 3
+        cursor.execute("DELETE FROM recipe_steps WHERE recipe_id = ?", recipe_id_horse)
+        cursor.execute("DELETE FROM recipe_ingredients WHERE recipe_id = ?", recipe_id_horse)
         
         steps_horse = [
             (1, 'salt', 'Засолка', 3, json.dumps({'salt_per_100kg': 20.67, 'water_per_100kg': 66.67, 'massager_minutes': 40})),
