@@ -72,60 +72,42 @@ export default function ButcheryScreen() {
       </View>
 
       {/* Content */}
-      <ScrollView
-        style={styles.content}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
-      >
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-          </View>
-        ) : !operations || operations.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="knife" size={60} color="#ccc" />
-            <Text style={styles.emptyText}>Операцій розділки немає</Text>
-            <Text style={styles.emptyHint}>Почніть нову розділку</Text>
-          </View>
-        ) : (
-          operations.map((operation: any) => (
-            <TouchableOpacity
-              key={operation.id}
-              style={styles.operationCard}
-              onPress={() => router.push(`/butchery/${operation.id}` as any)}
-            >
-              <View style={styles.operationHeader}>
-                <View style={styles.operationTitleRow}>
-                  <MaterialCommunityIcons name="knife" size={20} color="#007AFF" />
-                  <Text style={styles.operationNumber}>{operation.operation_number}</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(operation.status) }]}>
-                  <Text style={styles.statusText}>{getStatusText(operation.status)}</Text>
-                </View>
+      <FlatList
+        data={operations}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.operationCard}
+            onPress={() => router.push(`/butchery/${item.id}` as any)}
+          >
+            <View style={styles.operationHeader}>
+              <View style={styles.operationTitleRow}>
+                <MaterialCommunityIcons name="knife" size={20} color="#4CAF50" />
+                <Text style={styles.operationNumber}>{item.operation_number}</Text>
               </View>
-
-              <View style={styles.operationInfo}>
-                <Text style={styles.recipeName}>{operation.recipe_name}</Text>
-                <View style={styles.sourceRow}>
-                  <MaterialCommunityIcons name="arrow-right" size={16} color="#666" />
-                  <Text style={styles.sourceName}>{operation.source_name}</Text>
-                </View>
+              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+                <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
               </View>
+            </View>
 
-              <View style={styles.weightRow}>
-                <View style={styles.weightItem}>
-                  <Text style={styles.weightLabel}>Вхід:</Text>
-                  <Text style={styles.weightValue}>{operation.input_weight} кг</Text>
-                </View>
-                {operation.status === 'in_progress' && (
-                  <View style={styles.pendingBadge}>
-                    <Text style={styles.pendingText}>Очікує завершення</Text>
-                  </View>
-                )}
+            <Text style={styles.recipeName}>{item.recipe_name}</Text>
+            
+            <View style={styles.detailsContainer}>
+              <View style={styles.detailRow}>
+                <MaterialCommunityIcons name="arrow-right" size={16} color="#666" />
+                <Text style={styles.detailText}>{item.source_name}</Text>
               </View>
-
-              <View style={styles.operationFooter}>
-                <Text style={styles.footerText}>
-                  {new Date(operation.started_at).toLocaleDateString('uk-UA', {
+              
+              <View style={styles.detailRow}>
+                <MaterialCommunityIcons name="weight-kilogram" size={16} color="#666" />
+                <Text style={styles.detailText}>
+                  Вага: {item.input_weight} кг
+                </Text>
+              </View>
+              
+              <View style={styles.detailRow}>
+                <MaterialCommunityIcons name="clock-outline" size={16} color="#666" />
+                <Text style={styles.detailText}>
+                  {new Date(item.started_at).toLocaleDateString('uk-UA', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
@@ -133,12 +115,33 @@ export default function ButcheryScreen() {
                     minute: '2-digit',
                   })}
                 </Text>
-                <MaterialCommunityIcons name="chevron-right" size={20} color="#999" />
               </View>
-            </TouchableOpacity>
-          ))
+            </View>
+          </TouchableOpacity>
         )}
-      </ScrollView>
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={['#4CAF50']} />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <MaterialCommunityIcons name="knife" size={64} color="#ccc" />
+            <Text style={styles.emptyText}>Немає операцій</Text>
+            <Text style={styles.emptySubtext}>
+              Натисніть "+" щоб створити нову операцію розділки
+            </Text>
+          </View>
+        }
+      />
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/butchery/select-meat-type' as any)}
+      >
+        <MaterialCommunityIcons name="plus" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
