@@ -188,7 +188,9 @@ def update_recipes():
         print(f"✅ Updated recipe: Пластина яловичина")
         
         # Recipe 7: Суджук - uses Яловичина для суджука
-        recipe_id_sujuk = cursor.execute("SELECT id FROM recipes WHERE name = 'Суджук ваговий'").fetchone()[0]
+        recipe_id_sujuk = 8
+        cursor.execute("DELETE FROM recipe_steps WHERE recipe_id = ?", recipe_id_sujuk)
+        cursor.execute("DELETE FROM recipe_ingredients WHERE recipe_id = ?", recipe_id_sujuk)
         
         steps_sujuk = [
             (1, 'marinade_spices', 'Замішування зі специями', 2, json.dumps({'marinate_days': 2})),
