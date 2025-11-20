@@ -43,26 +43,25 @@ export default function InputWeightScreen() {
     let searchTerm = '';
     
     if (meatType === 'beef') {
-      if (grade === 'premium') searchTerm = 'вищій';
-      else if (grade === 'first') searchTerm = 'перший';
-      else if (grade === 'second') searchTerm = 'другий';
-      else if (grade === 'carcass') searchTerm = 'туша';
+      if (grade === 'premium') searchTerm = 'яловичини вищого';
+      else if (grade === 'first') searchTerm = 'яловичини першого';
+      else if (grade === 'second') searchTerm = 'яловичини другого';
+      else if (grade === 'carcass') searchTerm = 'туші яловичини';
     } else if (meatType === 'horse') {
-      if (grade === 'premium') searchTerm = 'конина вищій';
-      else if (grade === 'first') searchTerm = 'конина перший';
-      else if (grade === 'second') searchTerm = 'конина другий';
-      else if (grade === 'carcass') searchTerm = 'конина туша';
+      if (grade === 'premium') searchTerm = 'конини вищого';
+      else if (grade === 'first') searchTerm = 'конини першого';
+      else if (grade === 'second') searchTerm = 'конини другого';
+      else if (grade === 'carcass') searchTerm = 'туші конини';
     } else if (meatType === 'pork') {
-      searchTerm = 'свинина';
+      searchTerm = 'свинини';
     } else if (meatType === 'chicken') {
-      searchTerm = 'курка';
+      searchTerm = 'курки';
     } else if (meatType === 'turkey') {
-      searchTerm = 'індик';
+      searchTerm = 'індички';
     }
 
     return recipes.find((r: any) => 
-      r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.source_name.toLowerCase().includes(searchTerm.toLowerCase())
+      r.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
 
