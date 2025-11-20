@@ -404,15 +404,7 @@ async def complete_butchery_operation(operation_id: int, completion: ButcheryOpe
         input_weight = float(op_row[1])
         recipe_id = op_row[2]
         
-        # Валідація: сума виходів не повинна перевищувати вхід більше ніж на 5%
-        total_output = sum(out.actual_weight for out in completion.outputs)
-        if total_output > input_weight * 1.05:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Сума виходів ({total_output:.2f} кг) перевищує вхід ({input_weight:.2f} кг) більше ніж на 5%"
-            )
-        
-        # Отримати очікувані виходи для порівняння
+        # Отримати очікувані виходи для довідки (тільки для аналітики, без валідації)
         cursor.execute("""
             SELECT bro.output_nomenclature_id, bro.yield_percentage
             FROM butchery_recipe_outputs bro
