@@ -79,7 +79,9 @@ def update_recipes():
         print(f"✅ Updated recipe: Бастурма з конини")
         
         # Recipe 3: Свинина сировялена - uses Свинина для банкетної
-        recipe_id_pork = cursor.execute("SELECT id FROM recipes WHERE name = 'Свинина сировялена'").fetchone()[0]
+        recipe_id_pork = 6
+        cursor.execute("DELETE FROM recipe_steps WHERE recipe_id = ?", recipe_id_pork)
+        cursor.execute("DELETE FROM recipe_ingredients WHERE recipe_id = ?", recipe_id_pork)
         
         steps_pork = [
             (1, 'salt', 'Засолка', 3, json.dumps({'salt_per_100kg': 21.0, 'water_per_100kg': 25.0, 'massager_minutes': 40})),
