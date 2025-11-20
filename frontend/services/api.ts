@@ -66,27 +66,22 @@ export async function checkNetworkConnectivity(): Promise<boolean> {
   try {
     console.log('[Network Check] Checking connectivity to:', BASE_URL);
     
-    // Просто пінгуємо backend напряму
+    // Просто пінгуємо backend через легкий GET запит
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     
-    const response = await fetch(`${BASE_URL}/api/nomenclature`, {
-      method: 'HEAD',
+    const response = await fetch(`${BASE_URL}/api/stock/balances`, {
+      method: 'GET',
       signal: controller.signal,
     });
     
     clearTimeout(timeoutId);
-    const isOnline = response.ok;
-    console.log('[Network Check] Result:', isOnline ? 'ONLINE' : 'OFFLINE', 'Status:', response.status);
+    const isOnline = response.ok || response.status === 404; // 404 теж означає що backend доступний
+    console.log('[Network Check] Result:', isOnline ? 'ONLINE ✅' : 'OFFLINE ❌', 'Status:', response.status);
     return isOnline;
   } catch (error: any) {
     console.log('[Network Check] Failed:', error.message || error);
     // Якщо помилка мережі - вважаємо що офлайн
-    // Але якщо просто timeout - можна спробувати працювати онлайн
-    if (error.name === 'AbortError') {
-      console.log('[Network Check] Timeout - assuming ONLINE');
-      return true; // Можливо backend повільний, але працює
-    }
     return false;
   }
 }
