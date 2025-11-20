@@ -150,15 +150,18 @@ backend:
 
   - task: "Update production recipes - remove trim step and fix nomenclature"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/update_production_recipes.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Created and executed update_production_recipes.py script. All 8 recipes updated: (1) Removed 'trim' step from all recipes, (2) Updated nomenclature_id in recipe_ingredients to use butchery outputs (IDs: 199, 200, 201, 202, 204, 207, 210, 211), (3) Renumbered step_order for all steps. Script executed successfully with message 'All recipes updated successfully'. Needs testing to verify: recipes have correct steps without trim, ingredient nomenclature matches butchery outputs, batch creation works with new nomenclature."
+      - working: true
+        agent: "testing"
+        comment: "✅ PRODUCTION RECIPE UPDATE TESTING COMPLETED SUCCESSFULLY: Comprehensive testing of all 8 updated recipes completed with 100% success rate (4/4 tests passed). Key findings: (1) ✅ ALL 8 RECIPES RETRIEVED: GET /api/production/recipes returns all expected recipes with correct IDs (2, 3, 4, 5, 6, 7, 8, 9), (2) ✅ TRIM STEP REMOVAL VERIFIED: All recipes confirmed to have NO trim steps - first steps are now salt/marinade/grind as expected, step orders start from 1, (3) ✅ NOMENCLATURE MAPPING CORRECT: All recipes use correct butchery output nomenclature - Recipe 2→ID 199 (Яловичина для бастурми), Recipe 3→ID 202 (Конина для бастурми), Recipe 4→ID 211 (Індичка для бастурми), Recipe 5→ID 210 (Курка для суджука), Recipe 6→ID 207 (Свинина для банкетної), Recipe 7→ID 200 (Яловичина для пластин), Recipe 8→ID 201 (Яловичина для суджука), Recipe 9→ID 204 (Конина для махан), (4) ✅ BATCH CREATION WORKING: Successfully created test batch (BAST-20112025-1) with Recipe 2 using new nomenclature ID 199, stock deduction confirmed, (5) ✅ STEP ORDER VERIFICATION: All recipes have sequential step orders starting from 1 - Recipe 2 (7 steps), Recipe 3 (9 steps), Recipe 4 (7 steps), Recipe 5 (7 steps), Recipe 6 (7 steps), Recipe 7 (4 steps), Recipe 8 (9 steps), Recipe 9 (5 steps). The production recipe update script has been successfully implemented and all requirements met: trim steps removed, nomenclature updated to butchery outputs, step orders renumbered, batch creation functional with new nomenclature."
 
   - task: "Production API endpoints"
     implemented: true
