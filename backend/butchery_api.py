@@ -485,7 +485,7 @@ async def complete_butchery_operation(operation_id: int, completion: ButcheryOpe
                     source_operation_type, source_operation_id,
                     idempotency_key, operation_date, metadata
                 )
-                VALUES (?, 'receipt', ?, ?, 'butchery', ?, ?, GETUTCDATE(), ?)
+                VALUES (?, 'receipt', ?, ?, 'butchery', ?, ?, GETDATE(), ?)
             """, output.output_nomenclature_id, output.actual_weight, new_balance,
                 operation_number, f"butchery-output-{operation_id}-{output.output_nomenclature_id}",
                 json.dumps({
@@ -499,11 +499,11 @@ async def complete_butchery_operation(operation_id: int, completion: ButcheryOpe
             cursor.execute("""
                 IF EXISTS (SELECT 1 FROM stock_balances WHERE nomenclature_id = ?)
                     UPDATE stock_balances 
-                    SET quantity = ?, last_updated = GETUTCDATE()
+                    SET quantity = ?, last_updated = GETDATE()
                     WHERE nomenclature_id = ?
                 ELSE
                     INSERT INTO stock_balances (nomenclature_id, quantity, last_updated)
-                    VALUES (?, ?, GETUTCDATE())
+                    VALUES (?, ?, GETDATE())
             """, output.output_nomenclature_id, new_balance, output.output_nomenclature_id,
                 output.output_nomenclature_id, new_balance)
         
