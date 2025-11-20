@@ -149,7 +149,7 @@ export default function SugarFormScreen() {
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
               <Text style={styles.label}>Фактична кількість цукру (кг) *</Text>
-              <Text style={styles.recommendedLabel}>{recommendedSugar} кг</Text>
+              <Text style={styles.recommendedLabel}>Рекомендована вага: {recommendedSugar} кг</Text>
             </View>
             <View style={styles.inputWrapper}>
               <MaterialCommunityIcons name="cube-outline" size={20} color="#666" />
