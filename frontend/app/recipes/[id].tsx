@@ -486,4 +486,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
+  stockHint: {
+    fontSize: 14,
+    color: '#4CAF50',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
 });
