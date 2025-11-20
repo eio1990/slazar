@@ -498,6 +498,11 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
   },
+  unitLabel: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#4CAF50',
+  },
   selectButton: {
     flexDirection: 'row',
     alignItems: 'center',
