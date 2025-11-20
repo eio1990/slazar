@@ -8,6 +8,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { apiService, StockMovement, checkNetworkConnectivity, getOfflineQueue, clearOfflineQueue } from '../../services/api';
@@ -22,14 +23,27 @@ interface MovementWithName extends StockMovement {
 export default function HistoryScreen() {
   const { isOnline, isSyncing, setIsSyncing, setPendingOperationsCount } = useStore();
   const [movements, setMovements] = useState<MovementWithName[]>([]);
+  const [filteredMovements, setFilteredMovements] = useState<MovementWithName[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [pendingOpsCount, setPendingOps] = useState(0);
+  const [operationTypeFilter, setOperationTypeFilter] = useState<string>('all');
 
   useEffect(() => {
     loadMovements();
     checkPendingOperations();
   }, []);
+
+  useEffect(() => {
+    // Filter movements based on selected operation type
+    if (operationTypeFilter === 'all') {
+      setFilteredMovements(movements);
+    } else {
+      setFilteredMovements(
+        movements.filter(m => m.operation_type === operationTypeFilter)
+      );
+    }
+  }, [operationTypeFilter, movements]);
 
   const loadMovements = async (showLoader = true) => {
     try {
@@ -38,7 +52,8 @@ export default function HistoryScreen() {
       
       if (online) {
         const [movementsData, nomenclature] = await Promise.all([
-          apiService.getMovements({ limit: 100 }),
+          // Увеличиваем лимит для загрузки старых записей
+          apiService.getMovements({ limit: 500 }),
           apiService.getNomenclature(),
         ]);
         
@@ -133,6 +148,7 @@ export default function HistoryScreen() {
   const getOperationIcon = (type: string) => {
     if (type === 'receipt') return 'arrow-down-bold';
     if (type === 'withdrawal') return 'arrow-up-bold';
+    if (type.includes('production')) return 'factory';
     if (type.includes('inventory')) return 'clipboard-check';
     return 'swap-horizontal';
   };
@@ -140,22 +156,32 @@ export default function HistoryScreen() {
   const getOperationColor = (type: string) => {
     if (type === 'receipt') return '#4CAF50';
     if (type === 'withdrawal') return '#FF5722';
-    if (type.includes('inventory')) return '#2196F3';
+    if (type.includes('production')) return '#2196F3';
+    if (type.includes('inventory')) return '#FF9800';
     return '#666';
   };
 
   const getOperationLabel = (type: string) => {
     if (type === 'receipt') return 'Прихід';
     if (type === 'withdrawal') return 'Розхід';
+    if (type === 'production_withdrawal') return 'Виробництво';
+    if (type === 'butchery_withdrawal') return 'Розділка';
     if (type === 'inventory_adjustment_receipt') return 'Інвентаризація +';
     if (type === 'inventory_adjustment_withdrawal') return 'Інвентаризація -';
     return type;
   };
 
+  const filters = [
+    { key: 'all', label: 'Всі', icon: 'format-list-bulleted' },
+    { key: 'receipt', label: 'Прихід', icon: 'arrow-down-bold' },
+    { key: 'withdrawal', label: 'Розхід', icon: 'arrow-up-bold' },
+    { key: 'production_withdrawal', label: 'Виробництво', icon: 'factory' },
+  ];
+
   const renderMovement = ({ item }: { item: MovementWithName }) => {
     const operationColor = getOperationColor(item.operation_type);
     const operationLabel = getOperationLabel(item.operation_type);
-    const sign = item.operation_type === 'withdrawal' ? '-' : '+';
+    const sign = item.operation_type === 'withdrawal' || item.operation_type.includes('withdrawal') ? '-' : '+';
     
     return (
       <View style={styles.card}>
@@ -168,35 +194,25 @@ export default function HistoryScreen() {
             />
           </View>
           <View style={styles.cardContent}>
-            <Text style={styles.operationType}>
-              {operationLabel}: {item.nomenclature_name}
-            </Text>
-            <Text style={styles.quantityInline}>
-              {sign}{item.quantity} кг
-            </Text>
+            <Text style={styles.operationType}>{operationLabel}</Text>
+            <Text style={styles.nomenclatureName}>{item.nomenclature_name}</Text>
             <Text style={styles.dateText}>
-              {format(new Date(item.operation_date), 'dd MMMM yyyy, HH:mm', { locale: uk })}
+              {format(new Date(item.operation_date), 'dd MMM yyyy, HH:mm', { locale: uk })}
             </Text>
           </View>
-        </View>
-
-        <View style={styles.quantityRow}>
-          <View style={styles.quantityItem}>
-            <Text style={styles.quantityLabel}>Кількість</Text>
+          <View style={styles.quantityContainer}>
             <Text style={[styles.quantityValue, { color: operationColor }]}>
               {sign}{item.quantity}
             </Text>
-          </View>
-          <View style={styles.quantityItem}>
-            <Text style={styles.quantityLabel}>Залишок після</Text>
-            <Text style={styles.quantityValue}>{item.balance_after}</Text>
+            <Text style={styles.balanceAfter}>Залишок: {item.balance_after}</Text>
           </View>
         </View>
 
         {item.metadata && (
           <View style={styles.metadataContainer}>
+            <MaterialCommunityIcons name="information-outline" size={16} color="#666" />
             <Text style={styles.metadataText} numberOfLines={2}>
-              {JSON.parse(item.metadata).notes || 'Додаткова інформація'}
+              {typeof item.metadata === 'string' ? JSON.parse(item.metadata).notes || 'Додаткова інформація' : item.metadata.notes || 'Додаткова інформація'}
             </Text>
           </View>
         )}
@@ -237,8 +253,36 @@ export default function HistoryScreen() {
         </View>
       )}
 
+      {/* Filters */}
+      <View style={styles.filterContainer}>
+        {filters.map((f) => (
+          <TouchableOpacity
+            key={f.key}
+            style={[
+              styles.filterButton,
+              operationTypeFilter === f.key && styles.filterButtonActive,
+            ]}
+            onPress={() => setOperationTypeFilter(f.key)}
+          >
+            <MaterialCommunityIcons
+              name={f.icon as any}
+              size={18}
+              color={operationTypeFilter === f.key ? '#fff' : '#666'}
+            />
+            <Text
+              style={[
+                styles.filterButtonText,
+                operationTypeFilter === f.key && styles.filterButtonTextActive,
+              ]}
+            >
+              {f.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <FlatList
-        data={movements}
+        data={filteredMovements}
         renderItem={renderMovement}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
@@ -248,7 +292,12 @@ export default function HistoryScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <MaterialCommunityIcons name="history" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>Немає історії операцій</Text>
+            <Text style={styles.emptyText}>Немає операцій</Text>
+            <Text style={styles.emptySubtext}>
+              {operationTypeFilter !== 'all' 
+                ? 'Змініть фільтр для перегляду інших операцій'
+                : 'Історія операцій з'явиться тут'}
+            </Text>
           </View>
         }
       />
@@ -300,89 +349,135 @@ const styles = StyleSheet.create({
   syncButtonText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: 14,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    padding: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    gap: 8,
+  },
+  filterButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  filterButtonActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  filterButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+  },
+  filterButtonTextActive: {
+    color: '#fff',
   },
   listContent: {
     padding: 16,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#999',
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 8,
+    textAlign: 'center',
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      },
+    }),
   },
   cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+    alignItems: 'flex-start',
+    gap: 12,
   },
   iconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    alignItems: 'center',
   },
   cardContent: {
     flex: 1,
   },
   operationType: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 4,
+  },
+  nomenclatureName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 2,
-  },
-  quantityInline: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
     marginBottom: 4,
   },
   dateText: {
     fontSize: 12,
     color: '#999',
   },
-  quantityRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 8,
-  },
-  quantityItem: {
-    flex: 1,
-  },
-  quantityLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
+  quantityContainer: {
+    alignItems: 'flex-end',
   },
   quantityValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    marginBottom: 4,
   },
-  metadataContainer: {
-    marginTop: 8,
-    padding: 8,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-  },
-  metadataText: {
+  balanceAfter: {
     fontSize: 12,
     color: '#666',
   },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
+  metadataContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
-  emptyText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#999',
+  metadataText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
   },
 });
