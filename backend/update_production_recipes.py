@@ -135,7 +135,9 @@ def update_recipes():
         print(f"✅ Updated recipe: Індичка сировялена")
         
         # Recipe 5: Курка сировялена - uses Курка для суджука (closest match)
-        recipe_id_chicken = cursor.execute("SELECT id FROM recipes WHERE name = 'Курка сировялена'").fetchone()[0]
+        recipe_id_chicken = 5
+        cursor.execute("DELETE FROM recipe_steps WHERE recipe_id = ?", recipe_id_chicken)
+        cursor.execute("DELETE FROM recipe_ingredients WHERE recipe_id = ?", recipe_id_chicken)
         
         steps_chicken = [
             (1, 'salt', 'Засолка', 3, json.dumps({'salt_per_100kg': 18.0, 'water_per_100kg': 25.0, 'massager_minutes': 40})),
