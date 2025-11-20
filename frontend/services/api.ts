@@ -64,36 +64,29 @@ export const api = axios.create({
 // Check network connectivity
 export async function checkNetworkConnectivity(): Promise<boolean> {
   try {
-    const state = await NetInfo.fetch();
-    console.log('[Network Check] State:', JSON.stringify(state));
+    console.log('[Network Check] Checking connectivity to:', BASE_URL);
     
-    // Перевіряємо тільки isConnected, бо isInternetReachable може бути null
-    if (!state.isConnected) {
-      console.log('[Network Check] Not connected');
-      return false;
-    }
+    // Просто пінгуємо backend напряму
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     
-    // Якщо є з'єднання, спробуємо ping backend
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const response = await fetch(`${BASE_URL}/api/nomenclature`, {
-        method: 'HEAD',
-        signal: controller.signal,
-      });
-      
-      clearTimeout(timeoutId);
-      const isOnline = response.ok;
-      console.log('[Network Check] Backend ping:', isOnline ? 'SUCCESS' : 'FAILED');
-      return isOnline;
-    } catch (error) {
-      console.log('[Network Check] Backend ping failed:', error);
-      // Якщо ping не вдався, але є інтернет - вважаємо що online (можливо тимчасова проблема)
-      return state.isConnected === true;
+    const response = await fetch(`${BASE_URL}/api/nomenclature`, {
+      method: 'HEAD',
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    const isOnline = response.ok;
+    console.log('[Network Check] Result:', isOnline ? 'ONLINE' : 'OFFLINE', 'Status:', response.status);
+    return isOnline;
+  } catch (error: any) {
+    console.log('[Network Check] Failed:', error.message || error);
+    // Якщо помилка мережі - вважаємо що офлайн
+    // Але якщо просто timeout - можна спробувати працювати онлайн
+    if (error.name === 'AbortError') {
+      console.log('[Network Check] Timeout - assuming ONLINE');
+      return true; // Можливо backend повільний, але працює
     }
-  } catch (error) {
-    console.error('[Network Check] Error:', error);
     return false;
   }
 }
