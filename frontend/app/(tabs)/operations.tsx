@@ -160,10 +160,15 @@ export default function OperationsScreen() {
         } else {
           await apiService.withdrawal(operation);
         }
-        Alert.alert(
-          'Успіх',
-          `${operationType === 'receipt' ? 'Прихід' : 'Розхід'} успішно оброблено`
-        );
+        
+        // Show success toast
+        Toast.show({
+          type: 'success',
+          text1: 'Операція успішна!',
+          text2: `${operationType === 'receipt' ? 'Прихід' : 'Розхід'} ${selectedItem.name} оброблено`,
+          position: 'top',
+          visibilityTime: 3000,
+        });
       } else {
         // Queue for offline processing
         await addToOfflineQueue({
@@ -173,10 +178,15 @@ export default function OperationsScreen() {
         const { getOfflineQueue: getQueue } = require('../../services/api');
         const currentQueue = await getQueue();
         setPendingOperationsCount(currentQueue.length);
-        Alert.alert(
-          'Офлайн режим',
-          'Операція збережена та буде синхронізована при підключенні до мережі'
-        );
+        
+        // Show offline toast
+        Toast.show({
+          type: 'info',
+          text1: 'Офлайн режим',
+          text2: 'Операція збережена та буде синхронізована',
+          position: 'top',
+          visibilityTime: 3000,
+        });
       }
 
       // Reset form
