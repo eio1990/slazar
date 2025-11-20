@@ -68,20 +68,20 @@ export default function RecipeDetailScreen() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['batches'] });
-      Alert.alert(
-        'Успіх',
-        `Партія ${data.batch_number} створена`,
-        [
-          {
-            text: 'Переглянути',
-            onPress: () => router.push(`/batches/${data.id}` as any),
-          },
-          {
-            text: 'Закрити',
-            onPress: () => router.back(),
-          },
-        ]
-      );
+      
+      // Show success toast
+      Toast.show({
+        type: 'success',
+        text1: 'Партію створено!',
+        text2: `${data.batch_number} - ${recipe?.name}`,
+        position: 'top',
+        visibilityTime: 3000,
+      });
+      
+      // Navigate to production tab
+      setTimeout(() => {
+        router.push('/(tabs)/production' as any);
+      }, 500);
     },
     onError: (error) => {
       Alert.alert('Помилка', 'Не вдалося створити партію');
