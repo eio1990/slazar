@@ -275,45 +275,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  recommendedCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  recommendedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  recommendedInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  recommendedLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  recommendedValue: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 2,
-  },
-  recommendedNote: {
-    fontSize: 12,
-    color: '#999',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E0E0E0',
-    marginVertical: 8,
-  },
   formCard: {
     backgroundColor: '#FFF',
     borderRadius: 12,
@@ -324,11 +285,21 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   label: {
     fontSize: 14,
     fontWeight: '500',
     color: '#333',
-    marginBottom: 8,
+  },
+  recommendedText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f44336',
   },
   input: {
     backgroundColor: '#F8F8F8',
