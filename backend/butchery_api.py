@@ -404,6 +404,14 @@ async def complete_butchery_operation(operation_id: int, completion: ButcheryOpe
         input_weight = float(op_row[1])
         recipe_id = op_row[2]
         
+        # Фізична валідація: сума виходів не може перевищувати вхід
+        total_output = sum(out.actual_weight for out in completion.outputs)
+        if total_output > input_weight:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Помилка: сума виходів ({total_output:.2f} кг) перевищує вхідну вагу ({input_weight:.2f} кг). Це фізично неможливо."
+            )
+        
         # Отримати очікувані виходи для довідки (тільки для аналітики, без валідації)
         cursor.execute("""
             SELECT bro.output_nomenclature_id, bro.yield_percentage
