@@ -73,7 +73,7 @@ def update_recipes():
         
         cursor.execute("""
             INSERT INTO recipe_ingredients (recipe_id, nomenclature_id, quantity_per_100kg, is_optional, notes)
-            VALUES (?, (202), 100.0, 0, 'Оброблене м''ясо після розділки')
+            VALUES (?, 202, 100.0, 0, 'Оброблене м''ясо після розділки')
         """, recipe_id_horse)
         
         print(f"✅ Updated recipe: Бастурма з конини")
@@ -99,7 +99,7 @@ def update_recipes():
         
         cursor.execute("""
             INSERT INTO recipe_ingredients (recipe_id, nomenclature_id, quantity_per_100kg, is_optional, notes)
-            VALUES (?, (207), 100.0, 0, 'Оброблене м''ясо після розділки')
+            VALUES (?, 207, 100.0, 0, 'Оброблене м''ясо після розділки')
         """, recipe_id_pork)
         
         print(f"✅ Updated recipe: Свинина сировялена")
@@ -125,7 +125,7 @@ def update_recipes():
         
         cursor.execute("""
             INSERT INTO recipe_ingredients (recipe_id, nomenclature_id, quantity_per_100kg, is_optional, notes)
-            VALUES (?, (211), 100.0, 0, 'Оброблене м''ясо після розділки')
+            VALUES (?, 211, 100.0, 0, 'Оброблене м''ясо після розділки')
         """, recipe_id_turkey)
         
         print(f"✅ Updated recipe: Індичка сировялена")
@@ -151,7 +151,7 @@ def update_recipes():
         
         cursor.execute("""
             INSERT INTO recipe_ingredients (recipe_id, nomenclature_id, quantity_per_100kg, is_optional, notes)
-            VALUES (?, (210), 100.0, 0, 'Оброблене м''ясо після розділки')
+            VALUES (?, 210, 100.0, 0, 'Оброблене м''ясо після розділки')
         """, recipe_id_chicken)
         
         print(f"✅ Updated recipe: Курка сировялена")
@@ -174,7 +174,7 @@ def update_recipes():
         
         cursor.execute("""
             INSERT INTO recipe_ingredients (recipe_id, nomenclature_id, quantity_per_100kg, is_optional, notes)
-            VALUES (?, (200), 100.0, 0, 'Оброблене м''ясо після розділки')
+            VALUES (?, 200, 100.0, 0, 'Оброблене м''ясо після розділки')
         """, recipe_id_plate)
         
         print(f"✅ Updated recipe: Пластина яловичина")
@@ -202,7 +202,7 @@ def update_recipes():
         
         cursor.execute("""
             INSERT INTO recipe_ingredients (recipe_id, nomenclature_id, quantity_per_100kg, is_optional, notes)
-            VALUES (?, (201), 100.0, 0, 'Оброблене м''ясо після розділки')
+            VALUES (?, 201, 100.0, 0, 'Оброблене м''ясо після розділки')
         """, recipe_id_sujuk)
         
         print(f"✅ Updated recipe: Суджук")
@@ -226,7 +226,7 @@ def update_recipes():
         
         cursor.execute("""
             INSERT INTO recipe_ingredients (recipe_id, nomenclature_id, quantity_per_100kg, is_optional, notes)
-            VALUES (?, (204), 100.0, 0, 'Оброблене м''ясо після розділки')
+            VALUES (?, 204, 100.0, 0, 'Оброблене м''ясо після розділки')
         """, recipe_id_makhan)
         
         print(f"✅ Updated recipe: Махан")
