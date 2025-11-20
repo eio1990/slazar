@@ -73,21 +73,19 @@ export default function RecipeDetailScreen() {
     return false; // Will be updated once we have ingredient data
   });
 
-  // Get recipe ingredients to find the main ingredient
-  const { data: recipeIngredients } = useQuery({
-    queryKey: ['recipe-ingredients', id],
+  // Get recipe materials (ingredients)
+  const { data: recipeMaterials } = useQuery({
+    queryKey: ['recipe-materials', id],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/production/recipes/${id}`);
-      if (!response.ok) return [];
-      const data = await response.json();
-      // Extract ingredients if they exist
-      return data.ingredients || [];
+      const response = await fetch(`${API_URL}/api/production/recipes/${id}/materials`);
+      if (!response.ok) return { ingredients: [] };
+      return response.json();
     },
     enabled: !!recipe,
   });
 
   // Find the main ingredient's stock balance
-  const mainIngredient = recipeIngredients?.[0];
+  const mainIngredient = recipeMaterials?.ingredients?.[0];
   const availableStock = mainIngredient 
     ? stockBalances?.find((b: any) => b.nomenclature_id === mainIngredient.nomenclature_id)?.quantity || 0
     : 0;
