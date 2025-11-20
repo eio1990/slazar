@@ -307,10 +307,13 @@ export default function OperationsScreen() {
 
         {/* Quantity input */}
         <View style={styles.formSection}>
-          <Text style={styles.label}>Кількість *</Text>
+          <Text style={styles.label}>
+            Кількість *
+            {selectedItem && <Text style={styles.unitLabel}> ({selectedItem.unit})</Text>}
+          </Text>
           <TextInput
             style={styles.input}
-            placeholder={`Введіть кількість${selectedItem ? ` (${selectedItem.unit})` : ''}`}
+            placeholder={`Введіть кількість`}
             value={quantity}
             onChangeText={setQuantity}
             keyboardType="decimal-pad"
