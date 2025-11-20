@@ -43,7 +43,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "EXPO_PUBLIC_BACKEND_URL": "https://carcasstech.preview.emergentagent.com"
+      "EXPO_PUBLIC_BACKEND_URL": "https://butchery-app-1.preview.emergentagent.com"
     }
   }
 }

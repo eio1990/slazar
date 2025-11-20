@@ -18,9 +18,9 @@ try:
                 BACKEND_URL = line.split('=')[1].strip()
                 break
         else:
-            BACKEND_URL = "https://carcasstech.preview.emergentagent.com"
+            BACKEND_URL = "https://butchery-app-1.preview.emergentagent.com"
 except:
-    BACKEND_URL = "https://carcasstech.preview.emergentagent.com"
+    BACKEND_URL = "https://butchery-app-1.preview.emergentagent.com"
 
 API_BASE = f"{BACKEND_URL}/api"
 
