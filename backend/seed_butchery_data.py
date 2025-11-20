@@ -370,6 +370,24 @@ def seed_butchery_recipes(conn):
     
     conn.commit()
 
+def clean_old_recipes(conn):
+    """Видалити старі рецепти перед створенням нових"""
+    cursor = conn.cursor()
+    
+    print("\n" + "=" * 60)
+    print("ОЧИЩЕННЯ СТАРИХ РЕЦЕПТІВ")
+    print("=" * 60)
+    
+    # Видалити виходи рецептів
+    cursor.execute("DELETE FROM butchery_recipe_outputs")
+    print("   ✅ Видалено всі виходи рецептів")
+    
+    # Видалити рецепти
+    cursor.execute("DELETE FROM butchery_recipes")
+    print("   ✅ Видалено всі рецепти")
+    
+    conn.commit()
+
 def main():
     conn = get_connection()
     
@@ -380,7 +398,10 @@ def main():
         # 2. Оновити типи існуючої номенклатури
         update_existing_types(conn)
         
-        # 3. Створити рецепти розділки
+        # 3. Очистити старі рецепти
+        clean_old_recipes(conn)
+        
+        # 4. Створити нові рецепти розділки
         seed_butchery_recipes(conn)
         
         print("\n" + "=" * 60)
