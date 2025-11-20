@@ -173,12 +173,12 @@ export default function SelectRecipeScreen() {
               )}
 
               <View style={styles.outputsContainer}>
-                <Text style={styles.outputsTitle}>Очікувані виходи:</Text>
+                <Text style={styles.outputsTitle}>Виходи:</Text>
                 {recipe.outputs.map((output, idx) => (
                   <View key={idx} style={styles.outputRow}>
                     <View style={styles.outputDot} />
                     <Text style={styles.outputText}>
-                      {output.output_name}: {output.yield_percentage}%
+                      {output.output_name}
                     </Text>
                   </View>
                 ))}
