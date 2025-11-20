@@ -36,7 +36,8 @@ class ButcheryOutputInput(BaseModel):
 class ButcheryOperationComplete(BaseModel):
     outputs: List[ButcheryOutputInput]
     notes: Optional[str] = None
-    idempotency_key: str
+    operator_notes: Optional[str] = None  # Alias for notes
+    idempotency_key: Optional[str] = None  # Made optional
 
 class ButcheryOperation(BaseModel):
     id: int
