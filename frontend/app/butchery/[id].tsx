@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,24 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Toast from 'react-native-toast-message';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
 export default function ButcheryOperationDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const queryClient = useQueryClient();
+  const [outputWeights, setOutputWeights] = useState<Record<number, string>>({});
+  const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['butchery-operation', id],
@@ -72,8 +80,88 @@ export default function ButcheryOperationDetailScreen() {
     }
   };
 
-  const handleComplete = () => {
-    router.push(`/butchery/complete-form?operationId=${id}` as any);
+  const updateOutputWeight = (outputId: number, value: string) => {
+    setOutputWeights(prev => ({ ...prev, [outputId]: value }));
+  };
+
+  const fillWithExpected = (outputId: number, expectedWeight: number) => {
+    setOutputWeights(prev => ({ ...prev, [outputId]: expectedWeight.toFixed(2) }));
+  };
+
+  const handleComplete = async () => {
+    // Validate weights
+    const outputs = expected_outputs.map((output: any) => {
+      const weight = parseFloat(outputWeights[output.output_nomenclature_id] || '0');
+      if (isNaN(weight) || weight < 0) {
+        return null;
+      }
+      return {
+        output_nomenclature_id: output.output_nomenclature_id,
+        actual_weight: weight,
+      };
+    });
+
+    if (outputs.some((o: any) => o === null)) {
+      Alert.alert('Помилка', 'Введіть коректну вагу для всіх виходів (≥ 0)');
+      return;
+    }
+
+    const totalActualWeight = outputs.reduce((sum: number, o: any) => sum + o.actual_weight, 0);
+    if (totalActualWeight > operation.input_weight) {
+      Alert.alert(
+        'Попередження',
+        `Загальна вага виходів (${totalActualWeight.toFixed(2)} кг) перевищує вхідну вагу (${operation.input_weight} кг).\\n\\nВи впевнені?`,
+        [
+          { text: 'Скасувати', style: 'cancel' },
+          { text: 'Продовжити', onPress: () => submitCompletion(outputs) },
+        ]
+      );
+      return;
+    }
+
+    await submitCompletion(outputs);
+  };
+
+  const submitCompletion = async (outputs: any[]) => {
+    setIsSubmitting(true);
+    try {
+      const completionData = {
+        outputs: outputs,
+        operator_notes: notes || undefined,
+      };
+
+      const response = await fetch(`${API_URL}/api/butchery/operations/${id}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(completionData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Помилка завершення операції');
+      }
+
+      // Show success toast
+      Toast.show({
+        type: 'success',
+        text1: 'Розділку завершено!',
+        text2: `Операція ${operation.operation_number} успішно завершена`,
+        position: 'top',
+        visibilityTime: 3000,
+      });
+
+      // Invalidate queries and navigate
+      queryClient.invalidateQueries({ queryKey: ['butchery-operations'] });
+      queryClient.invalidateQueries({ queryKey: ['butchery-operation', id] });
+      
+      setTimeout(() => {
+        router.push('/(tabs)/butchery' as any);
+      }, 500);
+    } catch (error: any) {
+      Alert.alert('Помилка', error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const totalExpectedWeight = expected_outputs.reduce(
@@ -81,13 +169,15 @@ export default function ButcheryOperationDetailScreen() {
     0
   );
 
-  const totalActualWeight = actual_outputs.reduce(
-    (sum: number, out: any) => sum + out.actual_weight,
-    0
-  );
+  const totalActualWeight = isCompleted
+    ? actual_outputs.reduce((sum: number, out: any) => sum + out.actual_weight, 0)
+    : Object.values(outputWeights).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerBackButton}>
@@ -160,27 +250,79 @@ export default function ButcheryOperationDetailScreen() {
           )}
         </View>
 
-        {/* Expected outputs */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <MaterialCommunityIcons name="chart-box" size={20} color="#FF9800" />
-            <Text style={styles.cardTitle}>Очікувані виходи</Text>
-          </View>
-
-          {expected_outputs.map((output: any, idx: number) => (
-            <View key={idx} style={styles.outputRow}>
-              <View style={styles.outputInfo}>
-                <Text style={styles.outputName}>{output.output_name}</Text>
-              </View>
-              <Text style={styles.outputWeight}>{output.expected_weight.toFixed(2)} кг</Text>
+        {/* Input form for in-progress operations */}
+        {!isCompleted && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <MaterialCommunityIcons name="scale" size={20} color="#4CAF50" />
+              <Text style={styles.cardTitle}>Введіть фактичні ваги</Text>
             </View>
-          ))}
 
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Загальна очікувана вага:</Text>
-            <Text style={styles.totalValue}>{totalExpectedWeight.toFixed(2)} кг</Text>
+            {expected_outputs.map((output: any, idx: number) => (
+              <View key={idx} style={styles.inputSection}>
+                <View style={styles.outputHeader}>
+                  <Text style={styles.outputName}>{output.output_name}</Text>
+                  <Text style={styles.expectedLabel}>
+                    Очік: {output.expected_weight.toFixed(2)} кг
+                  </Text>
+                </View>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.weightInput}
+                    value={outputWeights[output.output_nomenclature_id] || ''}
+                    onChangeText={(value) => updateOutputWeight(output.output_nomenclature_id, value)}
+                    keyboardType="decimal-pad"
+                    placeholder="0.00"
+                    placeholderTextColor="#999"
+                  />
+                  <Text style={styles.unitText}>кг</Text>
+                  <TouchableOpacity
+                    style={styles.fillButton}
+                    onPress={() => fillWithExpected(output.output_nomenclature_id, output.expected_weight)}
+                  >
+                    <MaterialCommunityIcons name="content-copy" size={16} color="#007AFF" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+
+            {/* Total */}
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Загальна фактична вага:</Text>
+              <Text style={styles.totalValue}>{totalActualWeight.toFixed(2)} кг</Text>
+            </View>
+
+            {/* Notes */}
+            <View style={styles.notesSection}>
+              <Text style={styles.notesLabel}>Примітки оператора (опціонально)</Text>
+              <TextInput
+                style={styles.notesInput}
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Додаткова інформація..."
+                placeholderTextColor="#999"
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+
+            {/* Complete button */}
+            <TouchableOpacity
+              style={[styles.completeButton, isSubmitting && styles.completeButtonDisabled]}
+              onPress={handleComplete}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="check-circle" size={20} color="#fff" />
+                  <Text style={styles.completeButtonText}>Завершити розділку</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
-        </View>
+        )}
 
         {/* Actual outputs (if completed) */}
         {isCompleted && actual_outputs.length > 0 && (
@@ -234,19 +376,9 @@ export default function ButcheryOperationDetailScreen() {
           </View>
         )}
 
-        {/* Complete button */}
-        {!isCompleted && (
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.completeButton} onPress={handleComplete}>
-              <MaterialCommunityIcons name="check-circle" size={20} color="#fff" />
-              <Text style={styles.completeButtonText}>Завершити розділку</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
         <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -375,6 +507,85 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontStyle: 'italic',
   },
+  inputSection: {
+    marginBottom: 16,
+  },
+  outputHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  outputName: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  expectedLabel: {
+    fontSize: 12,
+    color: '#999',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  weightInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#333',
+  },
+  unitText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+    marginRight: 8,
+  },
+  fillButton: {
+    padding: 10,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+  },
+  notesSection: {
+    marginTop: 16,
+  },
+  notesLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  notesInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: '#333',
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  completeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 16,
+  },
+  completeButtonDisabled: {
+    opacity: 0.6,
+  },
+  completeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   outputRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -385,16 +596,6 @@ const styles = StyleSheet.create({
   },
   outputInfo: {
     flex: 1,
-  },
-  outputName: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  outputPercentage: {
-    fontSize: 12,
-    color: '#999',
   },
   outputWeight: {
     fontSize: 16,
@@ -437,23 +638,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'right',
     marginTop: 4,
-  },
-  buttonContainer: {
-    paddingHorizontal: 16,
-    marginTop: 24,
-  },
-  completeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#4CAF50',
-    padding: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  completeButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
