@@ -216,7 +216,7 @@ export default function InputWeightScreen() {
             value={weight}
             onChangeText={setWeight}
             keyboardType="decimal-pad"
-            placeholder="Наприклад: 150.5"
+            placeholder={`На складі: ${availableStock.toFixed(2)} кг`}
             placeholderTextColor="#999"
             autoFocus
           />
