@@ -29,6 +29,7 @@ NEW_NOMENCLATURE = [
     {'name': 'Яловичина для суджука', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
     
     # Конина
+    {'name': 'Конина другий ґатунок', 'category': 'Сировина - М\'ясо', 'unit': 'кг', 'type': 'semi'},
     {'name': 'Конина для бастурми з конини', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
     {'name': 'Конина для пластин з конини', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
     {'name': 'Конина для махан', 'category': 'Напівфабрикати', 'unit': 'кг', 'type': 'cut-specific'},
