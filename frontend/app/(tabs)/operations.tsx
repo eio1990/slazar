@@ -598,8 +598,10 @@ const styles = StyleSheet.create({
   },
   categoryFilterContainer: {
     flexGrow: 0,
+    flexShrink: 0,
     marginHorizontal: 16,
     marginBottom: 12,
+    maxHeight: 50,
   },
   categoryFilterContent: {
     paddingRight: 16,
