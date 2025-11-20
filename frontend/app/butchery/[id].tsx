@@ -175,13 +175,19 @@ export default function ButcheryOperationDetailScreen() {
     return 8;
   };
 
-  const sortedExpectedOutputs = expected_outputs?.slice().sort((a: any, b: any) => 
-    getSortOrder(a.output_name) - getSortOrder(b.output_name)
-  ) || [];
+  // Filter out liquid-waste (стек) from input fields - it's calculated automatically
+  const sortedExpectedOutputs = expected_outputs?.slice()
+    .filter((out: any) => !out.output_name.toLowerCase().includes('стек'))
+    .sort((a: any, b: any) => getSortOrder(a.output_name) - getSortOrder(b.output_name)) || [];
 
   const sortedActualOutputs = actual_outputs?.slice().sort((a: any, b: any) => 
     getSortOrder(a.output_name) - getSortOrder(b.output_name)
   ) || [];
+  
+  // Find liquid waste in actual outputs for display
+  const liquidWasteOutput = sortedActualOutputs.find((out: any) => 
+    out.output_name.toLowerCase().includes('стек')
+  );
 
   const totalActualWeight = isCompleted
     ? sortedActualOutputs.reduce((sum: number, out: any) => sum + out.actual_weight, 0)
