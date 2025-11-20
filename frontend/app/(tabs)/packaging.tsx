@@ -3,10 +3,10 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -34,6 +34,7 @@ export default function PackagingScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'created': return '#2196F3';
       case 'in_progress': return '#FF9800';
       case 'completed': return '#4CAF50';
       default: return '#999';
@@ -42,6 +43,7 @@ export default function PackagingScreen() {
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'created': return 'Створена';
       case 'in_progress': return 'В процесі';
       case 'completed': return 'Завершена';
       default: return status;
@@ -50,33 +52,22 @@ export default function PackagingScreen() {
 
   const filters = [
     { key: 'all', label: 'Всі' },
+    { key: 'created', label: 'Нові' },
     { key: 'in_progress', label: 'В процесі' },
     { key: 'completed', label: 'Завершені' },
   ];
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Фасування</Text>
-        <TouchableOpacity
-          style={styles.newButton}
-          onPress={() => router.push('/packaging/new-batch' as any)}
-        >
-          <MaterialCommunityIcons name="plus" size={20} color="#fff" />
-          <Text style={styles.newButtonText}>Нова партія</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Filters */}
-      <View style={styles.filters}>
+      <View style={styles.filterContainer}>
         {filters.map((f) => (
           <TouchableOpacity
             key={f.key}
             style={[styles.filterButton, filter === f.key && styles.filterButtonActive]}
             onPress={() => setFilter(f.key)}
           >
-            <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>
+            <Text style={[styles.filterButtonText, filter === f.key && styles.filterButtonTextActive]}>
               {f.label}
             </Text>
           </TouchableOpacity>
@@ -84,79 +75,59 @@ export default function PackagingScreen() {
       </View>
 
       {/* Content */}
-      <ScrollView
-        style={styles.content}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
-      >
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-          </View>
-        ) : !batches || batches.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="package-variant" size={60} color="#ccc" />
-            <Text style={styles.emptyText}>Партій фасування немає</Text>
-            <Text style={styles.emptyHint}>Створіть нову партію, щоб почати</Text>
-          </View>
-        ) : (
-          batches.map((batch: any) => (
-            <TouchableOpacity
-              key={batch.id}
-              style={styles.batchCard}
-              onPress={() => router.push(`/packaging/${batch.id}` as any)}
-            >
-              <View style={styles.batchHeader}>
-                <View style={styles.batchTitleRow}>
-                  <MaterialCommunityIcons name="package-variant-closed" size={20} color="#007AFF" />
-                  <Text style={styles.batchNumber}>{batch.batch_number}</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(batch.status) }]}>
-                  <Text style={styles.statusText}>{getStatusText(batch.status)}</Text>
-                </View>
+      <FlatList
+        data={batches}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.batchCard}
+            onPress={() => router.push(`/packaging/${item.id}` as any)}
+          >
+            <View style={styles.batchHeader}>
+              <View style={styles.batchTitleRow}>
+                <MaterialCommunityIcons name="package-variant-closed" size={20} color="#4CAF50" />
+                <Text style={styles.batchNumber}>{item.batch_number}</Text>
               </View>
+              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+                <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
+              </View>
+            </View>
 
-              <View style={styles.batchInfo}>
-                <Text style={styles.productName}>{batch.target_product_name || 'Продукт'}</Text>
-                <Text style={styles.packagingType}>
-                  {batch.packaging_type === 'vacuum' ? '🔷 Вакуум' : 
-                   batch.packaging_type === 'skin' ? '📦 Скін' : '⚖️ Ваговий'}
+            <Text style={styles.productName}>{item.target_product_name || 'Продукт'}</Text>
+            
+            <View style={styles.detailsContainer}>
+              <View style={styles.detailRow}>
+                <MaterialCommunityIcons 
+                  name={item.packaging_type === 'vacuum' ? 'package-variant' : 
+                        item.packaging_type === 'skin' ? 'package' : 'weight-kilogram'} 
+                  size={16} 
+                  color="#666" 
+                />
+                <Text style={styles.detailText}>
+                  {item.packaging_type === 'vacuum' ? 'Вакуум' : 
+                   item.packaging_type === 'skin' ? 'Скін' : 'Ваговий'}
                 </Text>
               </View>
-
-              <View style={styles.statsRow}>
-                <View style={styles.stat}>
-                  <Text style={styles.statLabel}>Заплановано</Text>
-                  <Text style={styles.statValue}>{batch.planned_quantity || 0} шт</Text>
-                </View>
-                <View style={styles.stat}>
-                  <Text style={styles.statLabel}>Фактично</Text>
-                  <Text style={styles.statValue}>{batch.actual_packed_quantity || 0} шт</Text>
-                </View>
-                <View style={styles.stat}>
-                  <Text style={styles.statLabel}>Відходи</Text>
-                  <Text style={styles.statValue}>{(batch.waste_quantity || 0).toFixed(2)} кг</Text>
-                </View>
+              
+              <View style={styles.detailRow}>
+                <MaterialCommunityIcons name="package-variant" size={16} color="#666" />
+                <Text style={styles.detailText}>
+                  Заплановано: {item.planned_quantity || 0} шт
+                </Text>
               </View>
-
-              {batch.status === 'in_progress' && (
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[
-                      styles.progressFill, 
-                      { 
-                        width: `${Math.min(
-                          100, 
-                          (batch.actual_packed_quantity / (batch.planned_quantity || 1)) * 100
-                        )}%` 
-                      }
-                    ]} 
-                  />
+              
+              {item.actual_packed_quantity > 0 && (
+                <View style={styles.detailRow}>
+                  <MaterialCommunityIcons name="check-circle" size={16} color="#4CAF50" />
+                  <Text style={styles.detailText}>
+                    Упаковано: {item.actual_packed_quantity} шт
+                  </Text>
                 </View>
               )}
-
-              <View style={styles.batchFooter}>
-                <Text style={styles.footerText}>
-                  {new Date(batch.started_at).toLocaleDateString('uk-UA', { 
+              
+              <View style={styles.detailRow}>
+                <MaterialCommunityIcons name="clock-outline" size={16} color="#666" />
+                <Text style={styles.detailText}>
+                  {new Date(item.started_at).toLocaleDateString('uk-UA', { 
                     day: '2-digit', 
                     month: '2-digit', 
                     year: 'numeric',
@@ -164,12 +135,33 @@ export default function PackagingScreen() {
                     minute: '2-digit'
                   })}
                 </Text>
-                <MaterialCommunityIcons name="chevron-right" size={20} color="#999" />
               </View>
-            </TouchableOpacity>
-          ))
+            </View>
+          </TouchableOpacity>
         )}
-      </ScrollView>
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={['#4CAF50']} />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <MaterialCommunityIcons name="package-variant" size={64} color="#ccc" />
+            <Text style={styles.emptyText}>Немає партій</Text>
+            <Text style={styles.emptySubtext}>
+              Натисніть "+" щоб створити нову партію фасування
+            </Text>
+          </View>
+        }
+      />
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/packaging/new-batch' as any)}
+      >
+        <MaterialCommunityIcons name="plus" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -179,95 +171,73 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
+  filterContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  newButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#007AFF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 6,
-  },
-  newButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  filters: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 8,
+    padding: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   filterButton: {
+    flex: 1,
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    marginHorizontal: 4,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: '#fff',
+    borderColor: '#e0e0e0',
+    alignItems: 'center',
   },
   filterButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
   },
-  filterText: {
+  filterButtonText: {
     fontSize: 14,
+    fontWeight: '600',
     color: '#666',
   },
-  filterTextActive: {
+  filterButtonTextActive: {
     color: '#fff',
-    fontWeight: '600',
   },
-  content: {
-    flex: 1,
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
+  listContent: {
+    padding: 16,
   },
   emptyContainer: {
-    padding: 40,
     alignItems: 'center',
+    paddingVertical: 48,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#666',
+    color: '#999',
     marginTop: 16,
   },
-  emptyHint: {
+  emptySubtext: {
     fontSize: 14,
     color: '#999',
     marginTop: 8,
+    textAlign: 'center',
   },
   batchCard: {
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 16,
     borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    padding: 16,
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      },
+    }),
   },
   batchHeader: {
     flexDirection: 'row',
@@ -278,12 +248,12 @@ const styles = StyleSheet.create({
   batchTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   batchNumber: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#333',
+    marginLeft: 8,
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -295,59 +265,47 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-  batchInfo: {
-    marginBottom: 12,
-  },
   productName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 4,
+    marginBottom: 12,
   },
-  packagingType: {
+  detailsContainer: {
+    gap: 8,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  detailText: {
     fontSize: 14,
     color: '#666',
+    marginLeft: 8,
   },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  stat: {
-    flex: 1,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 3,
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#4CAF50',
-    borderRadius: 3,
-  },
-  batchFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#999',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+      },
+    }),
   },
 });
