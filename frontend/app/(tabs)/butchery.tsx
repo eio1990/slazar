@@ -180,39 +180,44 @@ const styles = StyleSheet.create({
   filterButtonTextActive: {
     color: '#fff',
   },
-  content: {
-    flex: 1,
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
+  listContent: {
+    padding: 16,
   },
   emptyContainer: {
-    padding: 40,
     alignItems: 'center',
+    paddingVertical: 48,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#666',
+    color: '#999',
     marginTop: 16,
   },
-  emptyHint: {
+  emptySubtext: {
     fontSize: 14,
     color: '#999',
     marginTop: 8,
+    textAlign: 'center',
   },
   operationCard: {
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 16,
     borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    padding: 16,
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      },
+    }),
   },
   operationHeader: {
     flexDirection: 'row',
@@ -223,12 +228,12 @@ const styles = StyleSheet.create({
   operationTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   operationNumber: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#333',
+    marginLeft: 8,
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -240,65 +245,47 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-  operationInfo: {
-    marginBottom: 12,
-  },
   recipeName: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 6,
+    marginBottom: 12,
   },
-  sourceRow: {
+  detailsContainer: {
+    gap: 8,
+  },
+  detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
   },
-  sourceName: {
+  detailText: {
     fontSize: 14,
     color: '#666',
+    marginLeft: 8,
   },
-  weightRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  weightItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  weightLabel: {
-    fontSize: 14,
-    color: '#999',
-  },
-  weightValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  pendingBadge: {
-    backgroundColor: '#FFF3CD',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  pendingText: {
-    fontSize: 12,
-    color: '#856404',
-    fontWeight: '600',
-  },
-  operationFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#999',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+      },
+    }),
   },
 });
