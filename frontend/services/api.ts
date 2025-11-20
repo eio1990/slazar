@@ -63,8 +63,39 @@ export const api = axios.create({
 
 // Check network connectivity
 export async function checkNetworkConnectivity(): Promise<boolean> {
-  const state = await NetInfo.fetch();
-  return state.isConnected === true && state.isInternetReachable === true;
+  try {
+    const state = await NetInfo.fetch();
+    console.log('[Network Check] State:', JSON.stringify(state));
+    
+    // Перевіряємо тільки isConnected, бо isInternetReachable може бути null
+    if (!state.isConnected) {
+      console.log('[Network Check] Not connected');
+      return false;
+    }
+    
+    // Якщо є з'єднання, спробуємо ping backend
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch(`${BASE_URL}/api/nomenclature`, {
+        method: 'HEAD',
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      const isOnline = response.ok;
+      console.log('[Network Check] Backend ping:', isOnline ? 'SUCCESS' : 'FAILED');
+      return isOnline;
+    } catch (error) {
+      console.log('[Network Check] Backend ping failed:', error);
+      // Якщо ping не вдався, але є інтернет - вважаємо що online (можливо тимчасова проблема)
+      return state.isConnected === true;
+    }
+  } catch (error) {
+    console.error('[Network Check] Error:', error);
+    return false;
+  }
 }
 
 // Generate unique idempotency key
