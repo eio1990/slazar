@@ -56,6 +56,42 @@ export default function RecipeDetailScreen() {
     },
   });
 
+  // Get stock balances
+  const { data: stockBalances } = useQuery({
+    queryKey: ['stock-balances'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/stock/balances`);
+      if (!response.ok) throw new Error('Failed to load stock balances');
+      return response.json();
+    },
+  });
+
+  // Find stock balance for the ingredient
+  const ingredientBalance = stockBalances?.find((b: any) => {
+    // Match by target_product_id of the recipe or find first ingredient
+    // For now, we'll need to get recipe ingredients from API
+    return false; // Will be updated once we have ingredient data
+  });
+
+  // Get recipe ingredients to find the main ingredient
+  const { data: recipeIngredients } = useQuery({
+    queryKey: ['recipe-ingredients', id],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/production/recipes/${id}`);
+      if (!response.ok) return [];
+      const data = await response.json();
+      // Extract ingredients if they exist
+      return data.ingredients || [];
+    },
+    enabled: !!recipe,
+  });
+
+  // Find the main ingredient's stock balance
+  const mainIngredient = recipeIngredients?.[0];
+  const availableStock = mainIngredient 
+    ? stockBalances?.find((b: any) => b.nomenclature_id === mainIngredient.nomenclature_id)?.quantity || 0
+    : 0;
+
   const createBatchMutation = useMutation({
     mutationFn: async (batchData: any) => {
       const response = await fetch(`${API_URL}/api/production/batches`, {
