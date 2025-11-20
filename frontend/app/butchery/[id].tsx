@@ -324,22 +324,7 @@ export default function ButcheryOperationDetailScreen() {
                 <View style={styles.outputInfo}>
                   <Text style={styles.outputName}>{output.output_name}</Text>
                 </View>
-                <View style={styles.actualWeightContainer}>
-                  <Text style={styles.outputWeight}>{output.actual_weight.toFixed(2)} кг</Text>
-                  {output.expected_weight && (
-                    <Text
-                      style={[
-                        styles.differenceText,
-                        output.actual_weight > output.expected_weight
-                          ? styles.differencePositive
-                          : styles.differenceNegative,
-                      ]}
-                    >
-                      {output.actual_weight > output.expected_weight ? '+' : ''}
-                      {(output.actual_weight - output.expected_weight).toFixed(2)} кг
-                    </Text>
-                  )}
-                </View>
+                <Text style={styles.outputWeight}>{output.actual_weight.toFixed(2)} кг</Text>
               </View>
             ))}
 
