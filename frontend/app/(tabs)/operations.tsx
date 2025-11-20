@@ -14,6 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 import {
   apiService,
   checkNetworkConnectivity,
