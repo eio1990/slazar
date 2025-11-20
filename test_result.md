@@ -103,20 +103,25 @@
 #====================================================================================================
 
 user_problem_statement: |
-  Implement "Butchery Module" (Модуль розділки) - NEW MAJOR FEATURE
-  This module manages the breakdown of raw carcasses into primal cuts and by-products.
-  The butchery module is positioned BEFORE the production module in the workflow:
-  Flow: Raw Carcasses (Туша) → Butchery → Primal Cuts → Production → Finished Products
+  UPDATE PRODUCTION RECIPES - Remove trim step and fix nomenclature
+  All 8 production recipes need to be updated:
+  1. Remove "Обрізка та підготовка" (trim) step - this is now handled by Butchery module
+  2. Update source nomenclature to use butchery outputs instead of raw materials
+  3. Renumber steps (now start from salting/marinade, not trim)
   
-  Key features:
-  - Butchery recipe management (recipes define expected yields from carcasses)
-  - Butchery operation lifecycle (create, track, complete with actual outputs)
-  - Multi-level processing support (Level 1: carcass → primary cuts, Level 2: cuts → refined cuts)
-  - Non-inventory yield loss tracking (liquid waste like blood/water runoff)
-  - Stock movements for inputs (carcass deduction) and outputs (primal cuts addition)
-  - Idempotency for offline sync
+  Nomenclature mapping:
+  - Recipe 2 (Бастурма класична): ID 199 (Яловичина для бастурми)
+  - Recipe 3 (Бастурма з конини): ID 202 (Конина для бастурми)
+  - Recipe 4 (Індичка): ID 211 (Індичка для бастурми)
+  - Recipe 5 (Курка): ID 210 (Курка для суджука)
+  - Recipe 6 (Свинина): ID 207 (Свинина для банкетної)
+  - Recipe 7 (Пластина): ID 200 (Яловичина для пластин)
+  - Recipe 8 (Суджук): ID 201 (Яловичина для суджука)
+  - Recipe 9 (Махан): ID 204 (Конина для махан)
   
-  Previous modules (Production, Operations, Packaging) remain unchanged and operational.
+  Additional improvements:
+  - Toast notifications for batch creation with redirect to Production tab
+  - Show stock balance in weight input placeholder
 
 backend:
   - task: "Database schema for recipes module"
