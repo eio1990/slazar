@@ -1,28 +1,39 @@
 #!/usr/bin/env python3
 """
-Comprehensive Backend Testing for Butchery API Module
-Tests all 6 endpoints with edge cases and database validation
+Backend Testing for Production Recipe Updates
+Tests the update_production_recipes.py script results
 """
-
 import requests
 import json
-import uuid
+import sys
 from datetime import datetime
-import time
 
-# Get backend URL from frontend env
-try:
-    with open('/app/frontend/.env', 'r') as f:
-        for line in f:
-            if line.startswith('EXPO_PUBLIC_BACKEND_URL='):
-                BACKEND_URL = line.split('=')[1].strip()
-                break
-        else:
-            BACKEND_URL = "https://butchery-app-1.preview.emergentagent.com"
-except:
-    BACKEND_URL = "https://butchery-app-1.preview.emergentagent.com"
+# Get backend URL from environment
+BACKEND_URL = "https://butchery-app-1.preview.emergentagent.com/api"
 
-API_BASE = f"{BACKEND_URL}/api"
+# Expected nomenclature mappings after update
+EXPECTED_NOMENCLATURE = {
+    2: 199,  # Бастурма класична → Яловичина для бастурми
+    3: 202,  # Бастурма з конини → Конина для бастурми  
+    4: 211,  # Індичка → Індичка для бастурми
+    5: 210,  # Курка → Курка для суджука
+    6: 207,  # Свинина → Свинина для банкетної
+    7: 200,  # Пластина → Яловичина для пластин
+    8: 201,  # Суджук → Яловичина для суджука
+    9: 204,  # Махан → Конина для махан
+}
+
+# Recipe names for verification
+RECIPE_NAMES = {
+    2: "Бастурма класична",
+    3: "Бастурма з конини", 
+    4: "Індичка сировялена",
+    5: "Курка сировялена",
+    6: "Свинина сировялена",
+    7: "Пластина яловичина",
+    8: "Суджук",
+    9: "Махан"
+}
 
 class ButcheryAPITester:
     def __init__(self):
