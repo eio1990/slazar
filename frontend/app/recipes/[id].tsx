@@ -487,9 +487,9 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   stockHint: {
-    fontSize: 14,
-    color: '#4CAF50',
-    marginBottom: 8,
-    fontWeight: '500',
+    fontSize: 12,
+    color: '#2196F3',
+    marginBottom: 6,
+    fontStyle: 'italic',
   },
 });
