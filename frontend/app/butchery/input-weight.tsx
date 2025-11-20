@@ -35,6 +35,16 @@ export default function InputWeightScreen() {
     },
   });
 
+  // Get stock balances
+  const { data: stockBalances } = useQuery({
+    queryKey: ['stock-balances'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/stock/balances`);
+      if (!response.ok) throw new Error('Failed to load stock balances');
+      return response.json();
+    },
+  });
+
   // Find the recipe based on meat type and grade
   const findRecipe = () => {
     if (!recipes) return null;
