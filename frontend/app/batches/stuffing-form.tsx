@@ -296,7 +296,7 @@ export default function StuffingFormScreen() {
                 <View style={styles.calculationRow}>
                   <Text style={styles.calculationLabel}>Залишиться на складі:</Text>
                   <Text style={styles.calculationValue}>
-                    {(casingStock.balance - parseFloat(calculatedUsage)).toFixed(2)} кг
+                    {(casingStock - parseFloat(calculatedUsage)).toFixed(2)} кг
                   </Text>
                 </View>
               )}
