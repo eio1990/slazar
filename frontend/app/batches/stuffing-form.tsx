@@ -100,7 +100,7 @@ export default function StuffingFormScreen() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['batch', batchId] });
       queryClient.invalidateQueries({ queryKey: ['batch-operations', batchId] });
-      queryClient.invalidateQueries({ queryKey: ['stock-balance', casingId] });
+      queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
       
       const usageMsg = data.casing 
         ? `\nВикористано кишки: ${data.casing.usage_kg} ${data.casing.unit}`
