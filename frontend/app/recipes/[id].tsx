@@ -238,61 +238,17 @@ export default function RecipeDetailScreen() {
           
           <View style={styles.formCard}>
             <Text style={styles.label}>Початкова вага (кг) *</Text>
+            {availableStock > 0 && (
+              <Text style={styles.stockHint}>На складі: {availableStock.toFixed(2)} кг</Text>
+            )}
             <TextInput
               style={styles.input}
               value={initialWeight}
               onChangeText={setInitialWeight}
               keyboardType="decimal-pad"
-              placeholder={availableStock > 0 ? `На складі: ${availableStock.toFixed(2)} кг` : "Введіть вагу"}
+              placeholder="Введіть вагу"
+              placeholderTextColor="#999"
             />
-
-            {/* Trim Question */}
-            <View style={styles.checkboxContainer}>
-              <TouchableOpacity
-                style={styles.checkbox}
-                onPress={() => {
-                  setHasTrim(!hasTrim);
-                  if (!hasTrim === false) {
-                    setTrimWaste('0');
-                    setTrimReturned(false);
-                  }
-                }}
-              >
-                <MaterialCommunityIcons
-                  name={hasTrim ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                  size={24}
-                  color="#4CAF50"
-                />
-                <Text style={styles.checkboxLabel}>Є обрізки?</Text>
-              </TouchableOpacity>
-            </View>
-
-            {hasTrim && (
-              <>
-                <Text style={styles.label}>Вага обрізків (кг) *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={trimWaste}
-                  onChangeText={setTrimWaste}
-                  keyboardType="decimal-pad"
-                  placeholder="Введіть вагу обрізків"
-                />
-
-                <View style={styles.checkboxContainer}>
-                  <TouchableOpacity
-                    style={styles.checkbox}
-                    onPress={() => setTrimReturned(!trimReturned)}
-                  >
-                    <MaterialCommunityIcons
-                      name={trimReturned ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                      size={24}
-                      color="#4CAF50"
-                    />
-                    <Text style={styles.checkboxLabel}>Повернути обрізки на склад</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
 
             <TouchableOpacity
               style={[styles.createButton, createBatchMutation.isPending && styles.createButtonDisabled]}
