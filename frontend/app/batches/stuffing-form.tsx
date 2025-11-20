@@ -237,7 +237,7 @@ export default function StuffingFormScreen() {
           <View style={styles.stockCard}>
             <MaterialCommunityIcons name="warehouse" size={20} color="#666" />
             <Text style={styles.stockText}>
-              На складі: <Text style={styles.stockValue}>{casingStock} кг</Text>
+              На складі: <Text style={styles.stockValue}>{casingStock.toFixed(2)} кг</Text>
             </Text>
           </View>
         )}
