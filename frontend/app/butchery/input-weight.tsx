@@ -235,9 +235,7 @@ export default function InputWeightScreen() {
         {/* Weight input */}
         <View style={styles.inputCard}>
           <Text style={styles.inputLabel}>Вага сировини, кг *</Text>
-          {availableStock > 0 && (
-            <Text style={styles.stockHint}>На складі: {availableStock.toFixed(2)} кг</Text>
-          )}
+          <Text style={styles.stockHint}>На складі: {availableStock.toFixed(2)} кг</Text>
           <TextInput
             style={styles.input}
             value={weight}
