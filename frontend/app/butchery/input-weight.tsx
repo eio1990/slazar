@@ -76,6 +76,12 @@ export default function InputWeightScreen() {
   };
 
   const selectedRecipe = findRecipe();
+  
+  // Find stock balance for the source material
+  const sourceBalance = stockBalances?.find((b: any) => 
+    b.nomenclature_id === selectedRecipe?.source_nomenclature_id
+  );
+  const availableStock = sourceBalance?.quantity || 0;
 
   const getMeatTypeName = () => {
     switch (meatType) {
