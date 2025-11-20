@@ -149,7 +149,7 @@ export default function MassageFormScreen() {
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
               <Text style={styles.label}>Фактична кількість води (л) *</Text>
-              <Text style={styles.recommendedLabel}>{recommendedWater} л</Text>
+              <Text style={styles.recommendedLabel}>Рекомендована вага: {recommendedWater} л</Text>
             </View>
             <View style={styles.inputWrapper}>
               <MaterialCommunityIcons name="water" size={20} color="#666" />
