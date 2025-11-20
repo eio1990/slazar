@@ -26,6 +26,22 @@ def migrate():
             
             if trim_columns:
                 print(f"   Found trim columns: {trim_columns}")
+                
+                # First, drop default constraints
+                cursor.execute("""
+                    SELECT dc.name, c.name as column_name
+                    FROM sys.default_constraints dc
+                    JOIN sys.columns c ON dc.parent_column_id = c.column_id
+                    JOIN sys.tables t ON dc.parent_object_id = t.object_id
+                    WHERE t.name = 'batches' AND c.name IN ('trim_waste', 'trim_returned')
+                """)
+                constraints = cursor.fetchall()
+                
+                for constraint_name, col_name in constraints:
+                    cursor.execute(f"ALTER TABLE batches DROP CONSTRAINT {constraint_name}")
+                    print(f"   ✅ Dropped constraint: {constraint_name}")
+                
+                # Now drop columns
                 for col in trim_columns:
                     cursor.execute(f"ALTER TABLE batches DROP COLUMN {col}")
                     print(f"   ✅ Dropped column: {col}")
