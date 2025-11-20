@@ -66,16 +66,7 @@ export default function StuffingFormScreen() {
     },
   });
 
-  // Get casing stock balance
-  const { data: casingStock, isLoading: stockLoading } = useQuery({
-    queryKey: ['stock-balance', casingId],
-    queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/stock/balance/${casingId}`);
-      if (!response.ok) return { balance: 0, unit: 'кг' };
-      return response.json();
-    },
-    enabled: !!casingId,
-  });
+  // Casing stock is already calculated above on line 57
 
   // Get casing nomenclature details
   const { data: nomenclature } = useQuery({
