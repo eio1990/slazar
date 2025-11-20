@@ -335,7 +335,7 @@ export default function ButcheryOperationDetailScreen() {
               <Text style={styles.cardTitle}>Фактичні виходи</Text>
             </View>
 
-            {actual_outputs.map((output: any, idx: number) => (
+            {sortedActualOutputs.map((output: any, idx: number) => (
               <View key={idx} style={styles.outputRow}>
                 <View style={styles.outputInfo}>
                   <Text style={styles.outputName}>{output.output_name}</Text>
