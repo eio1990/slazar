@@ -375,8 +375,15 @@ def clean_old_recipes(conn):
     cursor = conn.cursor()
     
     print("\n" + "=" * 60)
-    print("ОЧИЩЕННЯ СТАРИХ РЕЦЕПТІВ")
+    print("ОЧИЩЕННЯ СТАРИХ ДАНИХ")
     print("=" * 60)
+    
+    # Видалити операції та їх виходи
+    cursor.execute("DELETE FROM butchery_session_operations")
+    print("   ✅ Видалено всі операції розділки")
+    
+    cursor.execute("DELETE FROM butchery_sessions")
+    print("   ✅ Видалено всі сесії розділки")
     
     # Видалити виходи рецептів
     cursor.execute("DELETE FROM butchery_recipe_outputs")
