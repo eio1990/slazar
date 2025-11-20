@@ -107,7 +107,9 @@ def update_recipes():
         print(f"✅ Updated recipe: Свинина сировялена")
         
         # Recipe 4: Індичка сировялена - uses Індичка для бастурми
-        recipe_id_turkey = cursor.execute("SELECT id FROM recipes WHERE name = 'Індичка сировялена'").fetchone()[0]
+        recipe_id_turkey = 4
+        cursor.execute("DELETE FROM recipe_steps WHERE recipe_id = ?", recipe_id_turkey)
+        cursor.execute("DELETE FROM recipe_ingredients WHERE recipe_id = ?", recipe_id_turkey)
         
         steps_turkey = [
             (1, 'salt', 'Засолка', 3, json.dumps({'salt_per_100kg': 19.0, 'water_per_100kg': 25.0, 'massager_minutes': 40})),
