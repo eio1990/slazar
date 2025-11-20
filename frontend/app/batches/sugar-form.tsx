@@ -37,6 +37,18 @@ export default function SugarFormScreen() {
     },
   });
 
+  // Get stock balances (Sugar ID = 29)
+  const { data: stockBalances } = useQuery({
+    queryKey: ['stock-balances'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/stock/balances`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+  });
+
+  const sugarStock = stockBalances?.find((b: any) => b.nomenclature_id === 29)?.quantity || 0;
+
   const processSugarMutation = useMutation({
     mutationFn: async (sugarData: any) => {
       const response = await fetch(`${API_URL}/api/production/batches/${batchId}/sugar`, {
