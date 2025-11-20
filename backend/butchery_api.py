@@ -412,14 +412,34 @@ async def complete_butchery_operation(operation_id: int, completion: ButcheryOpe
                 detail=f"Помилка: сума виходів ({total_output:.2f} кг) перевищує вхідну вагу ({input_weight:.2f} кг). Це фізично неможливо."
             )
         
-        # Отримати очікувані виходи для довідки (тільки для аналітики, без валідації)
+        # Отримати очікувані виходи та знайти стек (liquid-waste)
         cursor.execute("""
-            SELECT bro.output_nomenclature_id, bro.yield_percentage
+            SELECT bro.output_nomenclature_id, bro.yield_percentage, n.nomenclature_type
             FROM butchery_recipe_outputs bro
+            JOIN nomenclature n ON bro.output_nomenclature_id = n.id
             WHERE bro.recipe_id = ?
         """, recipe_id)
         
-        expected_outputs = {row[0]: float(row[1]) for row in cursor.fetchall()}
+        expected_outputs = {}
+        liquid_waste_id = None
+        for row in cursor.fetchall():
+            expected_outputs[row[0]] = float(row[1])
+            if row[2] == 'liquid-waste':
+                liquid_waste_id = row[0]
+        
+        # Автоматично розрахувати стек (різниця між входом і сумою виходів)
+        if liquid_waste_id:
+            liquid_waste_weight = input_weight - total_output
+            if liquid_waste_weight > 0:
+                # Додати стек до виходів автоматично
+                from butchery_models import ButcheryOutputInput
+                liquid_waste_output = ButcheryOutputInput(
+                    output_nomenclature_id=liquid_waste_id,
+                    actual_weight=liquid_waste_weight,
+                    notes="Автоматично розраховано"
+                )
+                completion.outputs.append(liquid_waste_output)
+                total_output += liquid_waste_weight
         
         # Записати фактичні виходи та оприбуткувати
         for output in completion.outputs:
