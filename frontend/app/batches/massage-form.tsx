@@ -39,6 +39,16 @@ export default function MassageFormScreen() {
     },
   });
 
+  // Get stock balances (water is not tracked, but we load for consistency)
+  const { data: stockBalances } = useQuery({
+    queryKey: ['stock-balances'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/stock/balances`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+  });
+
   const processMassageMutation = useMutation({
     mutationFn: async (massageData: any) => {
       const response = await fetch(`${API_URL}/api/production/batches/${batchId}/massage`, {
