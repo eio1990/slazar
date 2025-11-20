@@ -600,11 +600,12 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     flexShrink: 0,
     marginHorizontal: 16,
-    marginBottom: 12,
-    maxHeight: 50,
+    marginBottom: 8,
+    maxHeight: 44,
   },
   categoryFilterContent: {
     paddingRight: 16,
+    alignItems: 'center',
   },
   categoryChip: {
     paddingHorizontal: 16,
