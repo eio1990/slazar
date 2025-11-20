@@ -195,7 +195,7 @@ async def create_butchery_operation(operation: ButcheryOperationCreate):
                 source_operation_type, source_operation_id,
                 idempotency_key, operation_date, metadata
             )
-            VALUES (?, 'withdrawal', ?, ?, 'butchery', ?, ?, GETUTCDATE(), ?)
+            VALUES (?, 'withdrawal', ?, ?, 'butchery', ?, ?, GETDATE(), ?)
         """, operation.source_nomenclature_id, operation.input_weight, new_balance,
             operation_number, f"butchery-start-{operation.idempotency_key}",
             json.dumps({
@@ -207,7 +207,7 @@ async def create_butchery_operation(operation: ButcheryOperationCreate):
         # Оновити баланс
         cursor.execute("""
             UPDATE stock_balances
-            SET quantity = ?, last_updated = GETUTCDATE()
+            SET quantity = ?, last_updated = GETDATE()
             WHERE nomenclature_id = ?
         """, new_balance, operation.source_nomenclature_id)
         
