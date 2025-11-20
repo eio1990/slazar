@@ -441,4 +441,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  stockHint: {
+    fontSize: 12,
+    color: '#2196F3',
+    marginBottom: 6,
+    fontStyle: 'italic',
+  },
 });
