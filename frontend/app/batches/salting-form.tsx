@@ -345,6 +345,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#f44336',
   },
+  stockHint: {
+    fontSize: 12,
+    color: '#2196F3',
+    marginBottom: 6,
+    fontStyle: 'italic',
+  },
   input: {
     backgroundColor: '#F8F8F8',
     borderWidth: 1,
