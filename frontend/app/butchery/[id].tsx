@@ -330,20 +330,7 @@ export default function ButcheryOperationDetailScreen() {
 
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Загальна фактична вага:</Text>
-              <View>
-                <Text style={styles.totalValue}>{totalActualWeight.toFixed(2)} кг</Text>
-                <Text
-                  style={[
-                    styles.totalDifference,
-                    totalActualWeight > totalExpectedWeight
-                      ? styles.differencePositive
-                      : styles.differenceNegative,
-                  ]}
-                >
-                  {totalActualWeight > totalExpectedWeight ? '+' : ''}
-                  {(totalActualWeight - totalExpectedWeight).toFixed(2)} кг від очікуваної
-                </Text>
-              </View>
+              <Text style={styles.totalValue}>{totalActualWeight.toFixed(2)} кг</Text>
             </View>
           </View>
         )}
