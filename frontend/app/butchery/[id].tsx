@@ -129,7 +129,7 @@ export default function ButcheryOperationDetailScreen() {
       };
 
       const response = await fetch(`${API_URL}/api/butchery/operations/${id}/complete`, {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(completionData),
       });
