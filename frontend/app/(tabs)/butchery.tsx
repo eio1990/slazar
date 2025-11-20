@@ -64,7 +64,7 @@ export default function ButcheryScreen() {
         </View>
         <TouchableOpacity
           style={styles.newButton}
-          onPress={() => router.push('/butchery/select-recipe' as any)}
+          onPress={() => router.push('/butchery/select-meat-type' as any)}
         >
           <MaterialCommunityIcons name="plus" size={20} color="#fff" />
           <Text style={styles.newButtonText}>Нова</Text>
