@@ -134,8 +134,6 @@ class Recipe(BaseModel):
 class BatchCreate(BaseModel):
     recipe_id: int
     initial_weight: float
-    trim_waste: Optional[float] = 0
-    trim_returned: bool = False
     operator_notes: Optional[str] = None
 
 class BatchOperationCreate(BaseModel):
