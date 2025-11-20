@@ -163,7 +163,9 @@ def update_recipes():
         print(f"✅ Updated recipe: Курка сировялена")
         
         # Recipe 6: Пластина яловичина - uses Яловичина для пластин
-        recipe_id_plate = cursor.execute("SELECT id FROM recipes WHERE name = 'Пластина яловичина'").fetchone()[0]
+        recipe_id_plate = 7
+        cursor.execute("DELETE FROM recipe_steps WHERE recipe_id = ?", recipe_id_plate)
+        cursor.execute("DELETE FROM recipe_ingredients WHERE recipe_id = ?", recipe_id_plate)
         
         steps_plate = [
             (1, 'marinade', 'Виготовлення маринаду', 0, json.dumps({'type': 'beef_plate_marinade'})),
