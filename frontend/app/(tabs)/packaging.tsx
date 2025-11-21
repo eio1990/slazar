@@ -18,16 +18,16 @@ export default function PackagingScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState<string>('all');
 
-  // Get packaging batches
-  const { data: batches, isLoading, refetch } = useQuery({
-    queryKey: ['packaging-batches', filter],
+  // Get packaging sessions
+  const { data: sessions, isLoading, refetch } = useQuery({
+    queryKey: ['packaging-sessions', filter],
     queryFn: async () => {
-      let url = `${API_URL}/api/packaging/batches`;
+      let url = `${API_URL}/api/packaging/sessions`;
       if (filter !== 'all') {
         url += `?status=${filter}`;
       }
       const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch batches');
+      if (!response.ok) throw new Error('Failed to fetch sessions');
       return response.json();
     },
   });
@@ -76,52 +76,48 @@ export default function PackagingScreen() {
 
       {/* Content */}
       <FlatList
-        data={batches}
+        data={sessions}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.batchCard}
+            style={styles.sessionCard}
             onPress={() => router.push(`/packaging/${item.id}` as any)}
           >
-            <View style={styles.batchHeader}>
-              <View style={styles.batchTitleRow}>
+            <View style={styles.sessionHeader}>
+              <View style={styles.sessionTitleRow}>
                 <MaterialCommunityIcons name="package-variant-closed" size={20} color="#4CAF50" />
-                <Text style={styles.batchNumber}>{item.batch_number}</Text>
+                <Text style={styles.sessionNumber}>{item.session_number}</Text>
               </View>
               <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
                 <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
               </View>
             </View>
 
-            <Text style={styles.productName}>{item.target_product_name || 'Продукт'}</Text>
+            <Text style={styles.productName}>{item.source_product_name}</Text>
             
             <View style={styles.detailsContainer}>
               <View style={styles.detailRow}>
-                <MaterialCommunityIcons 
-                  name={item.packaging_type === 'vacuum' ? 'package-variant' : 
-                        item.packaging_type === 'skin' ? 'package' : 'weight-kilogram'} 
-                  size={16} 
-                  color="#666" 
-                />
+                <MaterialCommunityIcons name="weight-kilogram" size={16} color="#666" />
                 <Text style={styles.detailText}>
-                  {item.packaging_type === 'vacuum' ? 'Вакуум' : 
-                   item.packaging_type === 'skin' ? 'Скін' : 'Ваговий'}
+                  Взято: {item.source_weight_taken} кг
                 </Text>
               </View>
               
-              <View style={styles.detailRow}>
-                <MaterialCommunityIcons name="package-variant" size={16} color="#666" />
-                <Text style={styles.detailText}>
-                  Заплановано: {item.planned_quantity || 0} шт
-                </Text>
-              </View>
-              
-              {item.actual_packed_quantity > 0 && (
-                <View style={styles.detailRow}>
-                  <MaterialCommunityIcons name="check-circle" size={16} color="#4CAF50" />
-                  <Text style={styles.detailText}>
-                    Упаковано: {item.actual_packed_quantity} шт
-                  </Text>
-                </View>
+              {item.outputs_count > 0 && (
+                <>
+                  <View style={styles.detailRow}>
+                    <MaterialCommunityIcons name="package-variant" size={16} color="#666" />
+                    <Text style={styles.detailText}>
+                      Виходів: {item.outputs_count}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.detailRow}>
+                    <MaterialCommunityIcons name="check-circle" size={16} color="#4CAF50" />
+                    <Text style={styles.detailText}>
+                      Всього упаковано: {item.total_packed} шт
+                    </Text>
+                  </View>
+                </>
               )}
               
               <View style={styles.detailRow}>
@@ -147,9 +143,9 @@ export default function PackagingScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <MaterialCommunityIcons name="package-variant" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>Немає партій</Text>
+            <Text style={styles.emptyText}>Немає сесій фасування</Text>
             <Text style={styles.emptySubtext}>
-              Натисніть "+" щоб створити нову партію фасування
+              Натисніть "+" щоб почати нову сесію фасування
             </Text>
           </View>
         }
@@ -158,7 +154,7 @@ export default function PackagingScreen() {
       {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/packaging/new-batch' as any)}
+        onPress={() => router.push('/packaging/new-session' as any)}
       >
         <MaterialCommunityIcons name="plus" size={28} color="#fff" />
       </TouchableOpacity>
@@ -219,7 +215,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-  batchCard: {
+  sessionCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
@@ -239,17 +235,17 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  batchHeader: {
+  sessionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  batchTitleRow: {
+  sessionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  batchNumber: {
+  sessionNumber: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
