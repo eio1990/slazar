@@ -132,6 +132,24 @@ async def get_nomenclature():
             ]
     return await run_in_threadpool(_get)
 
+@app.get("/api/nomenclature/usage-stats")
+async def get_nomenclature_usage_stats():
+    """Get usage statistics for nomenclature items (for sorting by frequency)"""
+    def _get_stats():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            # Count usage from stock_movements (receipts and withdrawals)
+            cursor.execute("""
+                SELECT nomenclature_id, COUNT(*) as usage_count
+                FROM stock_movements
+                WHERE operation_date >= DATEADD(MONTH, -3, GETDATE())
+                GROUP BY nomenclature_id
+            """)
+            stats = {row.nomenclature_id: row.usage_count for row in cursor.fetchall()}
+            return stats
+    return await run_in_threadpool(_get_stats)
+
+
 @app.post("/api/nomenclature", response_model=Nomenclature)
 async def create_nomenclature(item: NomenclatureCreate):
     """Створити номенклатуру"""
