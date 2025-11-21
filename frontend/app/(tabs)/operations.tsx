@@ -115,8 +115,8 @@ export default function OperationsScreen() {
     })
     .sort((a, b) => {
       // First sort by usage frequency (most used first)
-      const aUsage = usageStats[a.id] || 0;
-      const bUsage = usageStats[b.id] || 0;
+      const aUsage = (usageStats && usageStats[a.id]) || 0;
+      const bUsage = (usageStats && usageStats[b.id]) || 0;
       
       if (aUsage !== bUsage) {
         return bUsage - aUsage; // Higher usage first
