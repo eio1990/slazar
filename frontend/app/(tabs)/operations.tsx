@@ -650,21 +650,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     fontSize: 16,
   },
-  categoryFilterContainer: {
+  categoryFilterRow: {
     flexDirection: 'row',
     padding: 12,
     backgroundColor: '#fff',
     gap: 8,
+    alignItems: 'center',
   },
   categoryButton: {
-    flex: 1,
     paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
     alignItems: 'center',
-    minWidth: 60,
+    minWidth: 80,
   },
   categoryButtonActive: {
     backgroundColor: '#4CAF50',
@@ -678,16 +678,14 @@ const styles = StyleSheet.create({
   categoryButtonTextActive: {
     color: '#fff',
   },
-  additionalFiltersContainer: {
-    flexGrow: 0,
-    flexShrink: 0,
-    marginHorizontal: 12,
-    marginBottom: 8,
+  scrollableFilters: {
+    flex: 1,
     maxHeight: 44,
   },
-  additionalFiltersContent: {
-    paddingRight: 12,
+  scrollableFiltersContent: {
+    paddingLeft: 8,
     alignItems: 'center',
+    gap: 8,
   },
   categoryChip: {
     paddingHorizontal: 16,
