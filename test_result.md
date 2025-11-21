@@ -129,6 +129,18 @@ user_problem_statement: |
   - PUT /api/packaging/sessions/{id}/complete - Complete session
 
 backend:
+  - task: "Packaging module refactor - Session-based API"
+    implemented: true
+    working: "NA"
+    file: "backend/packaging_api.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Completed full rewrite of packaging API for session-based workflow. New endpoints: POST /api/packaging/sessions (create session + withdraw source), GET /api/packaging/sessions (list), GET /api/packaging/sessions/{id} (details with outputs/remainders/waste), POST /api/packaging/sessions/{id}/outputs (add SKU output + auto-calculate materials + withdraw materials + receipt finished product), POST /api/packaging/sessions/{id}/remainders (add usable remainder + receipt to stock), POST /api/packaging/sessions/{id}/waste (add waste for analytics only), PUT /api/packaging/sessions/{id}/complete (complete session). Features: Auto-calculation of materials based on packaging recipes, Support for multiple different SKUs in one session, Remainders go back to stock, Waste tracked for analytics only. Ready for comprehensive backend testing."
+  
   - task: "Database schema for recipes module"
     implemented: true
     working: true
