@@ -296,7 +296,7 @@ export default function HistoryScreen() {
             <Text style={styles.emptySubtext}>
               {operationTypeFilter !== 'all' 
                 ? 'Змініть фільтр для перегляду інших операцій'
-                : 'Історія операцій з\'явиться тут'}
+                : 'Історія операцій появиться тут'}
             </Text>
           </View>
         }
