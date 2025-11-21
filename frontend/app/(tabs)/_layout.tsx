@@ -56,7 +56,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="butchery"
           options={{
-            title: 'Різання',
+            title: 'Обробка',
             href: '/(tabs)/butchery',
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="knife" size={size} color={color} />
