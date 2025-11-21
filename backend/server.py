@@ -146,6 +146,59 @@ async def get_nomenclature_usage_stats():
                 GROUP BY nomenclature_id
             """)
             stats = {row.nomenclature_id: row.usage_count for row in cursor.fetchall()}
+
+@app.get("/api/stock/meat-type-products")
+async def get_meat_type_products():
+    """Get mapping of meat types to finished product IDs"""
+    def _get_mapping():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Get all recipes with their main ingredient (first ingredient with highest quantity)
+            cursor.execute("""
+                SELECT 
+                    r.target_product_id,
+                    ri.nomenclature_id as main_ingredient_id,
+                    ni.name as main_ingredient_name
+                FROM recipes r
+                JOIN recipe_ingredients ri ON r.id = ri.recipe_id
+                JOIN nomenclature ni ON ri.nomenclature_id = ni.id
+                WHERE ri.nomenclature_id IN (
+                    SELECT TOP 1 ri2.nomenclature_id
+                    FROM recipe_ingredients ri2
+                    WHERE ri2.recipe_id = r.id
+                    ORDER BY ri2.quantity_per_100kg DESC
+                )
+            """)
+            
+            # Create mapping: meat_type -> [product_ids]
+            meat_mapping = {
+                'яловичина': [],
+                'конина': [],
+                'курка': [],
+                'індичка': [],
+                'свинина': []
+            }
+            
+            for row in cursor.fetchall():
+                ingredient_name_lower = row.main_ingredient_name.lower()
+                
+                # Map ingredient to meat type
+                if 'яловичин' in ingredient_name_lower:
+                    meat_mapping['яловичина'].append(row.target_product_id)
+                elif 'конин' in ingredient_name_lower:
+                    meat_mapping['конина'].append(row.target_product_id)
+                elif 'курк' in ingredient_name_lower:
+                    meat_mapping['курка'].append(row.target_product_id)
+                elif 'індичк' in ingredient_name_lower or 'індич' in ingredient_name_lower:
+                    meat_mapping['індичка'].append(row.target_product_id)
+                elif 'свинин' in ingredient_name_lower:
+                    meat_mapping['свинина'].append(row.target_product_id)
+            
+            return meat_mapping
+    
+    return await run_in_threadpool(_get_mapping)
+
             return stats
     return await run_in_threadpool(_get_stats)
 
