@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Alert,
   Platform,
   ScrollView,
 } from 'react-native';
@@ -16,6 +15,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { apiService, checkNetworkConnectivity } from '../../services/api';
 import NetInfo from '@react-native-community/netinfo';
+import Toast from 'react-native-toast-message';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
