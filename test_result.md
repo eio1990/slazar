@@ -325,7 +325,7 @@ frontend:
     implemented: true
     working: false
     files: ["app/(tabs)/packaging.tsx", "app/packaging/new-session.tsx", "app/packaging/[id].tsx"]
-    stuck_count: 1
+    stuck_count: 2
     priority: "high"
     needs_retesting: false
     status_history:
@@ -338,6 +338,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "❌ CRITICAL SKU SELECTOR ISSUE IDENTIFIED: Comprehensive testing revealed a critical problem with the SKU selection workflow. FINDINGS: (1) ✅ NAVIGATION & SESSIONS: Successfully navigated to packaging tab, found 4 existing sessions across different filters (Всі, В процесі), session details screens load correctly. (2) ✅ SKU MODAL OPENS: 'Додати вихід (SKU)' button works, modal opens with correct title and instructions. (3) ❌ CRITICAL ISSUE - SKU BUTTONS NOT VISIBLE: Modal shows loading state 'Завантаження варіантів фасування...' but horizontal SKU selector buttons with weights (50г, 100г, etc.) are NOT appearing in the UI. Found 3 SKU button elements in DOM but they're not visible to users. (4) ❌ FORM INTERACTION BLOCKED: Cannot test quantity input or submission because SKU selection step fails. (5) 🔍 ROOT CAUSE: Recipes are loading (console shows API calls) but the horizontal ScrollView with SKU buttons is not rendering properly. The UI shows 'Оберіть SKU зверху, щоб ввести кількість' with upward arrow, indicating buttons should be above but are missing. (6) ❌ WORKFLOW BLOCKED: Cannot complete the critical workflow of adding outputs because SKU selection is broken. This is the exact issue mentioned in the review request. RECOMMENDATION: Fix the horizontal SKU selector rendering issue in the modal - check ScrollView implementation, button styling, and loading state handling."
+      - working: false
+        agent: "testing"
+        comment: "❌ RE-TEST CONFIRMS CRITICAL ISSUE PERSISTS: Conducted comprehensive re-test of packaging SKU selector as requested in review. DETAILED FINDINGS: (1) ✅ NAVIGATION WORKING: Successfully navigated to Packaging tab (Фасування), found multiple sessions including PKG-21112025-004 (В процесі status), opened session details correctly. (2) ✅ MODAL OPENS: 'Додати вихід (SKU)' button found and clicked successfully, modal opens with correct title 'Додати вихід (SKU)' and instructions. (3) ❌ CRITICAL ISSUE CONFIRMED: SKU selector buttons are still NOT VISIBLE. Modal shows loading state 'Завантаження варіантів фасування...' that persists even after 6+ seconds. Found 0 SKU buttons in DOM, 0 scroll containers, 0 weight indicators (50г, 100г, etc.), 0 packaging type elements (вакуум, скін). (4) ❌ UI EVIDENCE: Modal displays message 'Оберіть SKU зверху, щоб ввести кількість' with upward arrow, confirming that horizontal scrollable buttons should be above but are completely missing. (5) ❌ WORKFLOW COMPLETELY BLOCKED: Cannot select any SKU, cannot enter quantities, cannot test output addition - the core packaging functionality is broken. (6) 🔍 TECHNICAL ANALYSIS: The .skuButtonsContainer and .skuButton elements are not rendering despite recipes API being called. This is exactly the issue described in the review request. CONCLUSION: The SKU selector fix has NOT been implemented or is not working. The horizontal scrollable buttons with SKU options (50г вакуум, 100г скін, etc.) are completely missing from the UI, making the packaging workflow unusable. Main agent needs to investigate and fix the ScrollView rendering issue in the modal."
 
 metadata:
   created_by: "main_agent"
