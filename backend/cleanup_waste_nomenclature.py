@@ -50,9 +50,9 @@ def cleanup_waste_nomenclature():
         # Step 3: Check for usage in butchery_operation_outputs
         print("\n3. Checking usage in butchery_operation_outputs...")
         cursor.execute("""
-            SELECT operation_id, nomenclature_id, actual_weight
+            SELECT operation_id, output_nomenclature_id, actual_weight
             FROM butchery_operation_outputs
-            WHERE nomenclature_id IN ({})
+            WHERE output_nomenclature_id IN ({})
         """.format(','.join('?' * len(waste_ids_to_remove))), waste_ids_to_remove)
         
         operation_outputs = cursor.fetchall()
@@ -62,8 +62,8 @@ def cleanup_waste_nomenclature():
             print(f"   Updating to use unified waste ID {keep_waste_id}...")
             cursor.execute("""
                 UPDATE butchery_operation_outputs
-                SET nomenclature_id = ?
-                WHERE nomenclature_id IN ({})
+                SET output_nomenclature_id = ?
+                WHERE output_nomenclature_id IN ({})
             """.format(','.join('?' * len(waste_ids_to_remove))), 
             keep_waste_id, *waste_ids_to_remove)
             print(f"   Updated {cursor.rowcount} operation output records")
