@@ -426,22 +426,7 @@ export default function OperationsScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.modalSearchContainer}>
-            <MaterialCommunityIcons name="magnify" size={24} color="#666" />
-            <TextInput
-              style={styles.modalSearchInput}
-              placeholder="Пошук..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <MaterialCommunityIcons name="close-circle" size={20} color="#999" />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Category filters */}
+          {/* Category filters - only М'ясо and Спеції */}
           <View style={styles.categoryFilterContainer}>
             <TouchableOpacity
               style={[styles.categoryButton, !selectedCategory && styles.categoryButtonActive]}
