@@ -22,11 +22,11 @@ def cleanup_waste_nomenclature():
         print("CLEANUP WASTE NOMENCLATURE")
         print("=" * 60)
         
-        # Step 1: Check current usage in butchery_outputs
-        print("\n1. Checking current usage in butchery_outputs...")
+        # Step 1: Check current usage in butchery_recipe_outputs
+        print("\n1. Checking current usage in butchery_recipe_outputs...")
         cursor.execute("""
             SELECT recipe_id, output_nomenclature_id, output_type
-            FROM butchery_outputs
+            FROM butchery_recipe_outputs
             WHERE output_nomenclature_id IN ({})
         """.format(','.join('?' * len(waste_ids_to_remove))), waste_ids_to_remove)
         
@@ -35,10 +35,10 @@ def cleanup_waste_nomenclature():
         for output in affected_outputs:
             print(f"   - Recipe {output.recipe_id}: nomenclature {output.output_nomenclature_id} ({output.output_type})")
         
-        # Step 2: Update butchery_outputs to use unified waste ID
-        print(f"\n2. Updating butchery_outputs to use unified waste ID {keep_waste_id}...")
+        # Step 2: Update butchery_recipe_outputs to use unified waste ID
+        print(f"\n2. Updating butchery_recipe_outputs to use unified waste ID {keep_waste_id}...")
         cursor.execute("""
-            UPDATE butchery_outputs
+            UPDATE butchery_recipe_outputs
             SET output_nomenclature_id = ?
             WHERE output_nomenclature_id IN ({})
         """.format(','.join('?' * len(waste_ids_to_remove))), 
