@@ -199,9 +199,6 @@ async def get_meat_type_products():
     
     return await run_in_threadpool(_get_mapping)
 
-            return stats
-    return await run_in_threadpool(_get_stats)
-
 
 @app.post("/api/nomenclature", response_model=Nomenclature)
 async def create_nomenclature(item: NomenclatureCreate):
