@@ -82,30 +82,6 @@ export default function StockScreen() {
     }
   };
 
-  // Load recipe nomenclatures when recipe is selected
-  const loadRecipeNomenclatures = async (recipeId: number) => {
-    try {
-      const response = await fetch(`${API_URL}/api/production/recipes/${recipeId}/materials`);
-      const data = await response.json();
-      
-      const nomenclatureIds: number[] = [];
-      
-      // Add ingredients
-      data.ingredients?.forEach((ing: any) => {
-        nomenclatureIds.push(ing.nomenclature_id);
-      });
-      
-      // Add spices
-      data.spices?.forEach((spice: any) => {
-        nomenclatureIds.push(spice.nomenclature_id);
-      });
-      
-      setRecipeNomenclatureIds(nomenclatureIds);
-    } catch (error) {
-      console.error('Error loading recipe materials:', error);
-    }
-  };
-
   useEffect(() => {
     loadData();
 
@@ -116,14 +92,6 @@ export default function StockScreen() {
 
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (selectedRecipe) {
-      loadRecipeNomenclatures(selectedRecipe);
-    } else {
-      setRecipeNomenclatureIds([]);
-    }
-  }, [selectedRecipe]);
 
   const onRefresh = () => {
     setRefreshing(true);
