@@ -439,7 +439,7 @@ export default function OperationsScreen() {
                   styles.categoryButtonText, 
                   selectedCategories.includes(category) && styles.categoryButtonTextActive
                 ]}>
-                  {category === 'М\'ясо та м\'ясні продукти' ? 'М\'ясо' : category}
+                  {category === 'Сировина - М\'ясо' ? 'М\'ясо' : category}
                 </Text>
               </TouchableOpacity>
             ))}
