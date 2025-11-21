@@ -897,32 +897,30 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     marginLeft: 12,
   },
-  modalOverlay: {
+  fullScreenModal: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '85%',
+    backgroundColor: '#f5f5f5',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  modalCloseButton: {
+    padding: 4,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
   },
-  modalBody: {
-    padding: 20,
+  fullModalBody: {
+    flex: 1,
+    padding: 16,
   },
   modalInfo: {
     fontSize: 14,
@@ -930,7 +928,65 @@ const styles = StyleSheet.create({
     backgroundColor: '#E3F2FD',
     padding: 12,
     borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  skuButtonsContainer: {
+    marginBottom: 24,
+    flexDirection: 'row',
+  },
+  skuButton: {
+    backgroundColor: '#fff',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    marginRight: 12,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  skuButtonSelected: {
+    borderColor: '#007AFF',
+    backgroundColor: '#E3F2FD',
+  },
+  skuButtonWeight: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  skuButtonWeightSelected: {
+    color: '#007AFF',
+  },
+  skuButtonType: {
+    fontSize: 13,
+    color: '#666',
+  },
+  skuButtonTypeSelected: {
+    color: '#007AFF',
+  },
+  selectedSkuInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  selectedSkuText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginLeft: 8,
+    flex: 1,
   },
   inputGroup: {
     marginBottom: 16,
@@ -941,9 +997,16 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
   },
-  skuList: {
-    maxHeight: 150,
-    marginBottom: 16,
+  inputLarge: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    textAlign: 'center',
   },
   skuCard: {
     backgroundColor: '#f5f5f5',
@@ -965,6 +1028,42 @@ const styles = StyleSheet.create({
   },
   skuWeight: {
     fontSize: 13,
+    color: '#666',
+  },
+  noSelectionContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+  },
+  noSelectionText: {
+    fontSize: 16,
+    color: '#999',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  materialsPreview: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 24,
+  },
+  materialsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 12,
+  },
+  materialRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  materialName: {
+    fontSize: 14,
+    color: '#333',
+  },
+  materialQty: {
+    fontSize: 14,
     color: '#666',
   },
   input: {
