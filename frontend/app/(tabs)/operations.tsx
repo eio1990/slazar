@@ -651,14 +651,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   categoryFilterContainer: {
+    flexDirection: 'row',
+    padding: 12,
+    backgroundColor: '#fff',
+    gap: 8,
+  },
+  categoryButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    alignItems: 'center',
+    minWidth: 60,
+  },
+  categoryButtonActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  categoryButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+  },
+  categoryButtonTextActive: {
+    color: '#fff',
+  },
+  additionalFiltersContainer: {
     flexGrow: 0,
     flexShrink: 0,
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginBottom: 8,
     maxHeight: 44,
   },
-  categoryFilterContent: {
-    paddingRight: 16,
+  additionalFiltersContent: {
+    paddingRight: 12,
     alignItems: 'center',
   },
   categoryChip: {
@@ -666,7 +694,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginRight: 8,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#f0f0f0',
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
@@ -675,8 +703,8 @@ const styles = StyleSheet.create({
     borderColor: '#4CAF50',
   },
   categoryChipText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     color: '#666',
   },
   categoryChipTextActive: {
