@@ -423,8 +423,9 @@ export default function OperationsScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Category filters - only М'ясо and Спеції */}
-          <View style={styles.categoryFilterContainer}>
+          {/* Category filters */}
+          <View style={styles.categoryFilterRow}>
+            {/* Priority filters - fixed */}
             {filterCategories.map((category) => (
               <TouchableOpacity
                 key={category}
@@ -442,6 +443,34 @@ export default function OperationsScreen() {
                 </Text>
               </TouchableOpacity>
             ))}
+            
+            {/* Other filters - scrollable */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.scrollableFilters}
+              contentContainerStyle={styles.scrollableFiltersContent}
+            >
+              {categories
+                .filter(c => !filterCategories.includes(c))
+                .map((category) => (
+                  <TouchableOpacity
+                    key={category}
+                    style={[
+                      styles.categoryChip,
+                      selectedCategories.includes(category) && styles.categoryChipActive
+                    ]}
+                    onPress={() => toggleCategoryFilter(category)}
+                  >
+                    <Text style={[
+                      styles.categoryChipText,
+                      selectedCategories.includes(category) && styles.categoryChipTextActive
+                    ]}>
+                      {category}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
           </View>
 
           {loading ? (
