@@ -212,7 +212,7 @@ export default function StockScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Залишки</Text>
+        <Text style={styles.headerTitle}>Склад</Text>
         <View style={styles.placeholder} />
       </View>
 
