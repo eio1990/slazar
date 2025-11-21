@@ -41,542 +41,492 @@ class PackagingSessionWasteCreate(BaseModel):
 class PackagingSessionComplete(BaseModel):
     notes: Optional[str] = None
 
+# ========== RECIPES ENDPOINT (unchanged) ==========
 
-@router.get("/recipes", response_model=List[PackagingRecipe])
-async def get_packaging_recipes(
-    source_product_id: Optional[int] = None,
-    packaging_type: Optional[str] = None,
-    active_only: bool = True
-):
-    """Получить список рецептов фасовки с нормами расхода материалов"""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        
-        query = """
-            SELECT 
-                pr.id, pr.source_product_id, pr.target_product_id,
-                pr.packaging_type, pr.target_weight_grams, pr.is_active, pr.notes,
-                n1.name as source_name, n2.name as target_name
-            FROM packaging_recipes pr
-            JOIN nomenclature n1 ON pr.source_product_id = n1.id
-            JOIN nomenclature n2 ON pr.target_product_id = n2.id
-            WHERE 1=1
-        """
-        params = []
-        
-        if active_only:
-            query += " AND pr.is_active = 1"
-        
-        if source_product_id:
-            query += " AND pr.source_product_id = ?"
-            params.append(source_product_id)
-        
-        if packaging_type:
-            query += " AND pr.packaging_type = ?"
-            params.append(packaging_type)
-        
-        query += " ORDER BY n1.name, pr.packaging_type, pr.target_weight_grams"
-        
-        cursor.execute(query, *params)
-        
-        recipes = []
-        for row in cursor.fetchall():
-            recipe_id = row.id
+@router.get("/recipes")
+async def get_packaging_recipes(source_product_id: Optional[int] = None):
+    """Получить рецепты фасовки (для расчета материалов)"""
+    def _get():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
             
-            # Получаем материалы для рецепта
-            cursor.execute("""
+            query = """
                 SELECT 
-                    prm.material_id, prm.quantity_per_unit, prm.rounding_precision,
-                    prm.material_type, n.name as material_name
-                FROM packaging_recipe_materials prm
-                JOIN nomenclature n ON prm.material_id = n.id
-                WHERE prm.recipe_id = ?
-            """, recipe_id)
+                    pr.id, pr.source_product_id, pr.target_product_id,
+                    pr.packaging_type, pr.target_weight_grams, pr.is_active, pr.notes,
+                    n1.name as source_name, n2.name as target_name
+                FROM packaging_recipes pr
+                JOIN nomenclature n1 ON pr.source_product_id = n1.id
+                JOIN nomenclature n2 ON pr.target_product_id = n2.id
+                WHERE pr.is_active = 1
+            """
+            params = []
             
-            materials = []
-            for mat_row in cursor.fetchall():
-                materials.append(PackagingRecipeMaterial(
-                    material_id=mat_row.material_id,
-                    material_name=mat_row.material_name,
-                    quantity_per_unit=float(mat_row.quantity_per_unit),
-                    rounding_precision=float(mat_row.rounding_precision) if mat_row.rounding_precision else None,
-                    material_type=mat_row.material_type
-                ))
+            if source_product_id:
+                query += " AND pr.source_product_id = ?"
+                params.append(source_product_id)
             
-            recipes.append(PackagingRecipe(
-                id=recipe_id,
-                source_product_id=row.source_product_id,
-                source_product_name=row.source_name,
-                target_product_id=row.target_product_id,
-                target_product_name=row.target_name,
-                packaging_type=row.packaging_type,
-                target_weight_grams=row.target_weight_grams,
-                is_active=bool(row.is_active),
-                materials=materials,
-                notes=row.notes
-            ))
-        
-        return recipes
+            query += " ORDER BY n1.name, pr.packaging_type, pr.target_weight_grams"
+            
+            cursor.execute(query, *params)
+            
+            recipes = []
+            for row in cursor.fetchall():
+                recipe_id = row.id
+                
+                # Получаем материалы для рецепта
+                cursor.execute("""
+                    SELECT 
+                        prm.material_id, prm.quantity_per_unit, prm.rounding_precision,
+                        prm.material_type, n.name as material_name
+                    FROM packaging_recipe_materials prm
+                    JOIN nomenclature n ON prm.material_id = n.id
+                    WHERE prm.recipe_id = ?
+                """, recipe_id)
+                
+                materials = []
+                for mat_row in cursor.fetchall():
+                    materials.append({
+                        'material_id': mat_row.material_id,
+                        'material_name': mat_row.material_name,
+                        'quantity_per_unit': float(mat_row.quantity_per_unit),
+                        'rounding_precision': float(mat_row.rounding_precision) if mat_row.rounding_precision else None,
+                        'material_type': mat_row.material_type
+                    })
+                
+                recipes.append({
+                    'id': recipe_id,
+                    'source_product_id': row.source_product_id,
+                    'source_product_name': row.source_name,
+                    'target_product_id': row.target_product_id,
+                    'target_product_name': row.target_name,
+                    'packaging_type': row.packaging_type,
+                    'target_weight_grams': row.target_weight_grams,
+                    'is_active': bool(row.is_active),
+                    'materials': materials,
+                    'notes': row.notes
+                })
+            
+            return recipes
+    
+    return await run_in_threadpool(_get)
 
+# ========== SESSION ENDPOINTS ==========
 
-@router.post("/batches", response_model=PackagingBatch)
-async def create_packaging_batch(batch_data: PackagingBatchCreate):
-    """Создать партию фасовки (запуск цикла фасовки)"""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        
-        # Проверяем idempotency
-        cursor.execute("""
-            SELECT id FROM packaging_batches WHERE batch_number = ?
-        """, batch_data.idempotency_key)
-        
-        existing = cursor.fetchone()
-        if existing:
-            # Возвращаем существующую партию
-            return await get_packaging_batch(existing.id)
-        
-        # Получаем рецепт фасовки
-        cursor.execute("""
-            SELECT pr.*, n1.name as source_name, n2.name as target_name
-            FROM packaging_recipes pr
-            JOIN nomenclature n1 ON pr.source_product_id = n1.id
-            JOIN nomenclature n2 ON pr.target_product_id = n2.id
-            WHERE pr.id = ? AND pr.is_active = 1
-        """, batch_data.recipe_id)
-        
-        recipe = cursor.fetchone()
-        if not recipe:
-            raise HTTPException(status_code=404, detail="Рецепт фасовки не найден или не активен")
-        
-        # Проверяем доступность весового продукта на складе
-        cursor.execute("""
-            SELECT COALESCE(quantity, 0) as quantity
-            FROM stock_balances
-            WHERE nomenclature_id = ?
-        """, recipe.source_product_id)
-        
-        balance_row = cursor.fetchone()
-        source_balance = float(balance_row[0]) if balance_row else 0
-        
-        if source_balance < batch_data.source_weight_taken:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Недостатньо весової продукції на складі. Доступно: {source_balance:.2f} кг, Потрібно: {batch_data.source_weight_taken:.2f} кг"
-            )
-        
-        # Генерируем номер партии фасовки
-        today = datetime.now().strftime("%d%m%Y")
-        
-        # Получаем счетчик партий на сегодня для данного продукта
-        cursor.execute("""
-            SELECT COUNT(*) 
-            FROM packaging_batches 
-            WHERE batch_number LIKE ?
-        """, f"PKG-{recipe.source_product_id}-{today}-%")
-        
-        count = cursor.fetchone()[0]
-        batch_number = f"PKG-{recipe.source_product_id}-{today}-{count + 1:03d}"
-        
-        # Создаем партию фасовки
-        cursor.execute("""
-            INSERT INTO packaging_batches (
-                batch_number, recipe_id, source_product_id, target_product_id,
-                status, planned_quantity, source_weight_taken,
-                operator_notes, started_at
-            )
-            VALUES (?, ?, ?, ?, 'in_progress', ?, ?, ?, DATEADD(HOUR, 2, GETDATE()))
-        """, batch_number, batch_data.recipe_id, recipe.source_product_id,
-            recipe.target_product_id, batch_data.planned_quantity,
-            batch_data.source_weight_taken, batch_data.notes)
-        
-        batch_id = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
-        
-        conn.commit()
-        
-        return await get_packaging_batch(batch_id)
-
-
-@router.get("/batches", response_model=List[PackagingBatch])
-async def get_packaging_batches(
-    status: Optional[str] = None,
-    source_product_id: Optional[int] = None,
-    limit: int = 100
-):
-    """Получить список партий фасовки"""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        
-        query = """
-            SELECT 
-                pb.id, pb.batch_number, pb.recipe_id,
-                pb.source_product_id, pb.target_product_id,
-                pb.status, pb.planned_quantity, pb.source_weight_taken,
-                pb.actual_packed_quantity, pb.actual_source_used, pb.waste_quantity,
-                pb.started_at, pb.completed_at, pb.operator_notes,
-                n1.name as source_name, n2.name as target_name,
-                pr.packaging_type, pr.target_weight_grams
-            FROM packaging_batches pb
-            JOIN nomenclature n1 ON pb.source_product_id = n1.id
-            JOIN nomenclature n2 ON pb.target_product_id = n2.id
-            JOIN packaging_recipes pr ON pb.recipe_id = pr.id
-            WHERE 1=1
-        """
-        params = []
-        
-        if status:
-            query += " AND pb.status = ?"
-            params.append(status)
-        
-        if source_product_id:
-            query += " AND pb.source_product_id = ?"
-            params.append(source_product_id)
-        
-        if limit:
-            # SQL Server вимагає TOP разом з ORDER BY в одному запиті
-            query = query.replace("SELECT", f"SELECT TOP {limit}", 1)
-            query += " ORDER BY pb.started_at DESC"
-        else:
-            query += " ORDER BY pb.started_at DESC"
-        
-        cursor.execute(query, *params)
-        
-        batches = []
-        for row in cursor.fetchall():
-            batches.append(PackagingBatch(
-                id=row.id,
-                batch_number=row.batch_number,
-                recipe_id=row.recipe_id,
-                source_product_id=row.source_product_id,
-                source_product_name=row.source_name,
-                target_product_id=row.target_product_id,
-                target_product_name=row.target_name,
-                packaging_type=row.packaging_type,
-                target_weight_grams=row.target_weight_grams,
-                status=row.status,
-                planned_quantity=row.planned_quantity,
-                source_weight_taken=float(row.source_weight_taken),
-                actual_packed_quantity=row.actual_packed_quantity,
-                actual_source_used=float(row.actual_source_used),
-                waste_quantity=float(row.waste_quantity),
-                started_at=row.started_at,
-                completed_at=row.completed_at,
-                operator_notes=row.operator_notes
-            ))
-        
-        return batches
-
-
-@router.get("/batches/{batch_id}", response_model=PackagingBatch)
-async def get_packaging_batch(batch_id: int):
-    """Получить детали партии фасовки"""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT 
-                pb.id, pb.batch_number, pb.recipe_id,
-                pb.source_product_id, pb.target_product_id,
-                pb.status, pb.planned_quantity, pb.source_weight_taken,
-                pb.actual_packed_quantity, pb.actual_source_used, pb.waste_quantity,
-                pb.started_at, pb.completed_at, pb.operator_notes,
-                n1.name as source_name, n2.name as target_name,
-                pr.packaging_type, pr.target_weight_grams
-            FROM packaging_batches pb
-            JOIN nomenclature n1 ON pb.source_product_id = n1.id
-            JOIN nomenclature n2 ON pb.target_product_id = n2.id
-            JOIN packaging_recipes pr ON pb.recipe_id = pr.id
-            WHERE pb.id = ?
-        """, batch_id)
-        
-        row = cursor.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Партия фасовки не найдена")
-        
-        return PackagingBatch(
-            id=row.id,
-            batch_number=row.batch_number,
-            recipe_id=row.recipe_id,
-            source_product_id=row.source_product_id,
-            source_product_name=row.source_name,
-            target_product_id=row.target_product_id,
-            target_product_name=row.target_name,
-            packaging_type=row.packaging_type,
-            target_weight_grams=row.target_weight_grams,
-            status=row.status,
-            planned_quantity=row.planned_quantity,
-            source_weight_taken=float(row.source_weight_taken),
-            actual_packed_quantity=row.actual_packed_quantity,
-            actual_source_used=float(row.actual_source_used),
-            waste_quantity=float(row.waste_quantity),
-            started_at=row.started_at,
-            completed_at=row.completed_at,
-            operator_notes=row.operator_notes
-        )
-
-
-@router.post("/batches/{batch_id}/operations")
-async def record_packaging_operation(batch_id: int, operation_data: PackagingOperationCreate):
+@router.post("/sessions")
+async def create_packaging_session(session_data: PackagingSessionCreate):
     """
-    Записать операцию фасовки с АВТОМАТИЧЕСКИМ расчетом материалов
-    Система сама рассчитывает расход материалов: норма × packed_quantity
+    Создать новую сессию фасовки
+    1. Списать весовой продукт со склада
+    2. Создать запись сессии
     """
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        
-        # Получаем партию
-        cursor.execute("SELECT * FROM packaging_batches WHERE id = ?", batch_id)
-        batch = cursor.fetchone()
-        if not batch:
-            raise HTTPException(status_code=404, detail="Партія фасування не знайдена")
-        
-        if batch.status == 'completed':
-            raise HTTPException(status_code=400, detail="Партія вже завершена")
-        
-        # Проверяем idempotency
-        cursor.execute("""
-            SELECT id FROM packaging_operations WHERE idempotency_key = ?
-        """, operation_data.idempotency_key)
-        
-        if cursor.fetchone():
-            return {"message": "Операція вже записана", "batch_id": batch_id}
-        
-        # Получаем рецепт фасовки
-        cursor.execute("SELECT * FROM packaging_recipes WHERE id = ?", batch.recipe_id)
-        recipe = cursor.fetchone()
-        if not recipe:
-            raise HTTPException(status_code=404, detail="Рецепт фасування не знайдено")
-        
-        # Получаем материалы рецепта с нормами
-        cursor.execute("""
-            SELECT prm.material_id, prm.quantity_per_unit, prm.rounding_precision, 
-                   prm.material_type, n.name, n.unit
-            FROM packaging_recipe_materials prm
-            JOIN nomenclature n ON prm.material_id = n.id
-            WHERE prm.recipe_id = ?
-        """, batch.recipe_id)
-        
-        recipe_materials = cursor.fetchall()
-        if not recipe_materials:
-            raise HTTPException(status_code=400, detail="У рецепті не вказано матеріали")
-        
-        # АВТОМАТИЧЕСКИЙ РАСЧЕТ материалов: норма × кількість
-        calculated_materials = []
-        
-        for mat_row in recipe_materials:
-            material_id = mat_row.material_id
-            quantity_per_unit = float(mat_row.quantity_per_unit)
-            rounding_precision = float(mat_row.rounding_precision) if mat_row.rounding_precision else None
-            material_type = mat_row.material_type
-            material_name = mat_row.name
-            material_unit = mat_row.unit
+    def _create():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
             
-            # Рассчитываем количество
-            calculated_qty = quantity_per_unit * operation_data.packed_quantity
-            
-            # Применяем округление
-            if rounding_precision:
-                calculated_qty = round(calculated_qty / rounding_precision) * rounding_precision
-            elif material_unit in ['шт', 'од']:
-                # Для штук - округление до целых
-                calculated_qty = int(round(calculated_qty))
-            else:
-                # Для метров и прочего - до 0.1
-                calculated_qty = round(calculated_qty, 1)
-            
-            calculated_materials.append({
-                'material_id': material_id,
-                'material_name': material_name,
-                'quantity': calculated_qty,
-                'unit': material_unit,
-                'material_type': material_type
-            })
-        
-        # Проверяем доступность ВСЕХ материалов перед списанием
-        for material in calculated_materials:
-            material_id = material['material_id']
-            quantity = material['quantity']
-            
+            # Проверить наличность на складе
             cursor.execute("""
-                SELECT COALESCE(quantity, 0) FROM stock_balances WHERE nomenclature_id = ?
-            """, material_id)
+                SELECT COALESCE(quantity, 0) FROM stock_balances 
+                WHERE nomenclature_id = ?
+            """, session_data.source_product_id)
             
             balance_row = cursor.fetchone()
             balance = float(balance_row[0]) if balance_row else 0
             
-            if balance < quantity:
+            if balance < session_data.source_weight_taken:
+                cursor.execute("SELECT name FROM nomenclature WHERE id = ?", session_data.source_product_id)
+                product_name = cursor.fetchone()[0]
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Недостатньо '{material['material_name']}'. Доступно: {balance:.2f} {material['unit']}, Потрібно: {quantity:.2f} {material['unit']}"
+                    detail=f"Недостатньо продукту '{product_name}'. Доступно: {balance:.2f} кг, Потрібно: {session_data.source_weight_taken:.2f} кг"
                 )
-        
-        # Создаем операцию
-        cursor.execute("""
-            INSERT INTO packaging_operations (
-                batch_id, operation_type, packed_quantity, source_used,
-                waste_quantity, notes, idempotency_key
-            )
-            VALUES (?, 'pack', ?, ?, ?, ?, ?)
-        """, batch_id, operation_data.packed_quantity, operation_data.source_used,
-            operation_data.waste_quantity, operation_data.notes, operation_data.idempotency_key)
-        
-        operation_id = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
-        
-        # Списываем материалы (автоматически рассчитанные)
-        for material in calculated_materials:
-            material_id = material['material_id']
-            quantity = material['quantity']
             
-            # Получаем текущий баланс
+            # Генерировать номер сессии
+            today = datetime.now().strftime("%d%m%Y")
             cursor.execute("""
-                SELECT COALESCE(quantity, 0) FROM stock_balances WHERE nomenclature_id = ?
-            """, material_id)
-            current_balance = float(cursor.fetchone()[0])
-            new_balance = current_balance - quantity
+                SELECT COUNT(*) FROM packaging_sessions 
+                WHERE session_number LIKE ?
+            """, f"PKG-{today}-%")
+            count = cursor.fetchone()[0]
+            session_number = f"PKG-{today}-{count + 1:03d}"
             
-            # Создаем движение
-            movement_key = f"packaging-material-{batch_id}-{material_id}-{operation_data.idempotency_key}"
+            # Списать продукт со склада
+            new_balance = balance - session_data.source_weight_taken
             
+            # Stock movement
+            movement_key = f"packaging-session-start-{session_number}-{datetime.now().timestamp()}"
             cursor.execute("""
                 INSERT INTO stock_movements (
                     nomenclature_id, operation_type, quantity, balance_after,
                     source_operation_type, source_operation_id,
                     idempotency_key, operation_date, metadata
                 )
-                VALUES (?, 'withdrawal', ?, ?, 'packaging_material', ?, ?, DATEADD(HOUR, 2, GETDATE()), ?)
-            """, material_id, quantity, new_balance, batch.batch_number, movement_key,
+                VALUES (?, 'withdrawal', ?, ?, 'packaging_session', ?, ?, DATEADD(HOUR, 2, GETDATE()), ?)
+            """, session_data.source_product_id, session_data.source_weight_taken, new_balance,
+                session_number, movement_key,
                 json.dumps({
-                    'batch_id': batch_id,
-                    'batch_number': batch.batch_number,
-                    'operation_id': operation_id
+                    'session_number': session_number,
+                    'source_weight_taken': session_data.source_weight_taken
                 }))
             
-            movement_id = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
-            
-            # Обновляем баланс
+            # Обновить баланс
             cursor.execute("""
-                UPDATE stock_balances
+                UPDATE stock_balances 
                 SET quantity = ?, last_updated = DATEADD(HOUR, 2, GETDATE())
                 WHERE nomenclature_id = ?
-            """, new_balance, material_id)
+            """, new_balance, session_data.source_product_id)
             
-            # Записываем расход материала
+            # Создать сессию
             cursor.execute("""
-                INSERT INTO packaging_material_consumption (
-                    operation_id, material_id, quantity_used, movement_id
+                INSERT INTO packaging_sessions (
+                    session_number, source_product_id, source_weight_taken,
+                    status, operator_notes
                 )
-                VALUES (?, ?, ?, ?)
-            """, operation_id, material_id, quantity, movement_id)
-        
-        # Обновляем итоги партии
-        cursor.execute("""
-            UPDATE packaging_batches
-            SET actual_packed_quantity = actual_packed_quantity + ?,
-                actual_source_used = actual_source_used + ?,
-                waste_quantity = waste_quantity + ?,
-                updated_at = DATEADD(HOUR, 2, GETDATE())
-            WHERE id = ?
-        """, operation_data.packed_quantity, operation_data.source_used,
-            operation_data.waste_quantity, batch_id)
-        
-        conn.commit()
-        
-        return {
-            "message": "Операція записана успішно",
-            "batch_id": batch_id,
-            "operation_id": operation_id,
-            "packed_quantity": operation_data.packed_quantity,
-            "materials_used": calculated_materials  # Показываем что было автоматически рассчитано
-        }
+                VALUES (?, ?, ?, 'in_progress', ?)
+            """, session_number, session_data.source_product_id, 
+                session_data.source_weight_taken, session_data.notes)
+            
+            session_id = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
+            
+            conn.commit()
+            
+            return {
+                "message": "Сесію фасування створено",
+                "session_id": session_id,
+                "session_number": session_number,
+                "source_weight_taken": session_data.source_weight_taken
+            }
+    
+    return await run_in_threadpool(_create)
 
 
-@router.put("/batches/{batch_id}/complete")
-async def complete_packaging_batch(batch_id: int, completion: PackagingBatchComplete):
-    """Завершить партию фасовки"""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        
-        # Получаем партию
-        cursor.execute("SELECT * FROM packaging_batches WHERE id = ?", batch_id)
-        batch = cursor.fetchone()
-        if not batch:
-            raise HTTPException(status_code=404, detail="Партия фасовки не найдена")
-        
-        if batch.status == 'completed':
-            raise HTTPException(status_code=400, detail="Партия уже завершена")
-        
-        # Обновляем партию
-        cursor.execute("""
-            UPDATE packaging_batches
-            SET status = 'completed',
-                actual_packed_quantity = ?,
-                actual_source_used = ?,
-                waste_quantity = ?,
-                operator_notes = ?,
-                completed_at = DATEADD(HOUR, 2, GETDATE()),
-                updated_at = DATEADD(HOUR, 2, GETDATE())
-            WHERE id = ?
-        """, completion.final_packed_quantity, completion.final_source_used,
-            completion.final_waste, completion.notes, batch_id)
-        
-        # Списываем весовой продукт (если еще не списан)
-        source_withdrawal_key = f"packaging-source-{batch_id}-{completion.idempotency_key}"
-        
-        cursor.execute("""
-            SELECT id FROM stock_movements WHERE idempotency_key = ?
-        """, source_withdrawal_key)
-        
-        if not cursor.fetchone():
-            # Получаем баланс
+@router.get("/sessions")
+async def get_packaging_sessions(status: Optional[str] = None, limit: int = 50):
+    """Получить список сессий фасовки"""
+    def _get():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            query = """
+                SELECT 
+                    ps.id, ps.session_number, ps.source_product_id, ps.source_weight_taken,
+                    ps.status, ps.started_at, ps.completed_at, ps.operator_notes,
+                    n.name as source_product_name
+                FROM packaging_sessions ps
+                JOIN nomenclature n ON ps.source_product_id = n.id
+                WHERE 1=1
+            """
+            params = []
+            
+            if status:
+                query += " AND ps.status = ?"
+                params.append(status)
+            
+            query = f"SELECT TOP {limit} * FROM ({query}) AS subquery ORDER BY started_at DESC"
+            
+            cursor.execute(query, *params)
+            
+            sessions = []
+            for row in cursor.fetchall():
+                session_id = row.id
+                
+                # Получить количество выходов
+                cursor.execute("SELECT COUNT(*) FROM packaging_session_outputs WHERE session_id = ?", session_id)
+                outputs_count = cursor.fetchone()[0]
+                
+                # Получить суммарное количество упакованных единиц
+                cursor.execute("SELECT COALESCE(SUM(quantity_packed), 0) FROM packaging_session_outputs WHERE session_id = ?", session_id)
+                total_packed = cursor.fetchone()[0]
+                
+                sessions.append({
+                    'id': session_id,
+                    'session_number': row.session_number,
+                    'source_product_id': row.source_product_id,
+                    'source_product_name': row.source_product_name,
+                    'source_weight_taken': float(row.source_weight_taken),
+                    'status': row.status,
+                    'started_at': row.started_at.isoformat() if row.started_at else None,
+                    'completed_at': row.completed_at.isoformat() if row.completed_at else None,
+                    'operator_notes': row.operator_notes,
+                    'outputs_count': outputs_count,
+                    'total_packed': total_packed
+                })
+            
+            return sessions
+    
+    return await run_in_threadpool(_get)
+
+
+@router.get("/sessions/{session_id}")
+async def get_packaging_session(session_id: int):
+    """Получить детали сессии фасовки с выходами, остатками и отходами"""
+    def _get():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Получить сессию
+            cursor.execute("""
+                SELECT 
+                    ps.id, ps.session_number, ps.source_product_id, ps.source_weight_taken,
+                    ps.status, ps.started_at, ps.completed_at, ps.operator_notes,
+                    n.name as source_product_name
+                FROM packaging_sessions ps
+                JOIN nomenclature n ON ps.source_product_id = n.id
+                WHERE ps.id = ?
+            """, session_id)
+            
+            row = cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Сесію фасування не знайдено")
+            
+            session = {
+                'id': row.id,
+                'session_number': row.session_number,
+                'source_product_id': row.source_product_id,
+                'source_product_name': row.source_product_name,
+                'source_weight_taken': float(row.source_weight_taken),
+                'status': row.status,
+                'started_at': row.started_at.isoformat() if row.started_at else None,
+                'completed_at': row.completed_at.isoformat() if row.completed_at else None,
+                'operator_notes': row.operator_notes
+            }
+            
+            # Получить выходы (outputs)
+            cursor.execute("""
+                SELECT 
+                    pso.id, pso.target_product_id, pso.quantity_packed, 
+                    pso.calculated_materials, pso.confirmed_materials, pso.defect_quantity,
+                    pso.notes, pso.created_at, n.name as target_product_name
+                FROM packaging_session_outputs pso
+                JOIN nomenclature n ON pso.target_product_id = n.id
+                WHERE pso.session_id = ?
+                ORDER BY pso.created_at
+            """, session_id)
+            
+            outputs = []
+            for out_row in cursor.fetchall():
+                outputs.append({
+                    'id': out_row.id,
+                    'target_product_id': out_row.target_product_id,
+                    'target_product_name': out_row.target_product_name,
+                    'quantity_packed': out_row.quantity_packed,
+                    'calculated_materials': json.loads(out_row.calculated_materials) if out_row.calculated_materials else None,
+                    'confirmed_materials': json.loads(out_row.confirmed_materials) if out_row.confirmed_materials else None,
+                    'defect_quantity': out_row.defect_quantity,
+                    'notes': out_row.notes,
+                    'created_at': out_row.created_at.isoformat() if out_row.created_at else None
+                })
+            
+            session['outputs'] = outputs
+            
+            # Получить остатки (remainders)
+            cursor.execute("""
+                SELECT 
+                    psr.id, psr.nomenclature_id, psr.weight_kg, psr.description,
+                    psr.notes, psr.created_at, n.name as nomenclature_name
+                FROM packaging_session_remainders psr
+                JOIN nomenclature n ON psr.nomenclature_id = n.id
+                WHERE psr.session_id = ?
+                ORDER BY psr.created_at
+            """, session_id)
+            
+            remainders = []
+            for rem_row in cursor.fetchall():
+                remainders.append({
+                    'id': rem_row.id,
+                    'nomenclature_id': rem_row.nomenclature_id,
+                    'nomenclature_name': rem_row.nomenclature_name,
+                    'weight_kg': float(rem_row.weight_kg),
+                    'description': rem_row.description,
+                    'notes': rem_row.notes,
+                    'created_at': rem_row.created_at.isoformat() if rem_row.created_at else None
+                })
+            
+            session['remainders'] = remainders
+            
+            # Получить отходы (waste)
+            cursor.execute("""
+                SELECT id, waste_weight_kg, waste_description, notes, created_at
+                FROM packaging_session_waste
+                WHERE session_id = ?
+                ORDER BY created_at
+            """, session_id)
+            
+            waste_items = []
+            for waste_row in cursor.fetchall():
+                waste_items.append({
+                    'id': waste_row.id,
+                    'waste_weight_kg': float(waste_row.waste_weight_kg),
+                    'waste_description': waste_row.waste_description,
+                    'notes': waste_row.notes,
+                    'created_at': waste_row.created_at.isoformat() if waste_row.created_at else None
+                })
+            
+            session['waste'] = waste_items
+            
+            return session
+    
+    return await run_in_threadpool(_get)
+
+
+@router.post("/sessions/{session_id}/outputs")
+async def add_packaging_output(session_id: int, output_data: PackagingSessionOutputCreate):
+    """
+    Добавить выход (готовую продукцию) в сессию
+    1. Найти рецепт для этого продукта
+    2. Рассчитать материалы автоматически
+    3. Списать материалы со склада
+    4. Оприходовать готовую продукцию
+    """
+    def _add():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Проверить сессию
+            cursor.execute("SELECT status, session_number FROM packaging_sessions WHERE id = ?", session_id)
+            session = cursor.fetchone()
+            if not session:
+                raise HTTPException(status_code=404, detail="Сесію не знайдено")
+            
+            if session.status == 'completed':
+                raise HTTPException(status_code=400, detail="Сесія вже завершена")
+            
+            # Найти рецепт для целевого продукта
+            cursor.execute("""
+                SELECT pr.id, pr.source_product_id
+                FROM packaging_recipes pr
+                WHERE pr.target_product_id = ? AND pr.is_active = 1
+            """, output_data.target_product_id)
+            
+            recipe = cursor.fetchone()
+            if not recipe:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"Рецепт фасування для продукту з ID {output_data.target_product_id} не знайдено"
+                )
+            
+            # Получить материалы рецепта
+            cursor.execute("""
+                SELECT prm.material_id, prm.quantity_per_unit, prm.rounding_precision, 
+                       prm.material_type, n.name, n.unit
+                FROM packaging_recipe_materials prm
+                JOIN nomenclature n ON prm.material_id = n.id
+                WHERE prm.recipe_id = ?
+            """, recipe.id)
+            
+            recipe_materials = cursor.fetchall()
+            
+            # АВТОМАТИЧЕСКИЙ РАСЧЕТ материалов
+            calculated_materials = []
+            
+            for mat_row in recipe_materials:
+                material_id = mat_row.material_id
+                quantity_per_unit = float(mat_row.quantity_per_unit)
+                rounding_precision = float(mat_row.rounding_precision) if mat_row.rounding_precision else None
+                material_type = mat_row.material_type
+                material_name = mat_row.name
+                material_unit = mat_row.unit
+                
+                # Рассчитываем количество
+                calculated_qty = quantity_per_unit * output_data.quantity_packed
+                
+                # Применяем округление
+                if rounding_precision:
+                    calculated_qty = round(calculated_qty / rounding_precision) * rounding_precision
+                elif material_unit in ['шт', 'од']:
+                    calculated_qty = int(round(calculated_qty))
+                else:
+                    calculated_qty = round(calculated_qty, 1)
+                
+                calculated_materials.append({
+                    'material_id': material_id,
+                    'material_name': material_name,
+                    'quantity': calculated_qty,
+                    'unit': material_unit,
+                    'material_type': material_type
+                })
+            
+            # Использовать confirmed_materials если оператор скорректировал (брак)
+            materials_to_use = calculated_materials
+            if output_data.confirmed_materials:
+                # TODO: здесь можно добавить логику корректировки
+                pass
+            
+            # Проверить доступность материалов
+            for material in materials_to_use:
+                cursor.execute("""
+                    SELECT COALESCE(quantity, 0) FROM stock_balances WHERE nomenclature_id = ?
+                """, material['material_id'])
+                
+                balance_row = cursor.fetchone()
+                balance = float(balance_row[0]) if balance_row else 0
+                
+                if balance < material['quantity']:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Недостатньо матеріалу '{material['material_name']}'. Доступно: {balance:.2f} {material['unit']}, Потрібно: {material['quantity']:.2f} {material['unit']}"
+                    )
+            
+            # Создать запись выхода
+            cursor.execute("""
+                INSERT INTO packaging_session_outputs (
+                    session_id, target_product_id, quantity_packed, 
+                    calculated_materials, confirmed_materials, defect_quantity, notes
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, session_id, output_data.target_product_id, output_data.quantity_packed,
+                json.dumps(calculated_materials), 
+                json.dumps(output_data.confirmed_materials) if output_data.confirmed_materials else None,
+                output_data.defect_quantity, output_data.notes)
+            
+            output_id = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
+            
+            # Списать материалы
+            for material in materials_to_use:
+                material_id = material['material_id']
+                quantity = material['quantity']
+                
+                cursor.execute("""
+                    SELECT COALESCE(quantity, 0) FROM stock_balances WHERE nomenclature_id = ?
+                """, material_id)
+                current_balance = float(cursor.fetchone()[0])
+                new_balance = current_balance - quantity
+                
+                movement_key = f"pkg-material-{session_id}-{output_id}-{material_id}-{datetime.now().timestamp()}"
+                
+                cursor.execute("""
+                    INSERT INTO stock_movements (
+                        nomenclature_id, operation_type, quantity, balance_after,
+                        source_operation_type, source_operation_id,
+                        idempotency_key, operation_date, metadata
+                    )
+                    VALUES (?, 'withdrawal', ?, ?, 'packaging_material', ?, ?, DATEADD(HOUR, 2, GETDATE()), ?)
+                """, material_id, quantity, new_balance, session.session_number, movement_key,
+                    json.dumps({
+                        'session_id': session_id,
+                        'session_number': session.session_number,
+                        'output_id': output_id,
+                        'target_product_id': output_data.target_product_id
+                    }))
+                
+                cursor.execute("""
+                    UPDATE stock_balances
+                    SET quantity = ?, last_updated = DATEADD(HOUR, 2, GETDATE())
+                    WHERE nomenclature_id = ?
+                """, new_balance, material_id)
+            
+            # Оприходовать готовую продукцию
             cursor.execute("""
                 SELECT COALESCE(quantity, 0) FROM stock_balances 
                 WHERE nomenclature_id = ?
-            """, batch.source_product_id)
-            
-            source_balance = float(cursor.fetchone()[0])
-            new_balance = source_balance - completion.final_source_used
-            
-            # Создаем движение
-            cursor.execute("""
-                INSERT INTO stock_movements (
-                    nomenclature_id, operation_type, quantity, balance_after,
-                    source_operation_type, source_operation_id,
-                    idempotency_key, operation_date, metadata
-                )
-                VALUES (?, 'withdrawal', ?, ?, 'packaging_source', ?, ?, DATEADD(HOUR, 2, GETDATE()), ?)
-            """, batch.source_product_id, completion.final_source_used, new_balance,
-                batch.batch_number, source_withdrawal_key,
-                json.dumps({
-                    'batch_id': batch_id,
-                    'batch_number': batch.batch_number,
-                    'packed_quantity': completion.final_packed_quantity
-                }))
-            
-            # Обновляем баланс
-            cursor.execute("""
-                UPDATE stock_balances
-                SET quantity = ?, last_updated = DATEADD(HOUR, 2, GETDATE())
-                WHERE nomenclature_id = ?
-            """, new_balance, batch.source_product_id)
-        
-        # Оприходуем фасованную продукцию
-        receipt_key = f"packaging-receipt-{batch_id}-{completion.idempotency_key}"
-        
-        cursor.execute("""
-            SELECT id FROM stock_movements WHERE idempotency_key = ?
-        """, receipt_key)
-        
-        if not cursor.fetchone():
-            # Получаем баланс фасованной продукции
-            cursor.execute("""
-                SELECT COALESCE(quantity, 0) FROM stock_balances 
-                WHERE nomenclature_id = ?
-            """, batch.target_product_id)
+            """, output_data.target_product_id)
             
             result = cursor.fetchone()
             target_balance = float(result[0]) if result else 0
-            new_target_balance = target_balance + completion.final_packed_quantity
+            new_target_balance = target_balance + output_data.quantity_packed
             
-            # Создаем приход
+            receipt_key = f"pkg-receipt-{session_id}-{output_id}-{datetime.now().timestamp()}"
+            
             cursor.execute("""
                 INSERT INTO stock_movements (
                     nomenclature_id, operation_type, quantity, balance_after,
@@ -584,15 +534,14 @@ async def complete_packaging_batch(batch_id: int, completion: PackagingBatchComp
                     idempotency_key, operation_date, metadata
                 )
                 VALUES (?, 'receipt', ?, ?, 'packaging_output', ?, ?, DATEADD(HOUR, 2, GETDATE()), ?)
-            """, batch.target_product_id, completion.final_packed_quantity, new_target_balance,
-                batch.batch_number, receipt_key,
+            """, output_data.target_product_id, output_data.quantity_packed, new_target_balance,
+                session.session_number, receipt_key,
                 json.dumps({
-                    'batch_id': batch_id,
-                    'batch_number': batch.batch_number,
-                    'source_used': completion.final_source_used
+                    'session_id': session_id,
+                    'session_number': session.session_number,
+                    'output_id': output_id
                 }))
             
-            # Обновляем/создаем баланс
             cursor.execute("""
                 IF EXISTS (SELECT 1 FROM stock_balances WHERE nomenclature_id = ?)
                     UPDATE stock_balances
@@ -601,46 +550,173 @@ async def complete_packaging_batch(batch_id: int, completion: PackagingBatchComp
                 ELSE
                     INSERT INTO stock_balances (nomenclature_id, quantity, last_updated)
                     VALUES (?, ?, DATEADD(HOUR, 2, GETDATE()))
-            """, batch.target_product_id, new_target_balance, batch.target_product_id,
-                batch.target_product_id, new_target_balance)
-        
-        conn.commit()
-        
-        return {
-            "message": "Партію фасовки завершено",
-            "batch_id": batch_id,
-            "batch_number": batch.batch_number,
-            "packed_quantity": completion.final_packed_quantity,
-            "source_used": completion.final_source_used,
-            "waste": completion.final_waste
-        }
+            """, output_data.target_product_id, new_target_balance, output_data.target_product_id,
+                output_data.target_product_id, new_target_balance)
+            
+            conn.commit()
+            
+            return {
+                "message": "Вихід додано успішно",
+                "output_id": output_id,
+                "quantity_packed": output_data.quantity_packed,
+                "materials_used": calculated_materials
+            }
+    
+    return await run_in_threadpool(_add)
 
 
-@router.get("/batches/{batch_id}/operations", response_model=List[PackagingOperation])
-async def get_batch_operations(batch_id: int):
-    """Получить список операций партии фасовки"""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT id, batch_id, operation_type, packed_quantity,
-                   source_used, waste_quantity, notes, created_at
-            FROM packaging_operations
-            WHERE batch_id = ?
-            ORDER BY created_at
-        """, batch_id)
-        
-        operations = []
-        for row in cursor.fetchall():
-            operations.append(PackagingOperation(
-                id=row.id,
-                batch_id=row.batch_id,
-                operation_type=row.operation_type,
-                packed_quantity=row.packed_quantity,
-                source_used=float(row.source_used),
-                waste_quantity=float(row.waste_quantity),
-                notes=row.notes,
-                created_at=row.created_at
-            ))
-        
-        return operations
+@router.post("/sessions/{session_id}/remainders")
+async def add_packaging_remainder(session_id: int, remainder_data: PackagingSessionRemainderCreate):
+    """
+    Добавить остаток (используемые отходы) в сессию
+    Например: упавшие специи, обрезки, которые можно вернуть на склад
+    """
+    def _add():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Проверить сессию
+            cursor.execute("SELECT status, session_number FROM packaging_sessions WHERE id = ?", session_id)
+            session = cursor.fetchone()
+            if not session:
+                raise HTTPException(status_code=404, detail="Сесію не знайдено")
+            
+            if session.status == 'completed':
+                raise HTTPException(status_code=400, detail="Сесія вже завершена")
+            
+            # Создать запись остатка
+            cursor.execute("""
+                INSERT INTO packaging_session_remainders (
+                    session_id, nomenclature_id, weight_kg, description, notes
+                )
+                VALUES (?, ?, ?, ?, ?)
+            """, session_id, remainder_data.nomenclature_id, remainder_data.weight_kg,
+                remainder_data.description, remainder_data.notes)
+            
+            remainder_id = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
+            
+            # Оприходовать остаток на склад
+            cursor.execute("""
+                SELECT COALESCE(quantity, 0) FROM stock_balances 
+                WHERE nomenclature_id = ?
+            """, remainder_data.nomenclature_id)
+            
+            result = cursor.fetchone()
+            balance = float(result[0]) if result else 0
+            new_balance = balance + remainder_data.weight_kg
+            
+            receipt_key = f"pkg-remainder-{session_id}-{remainder_id}-{datetime.now().timestamp()}"
+            
+            cursor.execute("""
+                INSERT INTO stock_movements (
+                    nomenclature_id, operation_type, quantity, balance_after,
+                    source_operation_type, source_operation_id,
+                    idempotency_key, operation_date, metadata
+                )
+                VALUES (?, 'receipt', ?, ?, 'packaging_remainder', ?, ?, DATEADD(HOUR, 2, GETDATE()), ?)
+            """, remainder_data.nomenclature_id, remainder_data.weight_kg, new_balance,
+                session.session_number, receipt_key,
+                json.dumps({
+                    'session_id': session_id,
+                    'session_number': session.session_number,
+                    'remainder_id': remainder_id,
+                    'description': remainder_data.description
+                }))
+            
+            cursor.execute("""
+                IF EXISTS (SELECT 1 FROM stock_balances WHERE nomenclature_id = ?)
+                    UPDATE stock_balances
+                    SET quantity = ?, last_updated = DATEADD(HOUR, 2, GETDATE())
+                    WHERE nomenclature_id = ?
+                ELSE
+                    INSERT INTO stock_balances (nomenclature_id, quantity, last_updated)
+                    VALUES (?, ?, DATEADD(HOUR, 2, GETDATE()))
+            """, remainder_data.nomenclature_id, new_balance, remainder_data.nomenclature_id,
+                remainder_data.nomenclature_id, new_balance)
+            
+            conn.commit()
+            
+            return {
+                "message": "Залишок додано і оприбутковано",
+                "remainder_id": remainder_id,
+                "weight_kg": remainder_data.weight_kg
+            }
+    
+    return await run_in_threadpool(_add)
+
+
+@router.post("/sessions/{session_id}/waste")
+async def add_packaging_waste(session_id: int, waste_data: PackagingSessionWasteCreate):
+    """
+    Добавить отходы (списание, потери)
+    Это НЕ оприходуется на склад, только фиксируется для аналитики
+    """
+    def _add():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Проверить сессию
+            cursor.execute("SELECT status FROM packaging_sessions WHERE id = ?", session_id)
+            session = cursor.fetchone()
+            if not session:
+                raise HTTPException(status_code=404, detail="Сесію не знайдено")
+            
+            if session.status == 'completed':
+                raise HTTPException(status_code=400, detail="Сесія вже завершена")
+            
+            # Создать запись отходов
+            cursor.execute("""
+                INSERT INTO packaging_session_waste (
+                    session_id, waste_weight_kg, waste_description, notes
+                )
+                VALUES (?, ?, ?, ?)
+            """, session_id, waste_data.waste_weight_kg, 
+                waste_data.waste_description, waste_data.notes)
+            
+            waste_id = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
+            
+            conn.commit()
+            
+            return {
+                "message": "Відходи зафіксовано",
+                "waste_id": waste_id,
+                "waste_weight_kg": waste_data.waste_weight_kg
+            }
+    
+    return await run_in_threadpool(_add)
+
+
+@router.put("/sessions/{session_id}/complete")
+async def complete_packaging_session(session_id: int, completion: PackagingSessionComplete):
+    """Завершить сессию фасовки"""
+    def _complete():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Проверить сессию
+            cursor.execute("SELECT status FROM packaging_sessions WHERE id = ?", session_id)
+            session = cursor.fetchone()
+            if not session:
+                raise HTTPException(status_code=404, detail="Сесію не знайдено")
+            
+            if session.status == 'completed':
+                raise HTTPException(status_code=400, detail="Сесія вже завершена")
+            
+            # Завершить сессию
+            cursor.execute("""
+                UPDATE packaging_sessions
+                SET status = 'completed',
+                    completed_at = DATEADD(HOUR, 2, GETDATE()),
+                    operator_notes = COALESCE(?, operator_notes),
+                    updated_at = DATEADD(HOUR, 2, GETDATE())
+                WHERE id = ?
+            """, completion.notes, session_id)
+            
+            conn.commit()
+            
+            return {
+                "message": "Сесію фасування завершено",
+                "session_id": session_id
+            }
+    
+    return await run_in_threadpool(_complete)
