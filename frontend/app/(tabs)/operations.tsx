@@ -147,36 +147,62 @@ export default function OperationsScreen() {
 
   const handleSubmit = async () => {
     if (!selectedItem) {
-      Alert.alert('Помилка', 'Оберіть номенклатуру');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: 'Оберіть номенклатуру',
+        position: 'top',
+        visibilityTime: 3000,
+      });
       return;
     }
 
     const qty = parseFloat(quantity);
     if (isNaN(qty) || qty <= 0) {
-      Alert.alert('Помилка', 'Введіть коректну кількість');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: 'Введіть коректну кількість',
+        position: 'top',
+        visibilityTime: 3000,
+      });
       return;
     }
 
     // Validate price for receipt (REQUIRED)
     if (operationType === 'receipt') {
       if (!pricePerUnit || pricePerUnit.trim() === '') {
-        Alert.alert('Помилка', 'Ціна за одиницю є обов\'язковим полем');
+        Toast.show({
+          type: 'error',
+          text1: 'Помилка',
+          text2: 'Ціна за одиницю є обов\'язковим полем',
+          position: 'top',
+          visibilityTime: 3000,
+        });
         return;
       }
       const price = parseFloat(pricePerUnit);
       if (isNaN(price) || price < 0) {
-        Alert.alert('Помилка', 'Введіть коректну ціну');
+        Toast.show({
+          type: 'error',
+          text1: 'Помилка',
+          text2: 'Введіть коректну ціну',
+          position: 'top',
+          visibilityTime: 3000,
+        });
         return;
       }
     }
 
     // Check available balance for withdrawal
     if (operationType === 'withdrawal' && availableBalance !== null && qty > availableBalance) {
-      Alert.alert(
-        'Недостатньо товару',
-        `Доступно: ${availableBalance} ${selectedItem.unit}\nЗапитано: ${qty} ${selectedItem.unit}\n\nНа складі недостатньо товару для списання.`,
-        [{ text: 'Зрозуміло' }]
-      );
+      Toast.show({
+        type: 'error',
+        text1: 'Недостатньо товару',
+        text2: `Доступно: ${availableBalance} ${selectedItem.unit}, запитано: ${qty} ${selectedItem.unit}`,
+        position: 'top',
+        visibilityTime: 4000,
+      });
       return;
     }
 
