@@ -258,29 +258,29 @@ export default function StockScreen() {
         </ScrollView>
       </View>
 
-      {/* Recipe filters */}
+      {/* Meat type filters */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Рецепти:</Text>
+        <Text style={styles.filterLabel}>Готова продукція:</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
           <TouchableOpacity
-            style={[styles.filterChip, !selectedRecipe && styles.filterChipActive]}
-            onPress={() => setSelectedRecipe(null)}
+            style={[styles.filterChip, !selectedMeatType && styles.filterChipActive]}
+            onPress={() => setSelectedMeatType(null)}
           >
-            <Text style={[styles.filterChipText, !selectedRecipe && styles.filterChipTextActive]}>
+            <Text style={[styles.filterChipText, !selectedMeatType && styles.filterChipTextActive]}>
               Всі
             </Text>
           </TouchableOpacity>
-          {recipes.map((recipe) => (
+          {meatTypes.map((meatType) => (
             <TouchableOpacity
-              key={recipe.id}
-              style={[styles.filterChip, selectedRecipe === recipe.id && styles.filterChipActive]}
+              key={meatType.key}
+              style={[styles.filterChip, selectedMeatType === meatType.key && styles.filterChipActive]}
               onPress={() => {
-                setSelectedRecipe(recipe.id);
+                setSelectedMeatType(meatType.key);
                 setSelectedCategories([]);
               }}
             >
-              <Text style={[styles.filterChipText, selectedRecipe === recipe.id && styles.filterChipTextActive]}>
-                {recipe.name}
+              <Text style={[styles.filterChipText, selectedMeatType === meatType.key && styles.filterChipTextActive]}>
+                {meatType.label}
               </Text>
             </TouchableOpacity>
           ))}
