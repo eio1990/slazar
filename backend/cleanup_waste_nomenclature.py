@@ -139,7 +139,7 @@ def cleanup_waste_nomenclature():
         # Step 6: Delete old nomenclature entries
         print("\n6. Deleting old waste nomenclature entries...")
         cursor.execute("""
-            SELECT id, name FROM nomenclatures
+            SELECT id, name FROM nomenclature
             WHERE id IN ({})
         """.format(','.join('?' * len(waste_ids_to_remove))), waste_ids_to_remove)
         
@@ -148,7 +148,7 @@ def cleanup_waste_nomenclature():
             print(f"   - Deleting: {item.name} (ID {item.id})")
         
         cursor.execute("""
-            DELETE FROM nomenclatures
+            DELETE FROM nomenclature
             WHERE id IN ({})
         """.format(','.join('?' * len(waste_ids_to_remove))), waste_ids_to_remove)
         
