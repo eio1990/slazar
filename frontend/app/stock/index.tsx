@@ -106,10 +106,12 @@ export default function StockScreen() {
       // Category filter: if no categories selected, show all
       const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(balance.category);
       
-      // Recipe filter
-      const matchesRecipe = !selectedRecipe || recipeNomenclatureIds.includes(balance.nomenclature_id);
+      // Meat type filter: filter finished products by meat type
+      const matchesMeatType = !selectedMeatType || 
+        (balance.category === 'Готова продукція' && 
+         balance.nomenclature_name.toLowerCase().includes(selectedMeatType));
       
-      return matchesSearch && matchesCategory && matchesRecipe;
+      return matchesSearch && matchesCategory && matchesMeatType;
     })
     .sort((a, b) => {
       // Sort by usage frequency
