@@ -46,10 +46,10 @@ def show_chain():
                 sf_name = sf[1]
                 
                 cursor.execute("""
-                    SELECT br.source_meat_type, n.name as meat_name
+                    SELECT br.source_nomenclature_id, n.name as meat_name
                     FROM butchery_recipe_outputs bro
                     JOIN butchery_recipes br ON bro.recipe_id = br.id
-                    LEFT JOIN nomenclature n ON br.source_meat_type = n.id
+                    LEFT JOIN nomenclature n ON br.source_nomenclature_id = n.id
                     WHERE bro.output_nomenclature_id = ?
                 """, sf_id)
                 
