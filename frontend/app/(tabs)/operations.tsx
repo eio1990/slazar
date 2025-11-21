@@ -72,8 +72,14 @@ export default function OperationsScreen() {
   const loadNomenclature = async () => {
     try {
       setLoading(true);
-      const data = await apiService.getNomenclature();
-      setNomenclature(data);
+      const [nomenclatureData, statsData] = await Promise.all([
+        apiService.getNomenclature(),
+        fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001'}/api/nomenclature/usage-stats`)
+          .then(res => res.json())
+          .catch(() => ({}))
+      ]);
+      setNomenclature(nomenclatureData);
+      setUsageStats(statsData);
     } catch (error) {
       console.error('Error loading nomenclature:', error);
       Alert.alert('Помилка', 'Не вдалося завантажити номенклатуру');
