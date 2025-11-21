@@ -122,6 +122,8 @@ user_problem_statement: |
   Additional improvements:
   - Toast notifications for batch creation with redirect to Production tab
   - Show stock balance in weight input placeholder
+  
+  Current session: User reports UI crashes when navigating to stock screen. Need full UI testing to identify and fix all issues.
 
 backend:
   - task: "Database schema for recipes module"
