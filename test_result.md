@@ -347,8 +347,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Packaging module session-based UI testing - COMPLETED"
-  stuck_tasks: []
+    - "Packaging Module - Session-based UI Testing"
+  stuck_tasks:
+    - "Packaging Module - Session-based UI Testing"
   test_all: false
   test_priority: "high_first"
 
