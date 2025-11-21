@@ -463,6 +463,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     borderColor: '#4CAF50',
   },
+  categoryChipDisabled: {
+    backgroundColor: '#f5f5f5',
+    borderColor: '#ddd',
+    opacity: 0.5,
+  },
   categoryChipText: {
     fontSize: 13,
     fontWeight: '600',
@@ -470,6 +475,9 @@ const styles = StyleSheet.create({
   },
   categoryChipTextActive: {
     color: '#fff',
+  },
+  categoryChipTextDisabled: {
+    color: '#999',
   },
   filterSection: {
     paddingVertical: 12,
