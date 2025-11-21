@@ -103,27 +103,30 @@
 #====================================================================================================
 
 user_problem_statement: |
-  UPDATE PRODUCTION RECIPES - Remove trim step and fix nomenclature
-  All 8 production recipes need to be updated:
-  1. Remove "Обрізка та підготовка" (trim) step - this is now handled by Butchery module
-  2. Update source nomenclature to use butchery outputs instead of raw materials
-  3. Renumber steps (now start from salting/marinade, not trim)
+  PACKAGING MODULE REFACTOR - Session-Based Workflow
+  Complete architectural refactor of the packaging (Фасування) module.
+  Replace rigid one-batch-to-one-product logic with flexible session-based workflow.
   
-  Nomenclature mapping:
-  - Recipe 2 (Бастурма класична): ID 199 (Яловичина для бастурми)
-  - Recipe 3 (Бастурма з конини): ID 202 (Конина для бастурми)
-  - Recipe 4 (Індичка): ID 211 (Індичка для бастурми)
-  - Recipe 5 (Курка): ID 210 (Курка для суджука)
-  - Recipe 6 (Свинина): ID 207 (Свинина для банкетної)
-  - Recipe 7 (Пластина): ID 200 (Яловичина для пластин)
-  - Recipe 8 (Суджук): ID 201 (Яловичина для суджука)
-  - Recipe 9 (Махан): ID 204 (Конина для махан)
+  New Requirements:
+  1. Session Concept: Operator starts a session by taking bulk product (e.g., "Бастурма вагова")
+  2. Multiple Outputs: In one session, can package into MULTIPLE different SKUs (e.g., 100g vacuum, 200g skin)
+  3. Manual Input: Operator manually enters quantity of each SKU produced
+  4. Remainders: Track usable remainders (e.g., fallen spices) that go back to stock
+  5. Waste: Track final waste (losses) for analytics
+  6. Material Calculation: System auto-calculates materials (bags, labels) but allows operator to adjust for defects (брак)
   
-  Additional improvements:
-  - Toast notifications for batch creation with redirect to Production tab
-  - Show stock balance in weight input placeholder
+  Database Changes (COMPLETED):
+  - Dropped: packaging_batches, packaging_operations
+  - Created: packaging_sessions, packaging_session_outputs, packaging_session_remainders, packaging_session_waste
   
-  Current session: User reports UI crashes when navigating to stock screen. Need full UI testing to identify and fix all issues.
+  Backend API Implementation (IN PROGRESS):
+  - POST /api/packaging/sessions - Create session (withdraw source product)
+  - GET /api/packaging/sessions - List sessions
+  - GET /api/packaging/sessions/{id} - Session details with outputs/remainders/waste
+  - POST /api/packaging/sessions/{id}/outputs - Add SKU output (auto-calculate & withdraw materials, receipt finished product)
+  - POST /api/packaging/sessions/{id}/remainders - Add usable remainder (receipt to stock)
+  - POST /api/packaging/sessions/{id}/waste - Add waste (analytics only, no stock)
+  - PUT /api/packaging/sessions/{id}/complete - Complete session
 
 backend:
   - task: "Database schema for recipes module"
