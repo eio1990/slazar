@@ -197,7 +197,7 @@ export default function InputWeightScreen() {
       <View style={styles.errorContainer}>
         <MaterialCommunityIcons name="alert" size={60} color="#f44336" />
         <Text style={styles.errorText}>Рецепт не знайдено</Text>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.push('/(tabs)/butchery' as any)}>
           <Text style={styles.backBtnText}>Повернутися</Text>
         </TouchableOpacity>
       </View>
@@ -211,7 +211,7 @@ export default function InputWeightScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/butchery' as any)} style={styles.backButton}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#007AFF" />
         </TouchableOpacity>
         <View>

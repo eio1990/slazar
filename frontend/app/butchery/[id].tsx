@@ -48,7 +48,7 @@ export default function ButcheryOperationDetailScreen() {
       <View style={styles.errorContainer}>
         <MaterialCommunityIcons name="alert-circle" size={60} color="#f44336" />
         <Text style={styles.errorText}>Операцію не знайдено</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/butchery' as any)}>
           <Text style={styles.backButtonText}>Повернутися</Text>
         </TouchableOpacity>
       </View>
@@ -200,7 +200,7 @@ export default function ButcheryOperationDetailScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBackButton}>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/butchery' as any)} style={styles.headerBackButton}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#007AFF" />
         </TouchableOpacity>
         <View style={styles.headerContent}>

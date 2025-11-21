@@ -42,7 +42,7 @@ export default function SelectMeatTypeScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/butchery' as any)} style={styles.backButton}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Оберіть тип м'яса</Text>

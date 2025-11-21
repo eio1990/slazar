@@ -107,7 +107,7 @@ export default function StuffingFormScreen() {
         : '';
       
       Alert.alert('Успіх', `Заправку виконано${usageMsg}`, [
-        { text: 'OK', onPress: () => router.back() }
+        { text: 'OK', onPress: () => router.push('/(tabs)/production' as any) }
       ]);
     },
     onError: (error: any) => {
@@ -182,7 +182,7 @@ export default function StuffingFormScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/production' as any)} style={styles.backButton}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#007AFF" />
           </TouchableOpacity>
           <Text style={styles.title}>Заправка в кишку</Text>

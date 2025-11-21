@@ -117,7 +117,7 @@ export default function MixFormScreen() {
       queryClient.invalidateQueries({ queryKey: ['batch', batchId] });
       queryClient.invalidateQueries({ queryKey: ['batch-operations', batchId] });
       Alert.alert('Успіх', 'Мікс виготовлено', [
-        { text: 'OK', onPress: () => router.back() }
+        { text: 'OK', onPress: () => router.push('/(tabs)/production' as any) }
       ]);
     },
     onError: (error: any) => {
@@ -200,7 +200,7 @@ export default function MixFormScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/production' as any)}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Виробництво мікса</Text>

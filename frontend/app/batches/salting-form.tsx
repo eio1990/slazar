@@ -86,7 +86,7 @@ export default function SaltingFormScreen() {
       });
       
       setTimeout(() => {
-        router.back();
+        router.push('/(tabs)/production' as any);
       }, 500);
     },
     onError: (error: any) => {
@@ -166,7 +166,7 @@ export default function SaltingFormScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/production' as any)} style={styles.backButton}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Засолка</Text>
