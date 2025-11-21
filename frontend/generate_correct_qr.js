@@ -13,6 +13,6 @@ QRCode.toString(EXPO_URL, { type: 'terminal', small: true }, (err, qr) => {
   console.log('\n🔗 URL для Expo Go:', EXPO_URL);
   console.log('\n📱 ИЛИ введите вручную в Expo Go:\n   butchery-app-1.preview.emergentagent.com\n');
   console.log('⚠️  ВАЖНО: Если не работает, попробуйте открыть в браузере Safari:');
-  console.log('   https://meat-tracker-5.preview.emergentagent.com');
+  console.log('   https://packmaster-6.preview.emergentagent.com');
   console.log('   А затем используйте веб-версию приложения\n');
 });

@@ -43,7 +43,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "EXPO_PUBLIC_BACKEND_URL": "https://meat-tracker-5.preview.emergentagent.com"
+      "EXPO_PUBLIC_BACKEND_URL": "https://packmaster-6.preview.emergentagent.com"
     }
   }
 }
