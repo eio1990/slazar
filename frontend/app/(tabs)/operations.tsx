@@ -88,8 +88,13 @@ export default function OperationsScreen() {
     }
   };
 
-  // Get unique categories
-  const categories = Array.from(new Set(nomenclature.map(item => item.category))).sort();
+  // Get unique categories with priority order
+  const priorityCategories = ['М\'ясо та м\'ясні продукти', 'Спеції'];
+  const allCategories = Array.from(new Set(nomenclature.map(item => item.category)));
+  const categories = [
+    ...allCategories.filter(c => priorityCategories.includes(c)).sort(),
+    ...allCategories.filter(c => !priorityCategories.includes(c)).sort(),
+  ];
 
   // Filter and sort nomenclature
   const filteredNomenclature = nomenclature
@@ -100,6 +105,21 @@ export default function OperationsScreen() {
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
+      // First sort by usage frequency (most used first)
+      const aUsage = usageStats[a.id] || 0;
+      const bUsage = usageStats[b.id] || 0;
+      
+      if (aUsage !== bUsage) {
+        return bUsage - aUsage; // Higher usage first
+      }
+      
+      // Then by category priority
+      const aPriority = priorityCategories.includes(a.category);
+      const bPriority = priorityCategories.includes(b.category);
+      
+      if (aPriority && !bPriority) return -1;
+      if (!aPriority && bPriority) return 1;
+      
       // Finished products go last
       const aIsFinished = a.category === 'Готова продукція';
       const bIsFinished = b.category === 'Готова продукція';
