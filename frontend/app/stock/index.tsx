@@ -282,24 +282,22 @@ export default function StockScreen() {
       <View style={styles.filterSection}>
         <Text style={styles.filterLabel}>Готова продукція:</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-          <TouchableOpacity
-            style={[styles.filterChip, !selectedMeatType && styles.filterChipActive]}
-            onPress={() => setSelectedMeatType(null)}
-          >
-            <Text style={[styles.filterChipText, !selectedMeatType && styles.filterChipTextActive]}>
-              Всі
-            </Text>
-          </TouchableOpacity>
           {meatTypes.map((meatType) => (
             <TouchableOpacity
               key={meatType.key}
-              style={[styles.filterChip, selectedMeatType === meatType.key && styles.filterChipActive]}
-              onPress={() => {
-                setSelectedMeatType(meatType.key);
-                setSelectedCategories([]);
-              }}
+              style={[
+                styles.filterChip, 
+                selectedMeatType === meatType.key && styles.filterChipActive,
+                selectedCategories.length > 0 && styles.filterChipDisabled
+              ]}
+              onPress={() => selectMeatType(meatType.key)}
+              disabled={selectedCategories.length > 0}
             >
-              <Text style={[styles.filterChipText, selectedMeatType === meatType.key && styles.filterChipTextActive]}>
+              <Text style={[
+                styles.filterChipText, 
+                selectedMeatType === meatType.key && styles.filterChipTextActive,
+                selectedCategories.length > 0 && styles.filterChipTextDisabled
+              ]}>
                 {meatType.label}
               </Text>
             </TouchableOpacity>
