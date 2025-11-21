@@ -106,10 +106,17 @@ export default function StockScreen() {
       // Category filter: if no categories selected, show all
       const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(balance.category);
       
-      // Meat type filter: filter finished products by meat type
-      const matchesMeatType = !selectedMeatType || 
-        (balance.category === 'Готова продукція' && 
-         balance.nomenclature_name.toLowerCase().includes(selectedMeatType));
+      // Meat type filter: only applies to finished products
+      let matchesMeatType = true;
+      if (selectedMeatType) {
+        // Only filter if this is finished product
+        if (balance.category === 'Готова продукція') {
+          matchesMeatType = balance.nomenclature_name.toLowerCase().includes(selectedMeatType);
+        } else {
+          // If meat type is selected but this is not finished product, don't show it
+          matchesMeatType = false;
+        }
+      }
       
       return matchesSearch && matchesCategory && matchesMeatType;
     })
