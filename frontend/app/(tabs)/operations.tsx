@@ -122,7 +122,7 @@ export default function OperationsScreen() {
         return bUsage - aUsage; // Higher usage first
       }
       
-      // Then by category priority
+      // Then by category priority (Сировина - М'ясо and Спеції first)
       const aPriority = filterCategories.includes(a.category);
       const bPriority = filterCategories.includes(b.category);
       
