@@ -35,6 +35,7 @@ export default function OperationsScreen() {
   const [notes, setNotes] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [nomenclature, setNomenclature] = useState<Nomenclature[]>([]);
+  const [usageStats, setUsageStats] = useState<Record<number, number>>({});
   const [balances, setBalances] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
