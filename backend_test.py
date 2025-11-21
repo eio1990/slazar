@@ -76,266 +76,356 @@ def test_packaging_recipes():
     
     return data
 
-def test_recipe_details_no_trim():
-    """Test 2: Verify each recipe has no trim step and correct nomenclature"""
-    print("\n🧪 Test 2: Recipe details - no trim step, correct nomenclature")
+def test_nomenclature():
+    """Get nomenclature for testing"""
+    print("\n=== GETTING NOMENCLATURE FOR TESTING ===")
     
-    all_passed = True
+    data, status = make_request("GET", "/nomenclature")
+    if data is None:
+        log_test("GET /nomenclature", "FAIL", "Could not retrieve nomenclature")
+        return [], []
     
-    for recipe_id, expected_nomenclature_id in EXPECTED_NOMENCLATURE.items():
-        print(f"\n  Testing Recipe ID {recipe_id} ({RECIPE_NAMES[recipe_id]})")
-        
-        try:
-            # Get recipe details
-            response = requests.get(f"{BACKEND_URL}/production/recipes/{recipe_id}", timeout=10)
-            
-            if response.status_code != 200:
-                print(f"    ❌ FAILED: Expected 200, got {response.status_code}")
-                all_passed = False
-                continue
-                
-            recipe = response.json()
-            
-            # Check steps don't contain trim
-            steps = recipe.get('steps', [])
-            if not steps:
-                print(f"    ❌ FAILED: No steps found")
-                all_passed = False
-                continue
-                
-            # Check first step is NOT trim
-            first_step = steps[0]
-            if first_step.get('step_type') == 'trim' or 'trim' in first_step.get('step_name', '').lower():
-                print(f"    ❌ FAILED: First step is still trim: {first_step.get('step_name')}")
-                all_passed = False
-                continue
-                
-            # Check step_order starts from 1
-            if first_step.get('step_order') != 1:
-                print(f"    ❌ FAILED: First step order is {first_step.get('step_order')}, expected 1")
-                all_passed = False
-                continue
-                
-            # Check no trim steps exist
-            trim_steps = [s for s in steps if s.get('step_type') == 'trim' or 'trim' in s.get('step_name', '').lower()]
-            if trim_steps:
-                print(f"    ❌ FAILED: Found trim steps: {[s.get('step_name') for s in trim_steps]}")
-                all_passed = False
-                continue
-                
-            print(f"    ✅ No trim steps found")
-            print(f"    ✅ First step: {first_step.get('step_name')} (order: {first_step.get('step_order')})")
-            
-            # Get recipe ingredients to check nomenclature
-            materials_response = requests.get(f"{BACKEND_URL}/production/recipes/{recipe_id}/materials", timeout=10)
-            
-            if materials_response.status_code != 200:
-                print(f"    ❌ FAILED: Could not get materials, status {materials_response.status_code}")
-                all_passed = False
-                continue
-                
-            materials = materials_response.json()
-            ingredients = materials.get('ingredients', [])
-            
-            if not ingredients:
-                print(f"    ❌ FAILED: No ingredients found")
-                all_passed = False
-                continue
-                
-            # Find main ingredient (should be the butchery output)
-            main_ingredient = ingredients[0]  # Assuming first ingredient is main
-            actual_nomenclature_id = main_ingredient.get('nomenclature_id')
-            
-            if actual_nomenclature_id != expected_nomenclature_id:
-                print(f"    ❌ FAILED: Nomenclature mismatch")
-                print(f"    Expected: {expected_nomenclature_id}")
-                print(f"    Actual: {actual_nomenclature_id}")
-                print(f"    Ingredient: {main_ingredient.get('name')}")
-                all_passed = False
-                continue
-                
-            print(f"    ✅ Correct nomenclature: {main_ingredient.get('name')} (ID: {actual_nomenclature_id})")
-            
-        except Exception as e:
-            print(f"    ❌ FAILED: Exception occurred: {e}")
-            all_passed = False
-            
-    return all_passed
+    # Find source products (bulk products for packaging)
+    source_products = []
+    target_products = []
+    
+    for item in data:
+        name = item.get('name', '').lower()
+        # Look for bulk/weight products that could be source
+        if any(keyword in name for keyword in ['вагова', 'вагов', 'кг', 'bulk']):
+            source_products.append(item)
+        # Look for packaged products that could be targets
+        elif any(keyword in name for keyword in ['100г', '200г', '50г', 'вакуум', 'пакет']):
+            target_products.append(item)
+    
+    log_test("Nomenclature analysis", "PASS", 
+             f"Found {len(source_products)} potential source products, {len(target_products)} target products")
+    
+    return source_products, target_products
 
-def test_batch_creation_with_new_nomenclature():
-    """Test 3: Create batch with new nomenclature (requires stock)"""
-    print("\n🧪 Test 3: Batch creation with new nomenclature")
+def test_create_session(source_products):
+    """Test POST /api/packaging/sessions"""
+    print("\n=== TESTING SESSION CREATION ===")
     
-    # Test with Recipe ID 2 (Бастурма класична) using nomenclature_id 199
-    recipe_id = 2
-    nomenclature_id = 199
-    test_weight = 50.0
+    if not source_products:
+        log_test("Session creation", "FAIL", "No source products available for testing")
+        return None
     
-    print(f"  Testing batch creation for Recipe {recipe_id} with {test_weight} kg")
+    # Use first available source product
+    source_product = source_products[0]
+    source_id = source_product['id']
     
-    try:
-        # First, add stock for the required nomenclature
-        print(f"  Adding stock for nomenclature ID {nomenclature_id}")
-        
-        stock_data = {
-            "nomenclature_id": nomenclature_id,
-            "quantity": 100.0,  # Add 100 kg
-            "price_per_unit": 150.0,
-            "idempotency_key": f"test-stock-{nomenclature_id}-{datetime.now().timestamp()}",
-            "metadata": {
-                "test": True,
-                "purpose": "batch_creation_test"
-            }
-        }
-        
-        stock_response = requests.post(f"{BACKEND_URL}/stock/receipt", json=stock_data, timeout=10)
-        
-        if stock_response.status_code != 200:
-            print(f"    ❌ FAILED: Could not add stock, status {stock_response.status_code}")
-            print(f"    Response: {stock_response.text}")
-            return False
-            
-        print(f"    ✅ Stock added successfully")
-        
-        # Now create batch
-        batch_data = {
-            "recipe_id": recipe_id,
-            "initial_weight": test_weight,
-            "trim_waste": 0.0,
-            "trim_returned": False,
-            "operator_notes": "Test batch for nomenclature verification"
-        }
-        
-        batch_response = requests.post(f"{BACKEND_URL}/production/batches", json=batch_data, timeout=10)
-        
-        if batch_response.status_code != 200:
-            print(f"    ❌ FAILED: Batch creation failed, status {batch_response.status_code}")
-            print(f"    Response: {batch_response.text}")
-            return False
-            
-        batch = batch_response.json()
-        batch_id = batch.get('id')
-        batch_number = batch.get('batch_number')
-        
-        print(f"    ✅ Batch created successfully")
-        print(f"    Batch ID: {batch_id}")
-        print(f"    Batch Number: {batch_number}")
-        print(f"    Recipe: {batch.get('recipe_name')}")
-        print(f"    Initial Weight: {batch.get('initial_weight')} kg")
-        
-        # Verify stock was deducted
-        balance_response = requests.get(f"{BACKEND_URL}/stock/balances", timeout=10)
-        
-        if balance_response.status_code == 200:
-            balances = balance_response.json()
-            target_balance = next((b for b in balances if b['nomenclature_id'] == nomenclature_id), None)
-            
-            if target_balance:
-                remaining_balance = target_balance['quantity']
-                expected_balance = 100.0 - test_weight  # 100 - 50 = 50
-                
-                if abs(remaining_balance - expected_balance) < 0.01:  # Allow small floating point differences
-                    print(f"    ✅ Stock deduction verified: {remaining_balance} kg remaining")
-                else:
-                    print(f"    ⚠️  Stock deduction mismatch: expected {expected_balance}, got {remaining_balance}")
-            else:
-                print(f"    ⚠️  Could not verify stock balance")
-        
-        return True
-        
-    except Exception as e:
-        print(f"    ❌ FAILED: Exception occurred: {e}")
-        return False
-
-def test_step_order_verification():
-    """Test 4: Verify step orders start from 1 and are sequential"""
-    print("\n🧪 Test 4: Step order verification")
+    # Test 1: Create session with valid data
+    session_data = {
+        "source_product_id": source_id,
+        "source_weight_taken": 10.5,
+        "notes": "Test packaging session"
+    }
     
-    all_passed = True
+    data, status = make_request("POST", "/packaging/sessions", session_data)
+    if data is None:
+        log_test("POST /packaging/sessions", "FAIL", f"Session creation failed with status {status}")
+        return None
     
-    for recipe_id in EXPECTED_NOMENCLATURE.keys():
-        print(f"\n  Testing step orders for Recipe ID {recipe_id}")
-        
-        try:
-            response = requests.get(f"{BACKEND_URL}/production/recipes/{recipe_id}", timeout=10)
-            
-            if response.status_code != 200:
-                print(f"    ❌ FAILED: Could not get recipe, status {response.status_code}")
-                all_passed = False
-                continue
-                
-            recipe = response.json()
-            steps = recipe.get('steps', [])
-            
-            if not steps:
-                print(f"    ❌ FAILED: No steps found")
-                all_passed = False
-                continue
-                
-            # Check step orders are sequential starting from 1
-            expected_order = 1
-            for step in steps:
-                actual_order = step.get('step_order')
-                if actual_order != expected_order:
-                    print(f"    ❌ FAILED: Step order mismatch at step '{step.get('step_name')}'")
-                    print(f"    Expected: {expected_order}, Actual: {actual_order}")
-                    all_passed = False
-                    break
-                expected_order += 1
-                
-            if all_passed:
-                print(f"    ✅ Step orders are sequential (1 to {len(steps)})")
-                
-        except Exception as e:
-            print(f"    ❌ FAILED: Exception occurred: {e}")
-            all_passed = False
-            
-    return all_passed
-
-def run_all_tests():
-    """Run all tests and return overall result"""
-    print("🚀 Starting Production Recipe Update Tests")
-    print("=" * 60)
+    session_id = data.get('session_id')
+    session_number = data.get('session_number')
     
-    tests = [
-        ("Get All Recipes", test_get_all_recipes),
-        ("Recipe Details - No Trim + Correct Nomenclature", test_recipe_details_no_trim),
-        ("Batch Creation with New Nomenclature", test_batch_creation_with_new_nomenclature),
-        ("Step Order Verification", test_step_order_verification),
-    ]
+    log_test("POST /packaging/sessions", "PASS", 
+             f"Created session {session_number} (ID: {session_id})")
     
-    results = []
+    # Test 2: Try to create session with insufficient stock
+    large_session_data = {
+        "source_product_id": source_id,
+        "source_weight_taken": 999999.0,  # Very large amount
+        "notes": "Test insufficient stock"
+    }
     
-    for test_name, test_func in tests:
-        print(f"\n{'='*60}")
-        result = test_func()
-        results.append((test_name, result))
-        
-        if result:
-            print(f"✅ {test_name}: PASSED")
-        else:
-            print(f"❌ {test_name}: FAILED")
-    
-    print(f"\n{'='*60}")
-    print("📊 TEST SUMMARY")
-    print("=" * 60)
-    
-    passed = sum(1 for _, result in results if result)
-    total = len(results)
-    
-    for test_name, result in results:
-        status = "✅ PASSED" if result else "❌ FAILED"
-        print(f"{status}: {test_name}")
-    
-    print(f"\n🎯 Overall Result: {passed}/{total} tests passed")
-    
-    if passed == total:
-        print("🎉 ALL TESTS PASSED! Recipe updates are working correctly.")
-        return True
+    data2, status2 = make_request("POST", "/packaging/sessions", large_session_data, expected_status=400)
+    if status2 == 400:
+        log_test("POST /packaging/sessions (insufficient stock)", "PASS", "Correctly rejected insufficient stock")
     else:
-        print("⚠️  Some tests failed. Please review the issues above.")
-        return False
+        log_test("POST /packaging/sessions (insufficient stock)", "FAIL", f"Expected 400, got {status2}")
+    
+    return session_id
+
+def test_list_sessions():
+    """Test GET /api/packaging/sessions"""
+    print("\n=== TESTING SESSION LISTING ===")
+    
+    # Test 1: Get all sessions
+    data, status = make_request("GET", "/packaging/sessions")
+    if data is None:
+        log_test("GET /packaging/sessions", "FAIL", f"Request failed with status {status}")
+        return
+    
+    log_test("GET /packaging/sessions", "PASS", f"Retrieved {len(data)} sessions")
+    
+    # Display session details
+    for session in data:
+        print(f"    Session {session.get('session_number')}: {session.get('source_product_name')}")
+        print(f"      Status: {session.get('status')}, Outputs: {session.get('outputs_count')}, Total packed: {session.get('total_packed')}")
+    
+    # Test 2: Filter by status
+    data2, status2 = make_request("GET", "/packaging/sessions?status=in_progress")
+    if data2 is not None:
+        log_test("GET /packaging/sessions (filtered)", "PASS", f"Found {len(data2)} in-progress sessions")
+    else:
+        log_test("GET /packaging/sessions (filtered)", "FAIL", "Filter request failed")
+
+def test_session_details(session_id):
+    """Test GET /api/packaging/sessions/{id}"""
+    print("\n=== TESTING SESSION DETAILS ===")
+    
+    if session_id is None:
+        log_test("Session details", "FAIL", "No session ID available")
+        return
+    
+    # Test 1: Get valid session details
+    data, status = make_request("GET", f"/packaging/sessions/{session_id}")
+    if data is None:
+        log_test("GET /packaging/sessions/{id}", "FAIL", f"Request failed with status {status}")
+        return
+    
+    log_test("GET /packaging/sessions/{id}", "PASS", 
+             f"Retrieved session details with {len(data.get('outputs', []))} outputs")
+    
+    # Test 2: Try non-existent session
+    data2, status2 = make_request("GET", "/packaging/sessions/99999", expected_status=404)
+    if status2 == 404:
+        log_test("GET /packaging/sessions/{id} (not found)", "PASS", "Correctly returned 404 for non-existent session")
+    else:
+        log_test("GET /packaging/sessions/{id} (not found)", "FAIL", f"Expected 404, got {status2}")
+
+def test_add_output(session_id, recipes, target_products):
+    """Test POST /api/packaging/sessions/{id}/outputs"""
+    print("\n=== TESTING SESSION OUTPUTS ===")
+    
+    if session_id is None:
+        log_test("Add output", "FAIL", "No session ID available")
+        return
+    
+    # Find a target product that has a recipe
+    target_product_id = None
+    if recipes:
+        target_product_id = recipes[0].get('target_product_id')
+    elif target_products:
+        target_product_id = target_products[0]['id']
+    
+    if target_product_id is None:
+        log_test("Add output", "FAIL", "No target product available")
+        return
+    
+    # Test 1: Add valid output
+    output_data = {
+        "target_product_id": target_product_id,
+        "quantity_packed": 50,
+        "defect_quantity": 0,
+        "notes": "Test output"
+    }
+    
+    data, status = make_request("POST", f"/packaging/sessions/{session_id}/outputs", output_data)
+    if data is None:
+        log_test("POST /packaging/sessions/{id}/outputs", "FAIL", f"Request failed with status {status}")
+        return
+    
+    log_test("POST /packaging/sessions/{id}/outputs", "PASS", 
+             f"Added output: {data.get('quantity_packed')} units")
+    
+    # Display calculated materials
+    materials = data.get('materials_used', [])
+    print(f"    Calculated materials: {len(materials)}")
+    for material in materials:
+        print(f"      {material.get('material_name')}: {material.get('quantity')} {material.get('unit')}")
+    
+    # Test 2: Try invalid target product (no recipe)
+    invalid_output_data = {
+        "target_product_id": 99999,  # Non-existent product
+        "quantity_packed": 10,
+        "defect_quantity": 0,
+        "notes": "Test invalid"
+    }
+    
+    data2, status2 = make_request("POST", f"/packaging/sessions/{session_id}/outputs", 
+                                 invalid_output_data, expected_status=404)
+    if status2 == 404:
+        log_test("POST /packaging/sessions/{id}/outputs (invalid product)", "PASS", 
+                "Correctly rejected invalid target product")
+    else:
+        log_test("POST /packaging/sessions/{id}/outputs (invalid product)", "FAIL", 
+                f"Expected 404, got {status2}")
+
+def test_add_remainder(session_id, source_products):
+    """Test POST /api/packaging/sessions/{id}/remainders"""
+    print("\n=== TESTING SESSION REMAINDERS ===")
+    
+    if session_id is None:
+        log_test("Add remainder", "FAIL", "No session ID available")
+        return
+    
+    if not source_products:
+        log_test("Add remainder", "FAIL", "No nomenclature available for remainder")
+        return
+    
+    # Use first available nomenclature for remainder
+    nomenclature_id = source_products[0]['id']
+    
+    remainder_data = {
+        "nomenclature_id": nomenclature_id,
+        "weight_kg": 1.5,
+        "description": "Fallen spices during packaging",
+        "notes": "Test remainder"
+    }
+    
+    data, status = make_request("POST", f"/packaging/sessions/{session_id}/remainders", remainder_data)
+    if data is None:
+        log_test("POST /packaging/sessions/{id}/remainders", "FAIL", f"Request failed with status {status}")
+        return
+    
+    log_test("POST /packaging/sessions/{id}/remainders", "PASS", 
+             f"Added remainder: {data.get('weight_kg')} kg")
+
+def test_add_waste(session_id):
+    """Test POST /api/packaging/sessions/{id}/waste"""
+    print("\n=== TESTING SESSION WASTE ===")
+    
+    if session_id is None:
+        log_test("Add waste", "FAIL", "No session ID available")
+        return
+    
+    waste_data = {
+        "waste_weight_kg": 0.5,
+        "waste_description": "Packaging losses",
+        "notes": "Test waste"
+    }
+    
+    data, status = make_request("POST", f"/packaging/sessions/{session_id}/waste", waste_data)
+    if data is None:
+        log_test("POST /packaging/sessions/{id}/waste", "FAIL", f"Request failed with status {status}")
+        return
+    
+    log_test("POST /packaging/sessions/{id}/waste", "PASS", 
+             f"Added waste: {data.get('waste_weight_kg')} kg")
+
+def test_complete_session(session_id):
+    """Test PUT /api/packaging/sessions/{id}/complete"""
+    print("\n=== TESTING SESSION COMPLETION ===")
+    
+    if session_id is None:
+        log_test("Complete session", "FAIL", "No session ID available")
+        return
+    
+    # Test 1: Complete session
+    completion_data = {
+        "notes": "Session completed successfully"
+    }
+    
+    data, status = make_request("PUT", f"/packaging/sessions/{session_id}/complete", completion_data)
+    if data is None:
+        log_test("PUT /packaging/sessions/{id}/complete", "FAIL", f"Request failed with status {status}")
+        return
+    
+    log_test("PUT /packaging/sessions/{id}/complete", "PASS", "Session completed successfully")
+    
+    # Test 2: Try to complete again (should fail)
+    data2, status2 = make_request("PUT", f"/packaging/sessions/{session_id}/complete", 
+                                 completion_data, expected_status=400)
+    if status2 == 400:
+        log_test("PUT /packaging/sessions/{id}/complete (double completion)", "PASS", 
+                "Correctly rejected double completion")
+    else:
+        log_test("PUT /packaging/sessions/{id}/complete (double completion)", "FAIL", 
+                f"Expected 400, got {status2}")
+
+def test_completed_session_operations(session_id):
+    """Test operations on completed session (should fail)"""
+    print("\n=== TESTING COMPLETED SESSION RESTRICTIONS ===")
+    
+    if session_id is None:
+        log_test("Completed session restrictions", "FAIL", "No session ID available")
+        return
+    
+    # Try to add remainder to completed session
+    remainder_data = {
+        "nomenclature_id": 1,
+        "weight_kg": 1.0,
+        "description": "Should fail",
+        "notes": "Test"
+    }
+    
+    data, status = make_request("POST", f"/packaging/sessions/{session_id}/remainders", 
+                               remainder_data, expected_status=400)
+    if status == 400:
+        log_test("Add remainder to completed session", "PASS", "Correctly rejected operation on completed session")
+    else:
+        log_test("Add remainder to completed session", "FAIL", f"Expected 400, got {status}")
+
+def add_test_stock():
+    """Add some stock for testing purposes"""
+    print("\n=== ADDING TEST STOCK ===")
+    
+    # Get nomenclature first
+    data, status = make_request("GET", "/nomenclature")
+    if data is None:
+        log_test("Add test stock", "FAIL", "Could not get nomenclature")
+        return
+    
+    # Add stock to first few items
+    for i, item in enumerate(data[:5]):
+        stock_data = {
+            "nomenclature_id": item['id'],
+            "quantity": 100.0,
+            "price_per_unit": 50.0,
+            "idempotency_key": f"test-stock-{item['id']}-{datetime.now().timestamp()}",
+            "metadata": {"test": True, "purpose": "packaging_test"}
+        }
+        
+        stock_result, stock_status = make_request("POST", "/stock/receipt", stock_data)
+        if stock_result:
+            print(f"    Added 100 units to {item['name']}")
+        else:
+            print(f"    Failed to add stock to {item['name']}")
+
+def main():
+    """Run all packaging API tests"""
+    print("🧪 PACKAGING MODULE SESSION-BASED API TESTING")
+    print("=" * 60)
+    
+    # Step 0: Add some test stock
+    add_test_stock()
+    
+    # Step 1: Test recipes endpoint
+    recipes = test_packaging_recipes()
+    
+    # Step 2: Get nomenclature for testing
+    source_products, target_products = test_nomenclature()
+    
+    # Step 3: Create a new session
+    session_id = test_create_session(source_products)
+    
+    # Step 4: Test session listing
+    test_list_sessions()
+    
+    # Step 5: Test session details
+    test_session_details(session_id)
+    
+    # Step 6: Add output to session
+    test_add_output(session_id, recipes, target_products)
+    
+    # Step 7: Add remainder to session
+    test_add_remainder(session_id, source_products)
+    
+    # Step 8: Add waste to session
+    test_add_waste(session_id)
+    
+    # Step 9: Complete session
+    test_complete_session(session_id)
+    
+    # Step 10: Test operations on completed session
+    test_completed_session_operations(session_id)
+    
+    print("\n" + "=" * 60)
+    print("🏁 PACKAGING API TESTING COMPLETED")
+    print("Check the logs above for detailed results")
 
 if __name__ == "__main__":
-    success = run_all_tests()
-    sys.exit(0 if success else 1)
+    main()
