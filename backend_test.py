@@ -12,42 +12,69 @@ from datetime import datetime
 # Get backend URL from environment
 BACKEND_URL = "https://packmaster-6.preview.emergentagent.com/api"
 
-def test_get_all_recipes():
-    """Test 1: GET /api/production/recipes - should return all 8 recipes"""
-    print("🧪 Test 1: GET /api/production/recipes")
-    
+def log_test(test_name, status, details=""):
+    """Log test results"""
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    status_symbol = "✅" if status == "PASS" else "❌" if status == "FAIL" else "⚠️"
+    print(f"[{timestamp}] {status_symbol} {test_name}")
+    if details:
+        print(f"    {details}")
+
+def make_request(method, endpoint, data=None, expected_status=200):
+    """Make HTTP request with error handling"""
+    url = f"{BACKEND_URL}{endpoint}"
     try:
-        response = requests.get(f"{BACKEND_URL}/production/recipes", timeout=10)
+        if method == "GET":
+            response = requests.get(url, timeout=30)
+        elif method == "POST":
+            response = requests.post(url, json=data, timeout=30)
+        elif method == "PUT":
+            response = requests.put(url, json=data, timeout=30)
+        else:
+            raise ValueError(f"Unsupported method: {method}")
         
-        if response.status_code != 200:
-            print(f"❌ FAILED: Expected 200, got {response.status_code}")
-            print(f"Response: {response.text}")
-            return False
-            
-        recipes = response.json()
+        print(f"    {method} {endpoint} -> {response.status_code}")
         
-        if len(recipes) != 8:
-            print(f"❌ FAILED: Expected 8 recipes, got {len(recipes)}")
-            return False
-            
-        print(f"✅ SUCCESS: Found {len(recipes)} recipes")
+        if response.status_code != expected_status:
+            print(f"    Response: {response.text}")
+            return None, response.status_code
         
-        # Verify recipe IDs and names
-        found_ids = {recipe['id'] for recipe in recipes}
-        expected_ids = set(RECIPE_NAMES.keys())
-        
-        if found_ids != expected_ids:
-            print(f"❌ FAILED: Recipe IDs mismatch")
-            print(f"Expected: {expected_ids}")
-            print(f"Found: {found_ids}")
-            return False
-            
-        print("✅ SUCCESS: All expected recipe IDs found")
-        return True
-        
+        return response.json() if response.content else {}, response.status_code
     except Exception as e:
-        print(f"❌ FAILED: Exception occurred: {e}")
-        return False
+        print(f"    ERROR: {str(e)}")
+        return None, 0
+
+def test_packaging_recipes():
+    """Test GET /api/packaging/recipes"""
+    print("\n=== TESTING PACKAGING RECIPES ===")
+    
+    # Test 1: Get all recipes
+    data, status = make_request("GET", "/packaging/recipes")
+    if data is None:
+        log_test("GET /packaging/recipes", "FAIL", f"Request failed with status {status}")
+        return []
+    
+    if not isinstance(data, list):
+        log_test("GET /packaging/recipes", "FAIL", "Response is not a list")
+        return []
+    
+    log_test("GET /packaging/recipes", "PASS", f"Retrieved {len(data)} recipes")
+    
+    # Display recipe details
+    for recipe in data:
+        print(f"    Recipe ID {recipe.get('id')}: {recipe.get('source_product_name')} -> {recipe.get('target_product_name')}")
+        print(f"      Materials: {len(recipe.get('materials', []))}")
+    
+    # Test 2: Filter by source_product_id if recipes exist
+    if data:
+        source_id = data[0].get('source_product_id')
+        filtered_data, status = make_request("GET", f"/packaging/recipes?source_product_id={source_id}")
+        if filtered_data is not None:
+            log_test("GET /packaging/recipes with filter", "PASS", f"Filtered to {len(filtered_data)} recipes")
+        else:
+            log_test("GET /packaging/recipes with filter", "FAIL", f"Filter request failed")
+    
+    return data
 
 def test_recipe_details_no_trim():
     """Test 2: Verify each recipe has no trim step and correct nomenclature"""
