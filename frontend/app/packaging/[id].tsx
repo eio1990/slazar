@@ -448,35 +448,43 @@ export default function PackagingSessionDetailScreen() {
 
             {/* SKU Selection as Horizontal Buttons */}
             <Text style={styles.sectionLabel}>Оберіть SKU *</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.skuButtonsContainer}>
-              {recipes?.map((recipe: any) => (
-                <TouchableOpacity
-                  key={recipe.id}
-                  style={[
-                    styles.skuButton,
-                    selectedSKU?.id === recipe.id && styles.skuButtonSelected,
-                  ]}
-                  onPress={() => {
-                    setSelectedSKU(recipe);
-                    setPackedQty('');
-                    setDefectQty('0');
-                  }}
-                >
-                  <Text style={[
-                    styles.skuButtonWeight,
-                    selectedSKU?.id === recipe.id && styles.skuButtonWeightSelected,
-                  ]}>
-                    {recipe.target_weight_grams}г
-                  </Text>
-                  <Text style={[
-                    styles.skuButtonType,
-                    selectedSKU?.id === recipe.id && styles.skuButtonTypeSelected,
-                  ]}>
-                    {recipe.packaging_type}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            
+            {!recipes || recipes.length === 0 ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#007AFF" />
+                <Text style={styles.loadingText}>Завантаження варіантів фасування...</Text>
+              </View>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.skuButtonsContainer}>
+                {recipes.map((recipe: any) => (
+                  <TouchableOpacity
+                    key={recipe.id}
+                    style={[
+                      styles.skuButton,
+                      selectedSKU?.id === recipe.id && styles.skuButtonSelected,
+                    ]}
+                    onPress={() => {
+                      setSelectedSKU(recipe);
+                      setPackedQty('');
+                      setDefectQty('0');
+                    }}
+                  >
+                    <Text style={[
+                      styles.skuButtonWeight,
+                      selectedSKU?.id === recipe.id && styles.skuButtonWeightSelected,
+                    ]}>
+                      {recipe.target_weight_grams}г
+                    </Text>
+                    <Text style={[
+                      styles.skuButtonType,
+                      selectedSKU?.id === recipe.id && styles.skuButtonTypeSelected,
+                    ]}>
+                      {recipe.packaging_type}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
 
             {/* Show form only when SKU is selected */}
             {selectedSKU && (
