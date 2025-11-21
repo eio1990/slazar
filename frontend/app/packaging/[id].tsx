@@ -949,7 +949,7 @@ const styles = StyleSheet.create({
   },
   skuButtonsContainer: {
     marginBottom: 24,
-    flexDirection: 'row',
+    height: 90,
   },
   skuButton: {
     backgroundColor: '#fff',
