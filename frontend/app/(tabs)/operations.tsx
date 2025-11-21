@@ -145,7 +145,6 @@ export default function OperationsScreen() {
   const handleSelectItem = (item: Nomenclature) => {
     setSelectedItem(item);
     setModalVisible(false);
-    setSearchQuery('');
   };
 
   const handleSubmit = async () => {
