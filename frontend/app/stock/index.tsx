@@ -26,12 +26,29 @@ export default function StockScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<number | null>(null);
   const [recipeNomenclatureIds, setRecipeNomenclatureIds] = useState<number[]>([]);
   const [isOnline, setOnlineState] = useState(true);
+  const [usageStats, setUsageStats] = useState<Record<number, number>>({});
 
-  const categories = Array.from(new Set(balances.map(b => b.category))).sort();
+  // Define filter categories with priority order
+  const filterCategories = ['Сировина - М\'ясо', 'Спеції'];
+  
+  // Get all unique categories
+  const allCategories = Array.from(new Set(balances.map(b => b.category))).sort();
+  
+  // Toggle category filter
+  const toggleCategoryFilter = (category: string) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(category)) {
+        return prev.filter(c => c !== category);
+      } else {
+        return [...prev, category];
+      }
+    });
+    setSelectedRecipe(null); // Clear recipe filter when category changes
+  };
 
   // Load data
   const loadData = async () => {
@@ -40,9 +57,15 @@ export default function StockScreen() {
       setOnlineState(online);
 
       if (online) {
-        // Load balances
-        const balancesData = await apiService.getBalances();
+        // Load balances and usage stats
+        const [balancesData, statsData] = await Promise.all([
+          apiService.getBalances(),
+          fetch(`${API_URL}/api/nomenclature/usage-stats`)
+            .then(res => res.json())
+            .catch(() => ({}))
+        ]);
         setBalances(balancesData);
+        setUsageStats(statsData);
 
         // Load recipes
         const recipesResponse = await fetch(`${API_URL}/api/production/recipes`);
@@ -106,13 +129,38 @@ export default function StockScreen() {
     loadData();
   };
 
-  // Filter balances
-  const filteredBalances = balances.filter(balance => {
-    const matchesSearch = balance.nomenclature_name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || balance.category === selectedCategory;
-    const matchesRecipe = !selectedRecipe || recipeNomenclatureIds.includes(balance.nomenclature_id);
-    return matchesSearch && matchesCategory && matchesRecipe;
-  });
+  // Filter and sort balances
+  const filteredBalances = balances
+    .filter(balance => {
+      const matchesSearch = balance.nomenclature_name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Category filter: if no categories selected, show all
+      const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(balance.category);
+      
+      // Recipe filter
+      const matchesRecipe = !selectedRecipe || recipeNomenclatureIds.includes(balance.nomenclature_id);
+      
+      return matchesSearch && matchesCategory && matchesRecipe;
+    })
+    .sort((a, b) => {
+      // Sort by usage frequency
+      const aUsage = usageStats[a.nomenclature_id] || 0;
+      const bUsage = usageStats[b.nomenclature_id] || 0;
+      
+      if (aUsage !== bUsage) {
+        return bUsage - aUsage; // Higher usage first
+      }
+      
+      // Then by category priority
+      const aPriority = filterCategories.includes(a.category);
+      const bPriority = filterCategories.includes(b.category);
+      
+      if (aPriority && !bPriority) return -1;
+      if (!aPriority && bPriority) return 1;
+      
+      // Alphabetical
+      return a.nomenclature_name.localeCompare(b.nomenclature_name, 'uk');
+    });
 
   const renderBalanceItem = ({ item }: { item: any }) => {
     const isLowStock = item.quantity === 0;
@@ -190,34 +238,52 @@ export default function StockScreen() {
       </View>
 
       {/* Category filters */}
-      <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Категорії:</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+      <View style={styles.categoryFilterRow}>
+        {/* Priority filters - fixed */}
+        {filterCategories.map((category) => (
           <TouchableOpacity
-            style={[styles.filterChip, !selectedCategory && styles.filterChipActive]}
-            onPress={() => {
-              setSelectedCategory(null);
-              setSelectedRecipe(null);
-            }}
+            key={category}
+            style={[
+              styles.categoryButton,
+              selectedCategories.includes(category) && styles.categoryButtonActive
+            ]}
+            onPress={() => toggleCategoryFilter(category)}
           >
-            <Text style={[styles.filterChipText, !selectedCategory && styles.filterChipTextActive]}>
-              Всі
+            <Text style={[
+              styles.categoryButtonText,
+              selectedCategories.includes(category) && styles.categoryButtonTextActive
+            ]}>
+              {category === 'Сировина - М\'ясо' ? 'М\'ясо' : category}
             </Text>
           </TouchableOpacity>
-          {categories.map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              style={[styles.filterChip, selectedCategory === cat && styles.filterChipActive]}
-              onPress={() => {
-                setSelectedCategory(cat);
-                setSelectedRecipe(null);
-              }}
-            >
-              <Text style={[styles.filterChipText, selectedCategory === cat && styles.filterChipTextActive]}>
-                {cat}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        ))}
+        
+        {/* Other filters - scrollable */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.scrollableFilters}
+          contentContainerStyle={styles.scrollableFiltersContent}
+        >
+          {allCategories
+            .filter(c => !filterCategories.includes(c))
+            .map((category) => (
+              <TouchableOpacity
+                key={category}
+                style={[
+                  styles.categoryChip,
+                  selectedCategories.includes(category) && styles.categoryChipActive
+                ]}
+                onPress={() => toggleCategoryFilter(category)}
+              >
+                <Text style={[
+                  styles.categoryChipText,
+                  selectedCategories.includes(category) && styles.categoryChipTextActive
+                ]}>
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            ))}
         </ScrollView>
       </View>
 
@@ -239,7 +305,7 @@ export default function StockScreen() {
               style={[styles.filterChip, selectedRecipe === recipe.id && styles.filterChipActive]}
               onPress={() => {
                 setSelectedRecipe(recipe.id);
-                setSelectedCategory(null);
+                setSelectedCategories([]);
               }}
             >
               <Text style={[styles.filterChipText, selectedRecipe === recipe.id && styles.filterChipTextActive]}>
@@ -279,13 +345,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#4CAF50',
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingBottom: 16,
     paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#4CAF50',
+    ...Platform.select({
+      android: {
+        paddingTop: 40,
+      },
+    }),
   },
   backButton: {
-    padding: 4,
+    padding: 8,
   },
   headerTitle: {
     fontSize: 20,
@@ -293,7 +363,20 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   placeholder: {
-    width: 32,
+    width: 40,
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FF9800',
+    paddingVertical: 8,
+  },
+  offlineText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
   },
   centerContainer: {
     flex: 1,
@@ -306,32 +389,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-  offlineBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF9800',
-    padding: 8,
-    gap: 8,
-  },
-  offlineText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    margin: 16,
-    marginBottom: 12,
+    marginHorizontal: 16,
+    marginVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   searchIcon: {
     marginRight: 8,
@@ -341,14 +408,77 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
   },
-  filterSection: {
+  categoryFilterRow: {
+    flexDirection: 'row',
+    padding: 12,
+    backgroundColor: '#fff',
+    gap: 8,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  categoryButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  categoryButtonActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  categoryButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+  },
+  categoryButtonTextActive: {
+    color: '#fff',
+  },
+  scrollableFilters: {
+    flex: 1,
+    maxHeight: 44,
+  },
+  scrollableFiltersContent: {
+    paddingLeft: 8,
+    alignItems: 'center',
+    gap: 8,
+  },
+  categoryChip: {
     paddingHorizontal: 16,
-    marginBottom: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  categoryChipActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  categoryChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+  },
+  categoryChipTextActive: {
+    color: '#fff',
+  },
+  filterSection: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: '#333',
     marginBottom: 8,
   },
   filterScroll: {
@@ -359,7 +489,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginRight: 8,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#f0f0f0',
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
@@ -368,8 +498,8 @@ const styles = StyleSheet.create({
     borderColor: '#4CAF50',
   },
   filterChipText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     color: '#666',
   },
   filterChipTextActive: {
@@ -377,18 +507,26 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingTop: 0,
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      },
+    }),
   },
   cardLowStock: {
     borderLeftWidth: 4,
@@ -397,32 +535,32 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 12,
   },
   itemName: {
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginRight: 8,
+    marginRight: 12,
   },
   quantityBadge: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#4CAF50',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 12,
   },
   quantityBadgeLow: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: '#FF5722',
   },
   quantityText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: '#fff',
   },
   quantityTextLow: {
-    color: '#FF5722',
+    color: '#fff',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -444,12 +582,12 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
+    paddingVertical: 48,
   },
   emptyText: {
-    marginTop: 16,
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#999',
+    marginTop: 16,
   },
 });
