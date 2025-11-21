@@ -127,7 +127,7 @@ export default function StockScreen() {
       
       // Meat type filter: use mapping from recipes
       let matchesMeatType = true;
-      if (selectedMeatType && meatTypeMapping[selectedMeatType]) {
+      if (selectedMeatType && meatTypeMapping && meatTypeMapping[selectedMeatType]) {
         // Check if this product is in the meat type mapping
         if (balance.category === 'Готова продукція') {
           matchesMeatType = meatTypeMapping[selectedMeatType].includes(balance.nomenclature_id);
