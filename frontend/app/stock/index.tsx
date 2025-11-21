@@ -48,6 +48,14 @@ export default function StockScreen() {
     setSelectedRecipe(null); // Clear recipe filter when category changes
   };
 
+  // Define meat types for filtering
+  const meatTypes = [
+    { key: 'яловичина', label: 'Яловичина' },
+    { key: 'конина', label: 'Конина' },
+    { key: 'індичка', label: 'Індичка' },
+    { key: 'свинина', label: 'Свинина' },
+  ];
+
   // Load data
   const loadData = async () => {
     try {
@@ -64,11 +72,6 @@ export default function StockScreen() {
         ]);
         setBalances(balancesData);
         setUsageStats(statsData);
-
-        // Load recipes
-        const recipesResponse = await fetch(`${API_URL}/api/production/recipes`);
-        const recipesData = await recipesResponse.json();
-        setRecipes(recipesData);
       }
     } catch (error) {
       console.error('Error loading data:', error);
