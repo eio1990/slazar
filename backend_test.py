@@ -1,39 +1,16 @@
 #!/usr/bin/env python3
 """
-Backend Testing for Production Recipe Updates
-Tests the update_production_recipes.py script results
+Comprehensive Backend Testing for Packaging Module Session-Based API
+Testing all packaging endpoints systematically
 """
+
 import requests
 import json
-import sys
+import time
 from datetime import datetime
 
 # Get backend URL from environment
 BACKEND_URL = "https://packmaster-6.preview.emergentagent.com/api"
-
-# Expected nomenclature mappings after update
-EXPECTED_NOMENCLATURE = {
-    2: 199,  # Бастурма класична → Яловичина для бастурми
-    3: 202,  # Бастурма з конини → Конина для бастурми  
-    4: 211,  # Індичка → Індичка для бастурми
-    5: 210,  # Курка → Курка для суджука
-    6: 207,  # Свинина → Свинина для банкетної
-    7: 200,  # Пластина → Яловичина для пластин
-    8: 201,  # Суджук → Яловичина для суджука
-    9: 204,  # Махан → Конина для махан
-}
-
-# Recipe names for verification
-RECIPE_NAMES = {
-    2: "Бастурма класична",
-    3: "Бастурма з конини", 
-    4: "Індичка сировялена",
-    5: "Курка сировялена",
-    6: "Свинина сировялена",
-    7: "Пластина яловичина",
-    8: "Суджук",
-    9: "Махан"
-}
 
 def test_get_all_recipes():
     """Test 1: GET /api/production/recipes - should return all 8 recipes"""
