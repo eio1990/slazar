@@ -236,13 +236,16 @@ export default function StockScreen() {
             key={category}
             style={[
               styles.categoryButton,
-              selectedCategories.includes(category) && styles.categoryButtonActive
+              selectedCategories.includes(category) && styles.categoryButtonActive,
+              selectedMeatType && styles.categoryButtonDisabled
             ]}
             onPress={() => toggleCategoryFilter(category)}
+            disabled={!!selectedMeatType}
           >
             <Text style={[
               styles.categoryButtonText,
-              selectedCategories.includes(category) && styles.categoryButtonTextActive
+              selectedCategories.includes(category) && styles.categoryButtonTextActive,
+              selectedMeatType && styles.categoryButtonTextDisabled
             ]}>
               {category === 'Сировина - М\'ясо' ? 'М\'ясо' : category}
             </Text>
@@ -263,13 +266,16 @@ export default function StockScreen() {
                 key={category}
                 style={[
                   styles.categoryChip,
-                  selectedCategories.includes(category) && styles.categoryChipActive
+                  selectedCategories.includes(category) && styles.categoryChipActive,
+                  selectedMeatType && styles.categoryChipDisabled
                 ]}
                 onPress={() => toggleCategoryFilter(category)}
+                disabled={!!selectedMeatType}
               >
                 <Text style={[
                   styles.categoryChipText,
-                  selectedCategories.includes(category) && styles.categoryChipTextActive
+                  selectedCategories.includes(category) && styles.categoryChipTextActive,
+                  selectedMeatType && styles.categoryChipTextDisabled
                 ]}>
                   {category}
                 </Text>
