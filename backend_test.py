@@ -369,8 +369,15 @@ def add_test_stock():
         log_test("Add test stock", "FAIL", "Could not get nomenclature")
         return
     
-    # Add stock to first few items
-    for i, item in enumerate(data[:5]):
+    # Find source products (bulk/weight products) and add stock to them
+    source_products = []
+    for item in data:
+        name = item.get('name', '').lower()
+        if any(keyword in name for keyword in ['вагова', 'вагов', 'кг', 'bulk']):
+            source_products.append(item)
+    
+    # Add stock to source products
+    for item in source_products[:10]:  # Add to first 10 source products
         stock_data = {
             "nomenclature_id": item['id'],
             "quantity": 100.0,
@@ -381,9 +388,30 @@ def add_test_stock():
         
         stock_result, stock_status = make_request("POST", "/stock/receipt", stock_data)
         if stock_result:
-            print(f"    Added 100 units to {item['name']}")
+            print(f"    Added 100 kg to {item['name']}")
         else:
             print(f"    Failed to add stock to {item['name']}")
+    
+    # Also add stock to some materials for packaging
+    material_keywords = ['пакет', 'етикетка', 'коробка', 'скін', 'вакуум']
+    material_count = 0
+    for item in data:
+        if material_count >= 10:
+            break
+        name = item.get('name', '').lower()
+        if any(keyword in name for keyword in material_keywords):
+            stock_data = {
+                "nomenclature_id": item['id'],
+                "quantity": 1000.0,  # More materials
+                "price_per_unit": 1.0,
+                "idempotency_key": f"test-material-{item['id']}-{datetime.now().timestamp()}",
+                "metadata": {"test": True, "purpose": "packaging_materials"}
+            }
+            
+            stock_result, stock_status = make_request("POST", "/stock/receipt", stock_data)
+            if stock_result:
+                print(f"    Added 1000 units to material {item['name']}")
+                material_count += 1
 
 def main():
     """Run all packaging API tests"""
