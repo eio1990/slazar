@@ -94,7 +94,13 @@ export default function StockScreen() {
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      Alert.alert('Помилка', 'Не вдалося завантажити дані');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: 'Не вдалося завантажити дані',
+        position: 'top',
+        visibilityTime: 3000,
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
