@@ -428,46 +428,24 @@ export default function OperationsScreen() {
 
           {/* Category filters - only М'ясо and Спеції */}
           <View style={styles.categoryFilterContainer}>
-            <TouchableOpacity
-              style={[styles.categoryButton, !selectedCategory && styles.categoryButtonActive]}
-              onPress={() => setSelectedCategory(null)}
-            >
-              <Text style={[styles.categoryButtonText, !selectedCategory && styles.categoryButtonTextActive]}>
-                Всі
-              </Text>
-            </TouchableOpacity>
-            {categories.slice(0, 3).map((category) => (
+            {filterCategories.map((category) => (
               <TouchableOpacity
                 key={category}
-                style={[styles.categoryButton, selectedCategory === category && styles.categoryButtonActive]}
-                onPress={() => setSelectedCategory(category)}
+                style={[
+                  styles.categoryButton, 
+                  selectedCategories.includes(category) && styles.categoryButtonActive
+                ]}
+                onPress={() => toggleCategoryFilter(category)}
               >
-                <Text style={[styles.categoryButtonText, selectedCategory === category && styles.categoryButtonTextActive]}>
-                  {category}
+                <Text style={[
+                  styles.categoryButtonText, 
+                  selectedCategories.includes(category) && styles.categoryButtonTextActive
+                ]}>
+                  {category === 'М\'ясо та м\'ясні продукти' ? 'М\'ясо' : category}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-          {categories.length > 3 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.additionalFiltersContainer}
-              contentContainerStyle={styles.additionalFiltersContent}
-            >
-              {categories.slice(3).map((category) => (
-                <TouchableOpacity
-                  key={category}
-                  style={[styles.categoryChip, selectedCategory === category && styles.categoryChipActive]}
-                  onPress={() => setSelectedCategory(category)}
-                >
-                  <Text style={[styles.categoryChipText, selectedCategory === category && styles.categoryChipTextActive]}>
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
 
           {loading ? (
             <View style={styles.modalLoading}>
