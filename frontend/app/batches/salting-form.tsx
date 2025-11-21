@@ -31,8 +31,8 @@ export default function SaltingFormScreen() {
   const recommendedSalt = (weight / 100) * saltPer100;
   const recommendedWater = (weight / 100) * waterPer100;
   
-  const [saltQuantity, setSaltQuantity] = useState(recommendedSalt.toFixed(2));
-  const [waterQuantity, setWaterQuantity] = useState(recommendedWater.toFixed(2));
+  const [saltQuantity, setSaltQuantity] = useState('');
+  const [waterQuantity, setWaterQuantity] = useState('');
   const [notes, setNotes] = useState('');
 
   // Get batch details
