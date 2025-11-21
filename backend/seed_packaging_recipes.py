@@ -61,8 +61,8 @@ def seed_packaging_recipes():
         vacuum_bag = cursor.fetchone()
         if not vacuum_bag:
             cursor.execute("""
-                INSERT INTO nomenclature (name, category, unit, is_raw_material)
-                VALUES ('Пакет вакуумний', 'Матеріали', 'шт', 0)
+                INSERT INTO nomenclature (name, category, unit)
+                VALUES ('Пакет вакуумний', 'Матеріали', 'шт')
             """)
             materials['vacuum_bag'] = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
             print(f"  Created material: Пакет вакуумний (ID: {materials['vacuum_bag']})")
@@ -75,8 +75,8 @@ def seed_packaging_recipes():
         skin_film = cursor.fetchone()
         if not skin_film:
             cursor.execute("""
-                INSERT INTO nomenclature (name, category, unit, is_raw_material)
-                VALUES ('Плівка скін', 'Матеріали', 'м', 0)
+                INSERT INTO nomenclature (name, category, unit)
+                VALUES ('Плівка скін', 'Матеріали', 'м')
             """)
             materials['skin_film'] = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
             print(f"  Created material: Плівка скін (ID: {materials['skin_film']})")
@@ -89,8 +89,8 @@ def seed_packaging_recipes():
         label = cursor.fetchone()
         if not label:
             cursor.execute("""
-                INSERT INTO nomenclature (name, category, unit, is_raw_material)
-                VALUES ('Етикетка', 'Матеріали', 'шт', 0)
+                INSERT INTO nomenclature (name, category, unit)
+                VALUES ('Етикетка', 'Матеріали', 'шт')
             """)
             materials['label'] = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
             print(f"  Created material: Етикетка (ID: {materials['label']})")
