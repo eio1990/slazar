@@ -53,13 +53,16 @@ export default function PackagingSessionDetailScreen() {
   });
 
   // Get packaging recipes (for SKU selection)
-  const { data: recipes } = useQuery({
+  const { data: recipes, isLoading: recipesLoading } = useQuery({
     queryKey: ['packaging-recipes', session?.source_product_id],
     queryFn: async () => {
       if (!session?.source_product_id) return [];
+      console.log('[Packaging] Fetching recipes for source_product_id:', session.source_product_id);
       const response = await fetch(`${API_URL}/api/packaging/recipes?source_product_id=${session.source_product_id}`);
       if (!response.ok) throw new Error('Failed to fetch recipes');
-      return response.json();
+      const data = await response.json();
+      console.log('[Packaging] Recipes loaded:', data.length, 'recipes');
+      return data;
     },
     enabled: !!session?.source_product_id,
   });
