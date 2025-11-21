@@ -431,32 +431,47 @@ export default function OperationsScreen() {
           </View>
 
           {/* Category filters */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.categoryFilterContainer}
-            contentContainerStyle={styles.categoryFilterContent}
-          >
+          <View style={styles.categoryFilterContainer}>
             <TouchableOpacity
-              style={[styles.categoryChip, !selectedCategory && styles.categoryChipActive]}
+              style={[styles.categoryButton, !selectedCategory && styles.categoryButtonActive]}
               onPress={() => setSelectedCategory(null)}
             >
-              <Text style={[styles.categoryChipText, !selectedCategory && styles.categoryChipTextActive]}>
+              <Text style={[styles.categoryButtonText, !selectedCategory && styles.categoryButtonTextActive]}>
                 Всі
               </Text>
             </TouchableOpacity>
-            {categories.map((category) => (
+            {categories.slice(0, 3).map((category) => (
               <TouchableOpacity
                 key={category}
-                style={[styles.categoryChip, selectedCategory === category && styles.categoryChipActive]}
+                style={[styles.categoryButton, selectedCategory === category && styles.categoryButtonActive]}
                 onPress={() => setSelectedCategory(category)}
               >
-                <Text style={[styles.categoryChipText, selectedCategory === category && styles.categoryChipTextActive]}>
+                <Text style={[styles.categoryButtonText, selectedCategory === category && styles.categoryButtonTextActive]}>
                   {category}
                 </Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
+          {categories.length > 3 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.additionalFiltersContainer}
+              contentContainerStyle={styles.additionalFiltersContent}
+            >
+              {categories.slice(3).map((category) => (
+                <TouchableOpacity
+                  key={category}
+                  style={[styles.categoryChip, selectedCategory === category && styles.categoryChipActive]}
+                  onPress={() => setSelectedCategory(category)}
+                >
+                  <Text style={[styles.categoryChipText, selectedCategory === category && styles.categoryChipTextActive]}>
+                    {category}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
 
           {loading ? (
             <View style={styles.modalLoading}>
