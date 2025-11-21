@@ -65,6 +65,7 @@ export default function StockScreen() {
   const meatTypes = [
     { key: 'яловичина', label: 'Яловичина' },
     { key: 'конина', label: 'Конина' },
+    { key: 'курка', label: 'Курка' },
     { key: 'індичка', label: 'Індичка' },
     { key: 'свинина', label: 'Свинина' },
   ];
