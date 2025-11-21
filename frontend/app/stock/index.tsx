@@ -508,6 +508,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     borderColor: '#4CAF50',
   },
+  filterChipDisabled: {
+    backgroundColor: '#f5f5f5',
+    borderColor: '#ddd',
+    opacity: 0.5,
+  },
   filterChipText: {
     fontSize: 13,
     fontWeight: '600',
@@ -515,6 +520,9 @@ const styles = StyleSheet.create({
   },
   filterChipTextActive: {
     color: '#fff',
+  },
+  filterChipTextDisabled: {
+    color: '#999',
   },
   listContent: {
     padding: 16,
