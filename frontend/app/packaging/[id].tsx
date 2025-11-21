@@ -429,87 +429,137 @@ export default function PackagingSessionDetailScreen() {
       <Modal
         visible={outputModalVisible}
         animationType="slide"
-        transparent={true}
+        transparent={false}
         onRequestClose={() => setOutputModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Додати вихід (SKU)</Text>
-              <TouchableOpacity onPress={() => setOutputModalVisible(false)}>
-                <MaterialCommunityIcons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalBody}>
-              <Text style={styles.modalInfo}>
-                Система автоматично розрахує та спише матеріали
-              </Text>
-
-              <Text style={styles.inputLabel}>Оберіть SKU *</Text>
-              <ScrollView style={styles.skuList} nestedScrollEnabled>
-                {recipes?.map((recipe: any) => (
-                  <TouchableOpacity
-                    key={recipe.id}
-                    style={[
-                      styles.skuCard,
-                      selectedSKU?.id === recipe.id && styles.skuCardSelected,
-                    ]}
-                    onPress={() => setSelectedSKU(recipe)}
-                  >
-                    <Text style={styles.skuName}>{recipe.target_product_name}</Text>
-                    <Text style={styles.skuWeight}>{recipe.target_weight_grams}г - {recipe.packaging_type}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Кількість упакованих (шт) *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={packedQty}
-                  onChangeText={setPackedQty}
-                  placeholder="напр. 50"
-                  keyboardType="number-pad"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Брак (шт)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={defectQty}
-                  onChangeText={setDefectQty}
-                  placeholder="0"
-                  keyboardType="number-pad"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Примітки</Text>
-                <TextInput
-                  style={styles.textArea}
-                  value={outputNotes}
-                  onChangeText={setOutputNotes}
-                  placeholder="Додаткова інформація..."
-                  multiline
-                  numberOfLines={2}
-                />
-              </View>
-
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleAddOutput}
-                disabled={addOutputMutation.isPending}
-              >
-                {addOutputMutation.isPending ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Додати вихід</Text>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
+        <View style={styles.fullScreenModal}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setOutputModalVisible(false)} style={styles.modalCloseButton}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color="#007AFF" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Додати вихід (SKU)</Text>
+            <View style={{ width: 24 }} />
           </View>
+
+          <ScrollView style={styles.fullModalBody}>
+            <Text style={styles.modalInfo}>
+              Оберіть SKU і введіть кількість. Матеріали будуть розраховані автоматично.
+            </Text>
+
+            {/* SKU Selection as Horizontal Buttons */}
+            <Text style={styles.sectionLabel}>Оберіть SKU *</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.skuButtonsContainer}>
+              {recipes?.map((recipe: any) => (
+                <TouchableOpacity
+                  key={recipe.id}
+                  style={[
+                    styles.skuButton,
+                    selectedSKU?.id === recipe.id && styles.skuButtonSelected,
+                  ]}
+                  onPress={() => {
+                    setSelectedSKU(recipe);
+                    setPackedQty('');
+                    setDefectQty('0');
+                  }}
+                >
+                  <Text style={[
+                    styles.skuButtonWeight,
+                    selectedSKU?.id === recipe.id && styles.skuButtonWeightSelected,
+                  ]}>
+                    {recipe.target_weight_grams}г
+                  </Text>
+                  <Text style={[
+                    styles.skuButtonType,
+                    selectedSKU?.id === recipe.id && styles.skuButtonTypeSelected,
+                  ]}>
+                    {recipe.packaging_type}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Show form only when SKU is selected */}
+            {selectedSKU && (
+              <>
+                <View style={styles.selectedSkuInfo}>
+                  <MaterialCommunityIcons name="package-variant" size={20} color="#007AFF" />
+                  <Text style={styles.selectedSkuText}>{selectedSKU.target_product_name}</Text>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Кількість упакованих (шт) *</Text>
+                  <TextInput
+                    style={styles.inputLarge}
+                    value={packedQty}
+                    onChangeText={setPackedQty}
+                    placeholder="напр. 50"
+                    keyboardType="number-pad"
+                    autoFocus
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Брак (шт)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={defectQty}
+                    onChangeText={setDefectQty}
+                    placeholder="0"
+                    keyboardType="number-pad"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Примітки</Text>
+                  <TextInput
+                    style={styles.textArea}
+                    value={outputNotes}
+                    onChangeText={setOutputNotes}
+                    placeholder="Додаткова інформація..."
+                    multiline
+                    numberOfLines={2}
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={styles.submitButton}
+                  onPress={handleAddOutput}
+                  disabled={addOutputMutation.isPending}
+                >
+                  {addOutputMutation.isPending ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <MaterialCommunityIcons name="check" size={20} color="#fff" />
+                      <Text style={styles.submitButtonText}>Додати вихід</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {/* Materials Preview */}
+                {selectedSKU.materials && selectedSKU.materials.length > 0 && (
+                  <View style={styles.materialsPreview}>
+                    <Text style={styles.materialsTitle}>Матеріали (на 1 шт):</Text>
+                    {selectedSKU.materials.map((mat: any, idx: number) => (
+                      <View key={idx} style={styles.materialRow}>
+                        <Text style={styles.materialName}>{mat.material_name}</Text>
+                        <Text style={styles.materialQty}>{mat.quantity_per_unit} {mat.material_type}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
+
+            {!selectedSKU && (
+              <View style={styles.noSelectionContainer}>
+                <MaterialCommunityIcons name="arrow-up" size={48} color="#ccc" />
+                <Text style={styles.noSelectionText}>
+                  Оберіть SKU зверху, щоб ввести кількість
+                </Text>
+              </View>
+            )}
+          </ScrollView>
         </View>
       </Modal>
 
