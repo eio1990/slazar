@@ -141,8 +141,8 @@ export default function StockScreen() {
     })
     .sort((a, b) => {
       // Sort by usage frequency
-      const aUsage = usageStats[a.nomenclature_id] || 0;
-      const bUsage = usageStats[b.nomenclature_id] || 0;
+      const aUsage = (usageStats && usageStats[a.nomenclature_id]) || 0;
+      const bUsage = (usageStats && usageStats[b.nomenclature_id]) || 0;
       
       if (aUsage !== bUsage) {
         return bUsage - aUsage; // Higher usage first
