@@ -38,6 +38,8 @@ export default function OperationsScreen() {
   const [usageStats, setUsageStats] = useState<Record<number, number>>({});
   const [balances, setBalances] = useState<any[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [availableBalance, setAvailableBalance] = useState<number | null>(null);
