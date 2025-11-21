@@ -425,6 +425,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     borderColor: '#4CAF50',
   },
+  categoryButtonDisabled: {
+    backgroundColor: '#f0f0f0',
+    borderColor: '#ddd',
+    opacity: 0.5,
+  },
   categoryButtonText: {
     fontSize: 13,
     fontWeight: '600',
@@ -432,6 +437,9 @@ const styles = StyleSheet.create({
   },
   categoryButtonTextActive: {
     color: '#fff',
+  },
+  categoryButtonTextDisabled: {
+    color: '#999',
   },
   scrollableFilters: {
     flex: 1,
