@@ -1,20 +1,45 @@
 """
-Packaging module API endpoints
-Модуль фасовки весовой готовой продукции
+Packaging module API endpoints - SESSION-BASED WORKFLOW
+Модуль фасовки с гибким подходом: одна сессия → много разных SKU
 """
 from fastapi import APIRouter, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from typing import List, Optional
 from datetime import datetime
+from pydantic import BaseModel
 import json
 
 from database import get_db_connection
-from models import (
-    PackagingRecipe, PackagingRecipeMaterial,
-    PackagingBatchCreate, PackagingBatch, PackagingBatchComplete,
-    PackagingOperationCreate, PackagingOperation
-)
 
 router = APIRouter(prefix="/api/packaging", tags=["packaging"])
+
+# ========== PYDANTIC MODELS FOR NEW SESSION WORKFLOW ==========
+
+class PackagingSessionCreate(BaseModel):
+    source_product_id: int
+    source_weight_taken: float  # кг
+    notes: Optional[str] = None
+
+class PackagingSessionOutputCreate(BaseModel):
+    target_product_id: int  # готовый SKU (например "Бастурма 100г вакуум")
+    quantity_packed: int  # количество упаковок
+    confirmed_materials: Optional[dict] = None  # оператор может подтвердить/скорректировать брак
+    defect_quantity: int = 0  # брак
+    notes: Optional[str] = None
+
+class PackagingSessionRemainderCreate(BaseModel):
+    nomenclature_id: int  # номенклатура остатка (например "Специи упавшие")
+    weight_kg: float
+    description: Optional[str] = None
+    notes: Optional[str] = None
+
+class PackagingSessionWasteCreate(BaseModel):
+    waste_weight_kg: float
+    waste_description: Optional[str] = None
+    notes: Optional[str] = None
+
+class PackagingSessionComplete(BaseModel):
+    notes: Optional[str] = None
 
 
 @router.get("/recipes", response_model=List[PackagingRecipe])
