@@ -45,7 +45,20 @@ export default function StockScreen() {
         return [...prev, category];
       }
     });
-    setSelectedRecipe(null); // Clear recipe filter when category changes
+    // Clear meat type filter when category is selected
+    setSelectedMeatType(null);
+  };
+  
+  // Select meat type (single selection)
+  const selectMeatType = (meatType: string) => {
+    if (selectedMeatType === meatType) {
+      // Deselect if clicking same type
+      setSelectedMeatType(null);
+    } else {
+      setSelectedMeatType(meatType);
+      // Clear category filters when meat type is selected
+      setSelectedCategories([]);
+    }
   };
 
   // Define meat types for filtering
