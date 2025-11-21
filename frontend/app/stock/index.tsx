@@ -29,6 +29,7 @@ export default function StockScreen() {
   const [selectedMeatType, setSelectedMeatType] = useState<string | null>(null);
   const [isOnline, setOnlineState] = useState(true);
   const [usageStats, setUsageStats] = useState<Record<number, number>>({});
+  const [meatTypeMapping, setMeatTypeMapping] = useState<Record<string, number[]>>({});
 
   // Define filter categories with priority order
   const filterCategories = ['Сировина - М\'ясо', 'Спеції'];
