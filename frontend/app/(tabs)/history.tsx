@@ -165,7 +165,7 @@ export default function HistoryScreen() {
     if (type === 'receipt') return 'Прихід';
     if (type === 'withdrawal') return 'Розхід';
     if (type === 'production_withdrawal') return 'Виробництво';
-    if (type === 'butchery_withdrawal') return 'Розділка';
+    if (type === 'butchery_withdrawal') return 'Обробка';
     if (type === 'inventory_adjustment_receipt') return 'Інвентаризація +';
     if (type === 'inventory_adjustment_withdrawal') return 'Інвентаризація -';
     return type;
