@@ -329,7 +329,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Complete application UI testing - COMPLETED"
+    - "Packaging module session-based API testing - COMPLETED"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
