@@ -78,15 +78,19 @@ export default function StockScreen() {
       setOnlineState(online);
 
       if (online) {
-        // Load balances and usage stats
-        const [balancesData, statsData] = await Promise.all([
+        // Load balances, usage stats, and meat type mapping
+        const [balancesData, statsData, mappingData] = await Promise.all([
           apiService.getBalances(),
           fetch(`${API_URL}/api/nomenclature/usage-stats`)
+            .then(res => res.json())
+            .catch(() => ({})),
+          fetch(`${API_URL}/api/stock/meat-type-products`)
             .then(res => res.json())
             .catch(() => ({}))
         ]);
         setBalances(balancesData);
         setUsageStats(statsData);
+        setMeatTypeMapping(mappingData);
       }
     } catch (error) {
       console.error('Error loading data:', error);
