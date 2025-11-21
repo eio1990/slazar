@@ -87,21 +87,28 @@ export default function OperationsScreen() {
     }
   };
 
-  // Get unique categories with priority order
-  const priorityCategories = ['М\'ясо та м\'ясні продукти', 'Спеції'];
-  const allCategories = Array.from(new Set(nomenclature.map(item => item.category)));
-  const categories = [
-    ...allCategories.filter(c => priorityCategories.includes(c)).sort(),
-    ...allCategories.filter(c => !priorityCategories.includes(c)).sort(),
-  ];
+  // Define filter categories with priority order
+  const filterCategories = ['М\'ясо та м\'ясні продукти', 'Спеції'];
+  
+  // Toggle category filter
+  const toggleCategoryFilter = (category: string) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(category)) {
+        return prev.filter(c => c !== category);
+      } else {
+        return [...prev, category];
+      }
+    });
+  };
 
   // Filter and sort nomenclature
   const filteredNomenclature = nomenclature
     .filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = !selectedCategory || item.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      // If no categories selected, show all
+      if (selectedCategories.length === 0) return true;
+      
+      // If categories selected, show only items matching any of them
+      return selectedCategories.includes(item.category);
     })
     .sort((a, b) => {
       // First sort by usage frequency (most used first)
@@ -113,8 +120,8 @@ export default function OperationsScreen() {
       }
       
       // Then by category priority
-      const aPriority = priorityCategories.includes(a.category);
-      const bPriority = priorityCategories.includes(b.category);
+      const aPriority = filterCategories.includes(a.category);
+      const bPriority = filterCategories.includes(b.category);
       
       if (aPriority && !bPriority) return -1;
       if (!aPriority && bPriority) return 1;
