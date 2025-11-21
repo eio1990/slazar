@@ -1074,6 +1074,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 12,
+  },
   input: {
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
