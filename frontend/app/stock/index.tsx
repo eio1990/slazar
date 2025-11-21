@@ -22,13 +22,11 @@ const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 export default function StockScreen() {
   const router = useRouter();
   const [balances, setBalances] = useState<any[]>([]);
-  const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedRecipe, setSelectedRecipe] = useState<number | null>(null);
-  const [recipeNomenclatureIds, setRecipeNomenclatureIds] = useState<number[]>([]);
+  const [selectedMeatType, setSelectedMeatType] = useState<string | null>(null);
   const [isOnline, setOnlineState] = useState(true);
   const [usageStats, setUsageStats] = useState<Record<number, number>>({});
 
