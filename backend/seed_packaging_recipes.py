@@ -44,8 +44,8 @@ def seed_packaging_recipes():
             else:
                 # Create new nomenclature
                 cursor.execute("""
-                    INSERT INTO nomenclature (name, category, unit, is_raw_material)
-                    VALUES (?, 'Готова продукція', 'шт', 0)
+                    INSERT INTO nomenclature (name, category, unit)
+                    VALUES (?, 'Готова продукція', 'шт')
                 """, name)
                 new_id = int(cursor.execute("SELECT @@IDENTITY").fetchone()[0])
                 target_ids[(weight, pkg_type)] = new_id
