@@ -120,7 +120,7 @@ def execute_migration():
             print(f"    ID {row[0]}: {row[1]}")
         
         if len(existing) == 2:
-            # Обновим packaging_recipes: 178 → 108
+            # Обновим все ссылки: 178 → 108
             print("\n  Обновление packaging_recipes: source_product_id 178 → 108")
             cursor.execute("""
                 UPDATE packaging_recipes
@@ -130,8 +130,49 @@ def execute_migration():
             affected = cursor.rowcount
             print(f"    Обновлено записей: {affected}")
             
-            # Удалим ID 178
-            print(f"  Удаление ID 178 'Конина'")
+            print("\n  Обновление stock_movements: nomenclature_id 178 → 108")
+            cursor.execute("""
+                UPDATE stock_movements
+                SET nomenclature_id = 108
+                WHERE nomenclature_id = 178
+            """)
+            affected = cursor.rowcount
+            print(f"    Обновлено записей: {affected}")
+            
+            print("\n  Обновление stock_balances: nomenclature_id 178 → 108")
+            cursor.execute("""
+                SELECT id, nomenclature_id, balance 
+                FROM stock_balances 
+                WHERE nomenclature_id IN (108, 178)
+            """)
+            balances = cursor.fetchall()
+            print(f"    Найдено балансов: {len(balances)}")
+            
+            if len(balances) == 2:
+                # Есть балансы для обоих ID, нужно объединить
+                bal_108 = next((b for b in balances if b[1] == 108), None)
+                bal_178 = next((b for b in balances if b[1] == 178), None)
+                if bal_108 and bal_178:
+                    new_balance = bal_108[2] + bal_178[2]
+                    print(f"    Объединение балансов: {bal_108[2]} + {bal_178[2]} = {new_balance}")
+                    cursor.execute("""
+                        UPDATE stock_balances
+                        SET balance = ?
+                        WHERE id = ?
+                    """, new_balance, bal_108[0])
+                    cursor.execute("""
+                        DELETE FROM stock_balances WHERE id = ?
+                    """, bal_178[0])
+            elif len(balances) == 1 and balances[0][1] == 178:
+                # Есть только баланс для 178, обновим на 108
+                cursor.execute("""
+                    UPDATE stock_balances
+                    SET nomenclature_id = 108
+                    WHERE nomenclature_id = 178
+                """)
+            
+            # Теперь можно удалить ID 178
+            print(f"\n  Удаление ID 178 'Конина'")
             cursor.execute("DELETE FROM nomenclature WHERE id = 178")
             print(f"    ✅ Удалено")
             
