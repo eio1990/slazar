@@ -273,6 +273,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
