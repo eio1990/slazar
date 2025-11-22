@@ -1,86 +1,71 @@
 <analysis>
-The trajectory documents a highly iterative and user-driven development process for a warehouse management application. The work began with implementing a weight-based inventory tracking system for sausage casings, which involved backend API and frontend form modifications. A recurring technical hurdle was an MS SQL ODBC driver failure in the Docker environment, which was repeatedly resolved by reinstallation.
+The trajectory documents the complete refactoring of a meat production application's Packaging module and a subsequent, massive data nomenclature overhaul. The work began by implementing a new Packaging Session architecture, moving from a rigid one-to-one batch system to a flexible one-to-many model. This involved creating a database migration script (), rewriting the backend API (), and building new frontend screens (, ).
 
-Subsequently, the user requested a full implementation of a Packaging module. The engineer developed the backend logic for automatic material calculation based on production quantity and created the corresponding frontend screens.
+During this process, several critical issues were addressed: a recurring MS SQL ODBC driver instability in the Docker environment was repeatedly fixed; a global navigation bug with the  function was resolved by replacing it with explicit  calls; and the SKU selection UI was significantly improved based on user feedback.
 
-A significant pivot occurred when the user introduced a new Butchery module, fundamentally changing the production workflow from  to . This required a major re-architecture. The engineer created a detailed roadmap, which the user approved.
+The most substantial part of the work involved an extensive, iterative cleanup of the entire product nomenclature. After the AI used incorrect mock data, the user initiated a deep data alignment process. This involved numerous database queries, the creation of multiple data-seeding and cleanup scripts (e.g., ), and a lengthy back-and-forth conversation to eliminate duplicate products, correct naming conventions, and accurately map the entire production chain from raw material to finished, packaged goods. The last user interaction was to provide the final, definitive list of all products, which is now ready to be implemented in the database.
 
-The most recent work involved implementing the backend for this new Butchery module. This included:
-1.  Creating database migration scripts to add new tables (, ) and alter existing ones.
-2.  Seeding the database with new butchery recipes and derived nomenclature items.
-3.  Developing a new  with endpoints for managing butchery sessions.
-4.  Refining the logic to treat стек (blood/water runoff) as a non-inventoried yield loss.
-
-The work concluded just after the backend for the butchery module was established and immediately before starting the development of its corresponding frontend interface. The user's primary language is Russian/Ukrainian. The next agent should respond in Russian/Ukrainian.
+The user communicates primarily in Russian. **The next agent MUST respond in Russian.**
 </analysis>
-
 <product_requirements>
-The application is a comprehensive warehouse and production management system for a meat processing facility. Its purpose is to digitize and track the entire production lifecycle, from raw material intake to finished goods.
+The application is a production and warehouse management system for a meat processing facility, designed to track products from raw material to packaged goods.
 
-A recent major change in business requirements has split the production process into two distinct modules:
-1.  **Butchery Module (New Requirement):** This module manages the breakdown of raw carcasses (e.g., beef, horse) into various primal cuts and by-products (e.g., Яловичина на бастурму, перший сорт, жир, кістки). It must also account for non-inventory yield loss like стек (blood and water runoff) for costing purposes.
-2.  **Production Module (Existing, to be refactored):** This module consumes the primal cuts produced by the Butchery module to create finished products like Бастурма and Суджук. The original logic of consuming carcasses directly is now obsolete.
+**Core Workflow:**
+1.  **Butchery (Обробка):** Raw meat is processed into cuts.
+2.  **Production (Виробництво):** Cuts are used in recipes to create bulk products (e.g., Бастурма).
+3.  **Packaging (Фасування):** Bulk products are packaged into sellable SKUs.
 
-Other implemented modules include a partially built Packaging module for packing finished goods and a basic Inventory module for stock adjustments. The system must enforce business rules like preventing negative stock balances and using idempotency keys for all operations.
+**Key Feature Implementation:**
+The primary focus of the work was a complete refactor of the Packaging module. The initial, simplistic model was replaced with a Packaging Session concept. In a single session, an operator can take a quantity of one bulk product and package it into multiple different SKUs, recording the output quantity for each, plus any waste or usable remnants.
+
+**Critical Data Requirement:**
+A major part of the project involved a deep database cleanup to establish a single source of truth for all product nomenclature. This was driven by the user's need for an accurate and non-redundant list of raw materials, semi-finished goods, bulk production outputs, and final packaged SKUs, ensuring all production and packaging recipes link to the correct items.
 </product_requirements>
-
 <key_technical_concepts>
-- **Backend:** FastAPI (Python) using  for MS SQL Server communication.
-- **Frontend:** Expo (React Native) with file-based routing ().
-- **Database:** Schema defined and modified through Python scripts (, migration scripts). Data is populated using seeder scripts ().
-- **Architecture:** Monorepo with separate  and  services, running in a Dockerized  Linux environment.
-- **Core Logic:** Idempotency keys, multi-step process management, transactional database updates, dynamic inventory deductions based on recipes.
+- **Backend:** FastAPI (Python)
+- **Frontend:** Expo (React Native)
+- **Database:** MS SQL Server with  driver.
+- **Routing:** File-based routing with .
+- **UI/UX:** React Native components, custom components, .
+- **Data Integrity:** Database schema changes and data seeding performed via standalone Python scripts executed as needed.
+- **Environment:** Docker-based, with a recurring issue with the MS SQL ODBC driver requiring re-installation.
 </key_technical_concepts>
-
 <code_architecture>
-The application is a monorepo containing a  Expo app and a  FastAPI service.
+The application is a standard monorepo with a React Native frontend and a Python backend.
 
 
 
--   ****
-    -   **Importance:** This is a **new file** that contains all API endpoints for the new Butchery module. It handles creating butchery sessions, fetching butchery recipes, and processing the outputs of a butchery operation.
-    -   **Summary of Changes:** Created from scratch. It includes logic to prevent non-inventoried by-products (like 'liquid-waste') from being added to stock balances, while still tracking them.
+- ****
+  - **Importance:** Contains all API endpoints for the packaging module.
+  - **Summary of changes:** This file was completely rewritten from scratch to replace the old batch-based logic with the new session-based workflow. It now includes endpoints for creating sessions (), retrieving session details (), getting possible packaging recipes (), and completing sessions.
 
--   ****
-    -   **Importance:** A **new one-time script** used to update the database schema for the butchery module.
-    -   **Summary of Changes:** Created to add a  column to the  table and create several new tables: , , , and .
+- ** (and similar scripts)**
+  - **Importance:** A series of single-use scripts created to perform a massive, multi-step cleanup and reorganization of the product nomenclature in the database.
+  - **Summary of changes:** These scripts contain raw SQL , , and  statements to rename products, merge duplicates, delete obsolete items, and update foreign key relationships in  and  tables to align with the new, clean data structure mandated by the user.
 
--   ****
-    -   **Importance:** A **new script** to populate the database with all necessary data for the butchery module.
-    -   **Summary of Changes:** Created to add new nomenclature items for primal cuts (e.g., Яловичина на бастурму) and by-products. It also creates the butchery recipes that define the expected yield from a carcass. It was modified to tag стек as .
+- ****
+  - **Importance:** The main user interface for viewing and managing an active packaging session. This is where operators input the quantity of each SKU they produce.
+  - **Summary of changes:** This file underwent multiple major refactors.
+    1.  Initial creation for the new session logic.
+    2.   was replaced with  to fix a navigation bug.
+    3.  The UI for adding packaged outputs was completely rebuilt from a simple modal to a more complex component featuring a horizontal  with selectable SKU buttons, allowing the user to quickly switch between forms for different SKUs without closing the modal. This was a direct response to user feedback on poor UX.
+    4.  Extensive debugging logic, including loading states and s, was added to diagnose why the SKU buttons were not appearing, which was ultimately traced back to incorrect data in the database.
 
--   ****
-    -   **Importance:** Defines the initial database schema.
-    -   **Summary of Changes:** The logic from  was intended to be merged here, effectively adding the new butchery-related tables to the core schema.
-
--   ****
-    -   **Importance:** A **new file** defining the Pydantic models for the .
-    -   **Summary of Changes:** Created to hold models like , , and .
-
--   ****
-    -   **Importance:** The main FastAPI application file that mounts all API routers.
-    -   **Summary of Changes:** Modified to import and include the new router from , making its endpoints accessible under the  prefix.
+- **Multiple Frontend Files (e.g., )**
+  - **Importance:** These files contained a systemic navigation bug.
+  - **Summary of changes:** A  script () was created and executed to perform a search-and-replace operation on these files, changing all instances of  to  to ensure the back button returned to the correct tab's root screen.
 </code_architecture>
-
 <pending_tasks>
-- **Frontend:** Build the entire UI for the new Butchery module, including a new tab, a screen to list butchery sessions, and forms for creating sessions and logging outputs.
-- **Refactoring:** Update the Production module recipes to consume the new primal cuts generated by the Butchery module, not raw carcasses.
-- **Data Migration:** Write and run scripts to update all existing production recipes in the database to use the new nomenclature.
-- **Analysis:** Implement the analytics portion of the roadmap, tracking yield and waste from butchery.
+- Execute the final, user-approved database cleanup. This involves running a script to:
+  - Delete numerous obsolete and duplicate nomenclature items.
+  - Rename several products to match the user's final specification.
+  - Create new products (e.g., Курка вагова).
+  - Update all production and packaging recipes to use the correct, final nomenclature IDs.
 </pending_tasks>
-
 <current_work>
-The most recent work was focused on establishing the backend foundation for the new, user-requested Butchery module. This was a significant architectural pivot. The last set of actions involved refining this new backend logic based on a user clarification regarding стек (blood and water runoff).
-
-Specifically, the engineer:
-1.  Modified the  table schema to include a  field.
-2.  Updated the  script to classify the Стек item as a  type. This ensures it's tracked as a yield loss for costing but not as a physical item in inventory.
-3.  Modified the  endpoint in . The logic now explicitly checks the  and skips adding any  items to the  table.
-4.  Re-ran the seeder script to apply these data changes to the database.
-
-The work is paused immediately after completing this backend logic refinement and just before starting the creation of the corresponding frontend UI for the Butchery module.
+The immediate work is a critical and extensive database migration to clean up and finalize the entire product nomenclature. After a long and iterative process of debugging and data correction, the user has provided a definitive, final list of all valid products, categorized into Raw Meat, Semi-finished Goods, Production Outputs (bulk), and Packaged SKUs. The previous engineer analyzed this list, identified all items to be deleted, renamed, or created, and mapped out the necessary changes to the  and  tables. A plan and a representation of the final data structure were presented to the user. The very last action was receiving the user's final approval to proceed with these significant and destructive changes to the database. The system is now poised for the execution of this final data migration.
 </current_work>
-
 <optional_next_step>
-Begin implementing the frontend for the Butchery module. The first step is to create a new tab in the main navigation and a placeholder screen that will list butchery sessions.
+Приступаю к выполнению изменений в БД по утвержденному списку. Буду действовать пошагово, чтобы обеспечить целостность данных.
 </optional_next_step>
+
