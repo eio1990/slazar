@@ -6,7 +6,7 @@ import requests
 import time
 from datetime import datetime
 
-API_URL = "https://meat-tracker-6.preview.emergentagent.com/api"
+API_URL = "https://production-hub-41.preview.emergentagent.com/api"
 
 def get_nomenclature():
     """Отримати всі номенклатури"""
