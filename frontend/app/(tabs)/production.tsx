@@ -177,44 +177,40 @@ export default function ProductionScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Filter buttons */}
-      <View style={styles.filterContainer}>
+      {/* Filter chips */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterScroll}
+        contentContainerStyle={styles.filterContainer}
+      >
         <TouchableOpacity
-          style={[styles.filterButton, statusFilter === 'all' && styles.filterButtonActive]}
-          onPress={() => setStatusFilter('all')}
-        >
-          <Text style={[styles.filterButtonText, statusFilter === 'all' && styles.filterButtonTextActive]}>
-            Всі
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.filterButton, statusFilter === 'created' && styles.filterButtonActive]}
+          style={[styles.filterChip, statusFilter === 'created' && styles.filterChipActive]}
           onPress={() => setStatusFilter('created')}
         >
-          <Text style={[styles.filterButtonText, statusFilter === 'created' && styles.filterButtonTextActive]}>
+          <Text style={[styles.filterChipText, statusFilter === 'created' && styles.filterChipTextActive]}>
             Нові
           </Text>
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={[styles.filterButton, statusFilter === 'in_progress' && styles.filterButtonActive]}
+          style={[styles.filterChip, statusFilter === 'in_progress' && styles.filterChipActive]}
           onPress={() => setStatusFilter('in_progress')}
         >
-          <Text style={[styles.filterButtonText, statusFilter === 'in_progress' && styles.filterButtonTextActive]}>
+          <Text style={[styles.filterChipText, statusFilter === 'in_progress' && styles.filterChipTextActive]}>
             В процесі
           </Text>
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={[styles.filterButton, statusFilter === 'completed' && styles.filterButtonActive]}
+          style={[styles.filterChip, statusFilter === 'completed' && styles.filterChipActive]}
           onPress={() => setStatusFilter('completed')}
         >
-          <Text style={[styles.filterButtonText, statusFilter === 'completed' && styles.filterButtonTextActive]}>
+          <Text style={[styles.filterChipText, statusFilter === 'completed' && styles.filterChipTextActive]}>
             Завершені
           </Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       <FlatList
         data={batches}
