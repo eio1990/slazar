@@ -30,6 +30,15 @@ class StockOperation(BaseModel):
     idempotency_key: str
     metadata: Optional[dict] = None
 
+class OperationCreate(BaseModel):
+    """Model for universal operations endpoint"""
+    type: str  # 'receipt' or 'expense'/'withdrawal'
+    nomenclature_id: int
+    quantity: float
+    price: Optional[float] = None
+    notes: Optional[str] = None
+    idempotency_key: Optional[str] = None
+
 class StockMovement(BaseModel):
     id: int
     nomenclature_id: int
