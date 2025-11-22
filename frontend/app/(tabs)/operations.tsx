@@ -669,10 +669,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     fontSize: 16,
   },
+  categoryFilterScroll: {
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+  },
   categoryFilterRow: {
     flexDirection: 'row',
-    padding: 12,
-    backgroundColor: '#fff',
+    paddingHorizontal: 12,
     gap: 8,
     alignItems: 'center',
   },
