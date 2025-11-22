@@ -270,15 +270,28 @@ async def get_balances(category: Optional[str] = None):
     return await run_in_threadpool(_get)
 
 @app.post("/api/operations")
-async def create_operation(operation: StockOperation):
+async def create_operation(req: OperationCreate):
     """Універсальний endpoint для операцій (прихід/розхід)"""
-    if operation.type == "receipt":
+    import uuid
+    
+    # Generate idempotency key if not provided
+    idempotency_key = req.idempotency_key or str(uuid.uuid4())
+    
+    # Create StockOperation object
+    operation = StockOperation(
+        nomenclature_id=req.nomenclature_id,
+        quantity=req.quantity,
+        price_per_unit=req.price,
+        idempotency_key=idempotency_key,
+        metadata={"notes": req.notes} if req.notes else None
+    )
+    
+    if req.type == "receipt":
         return await stock_receipt(operation)
-    elif operation.type == "expense" or operation.type == "withdrawal":
-        operation.type = "withdrawal"  # Normalize type
+    elif req.type == "expense" or req.type == "withdrawal":
         return await stock_withdrawal(operation)
     else:
-        raise HTTPException(status_code=400, detail=f"Невідомий тип операції: {operation.type}")
+        raise HTTPException(status_code=400, detail=f"Невідомий тип операції: {req.type}")
 
 @app.post("/api/stock/receipt")
 async def stock_receipt(operation: StockOperation):
