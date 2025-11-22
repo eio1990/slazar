@@ -359,9 +359,22 @@ test_plan:
   test_all: false
   test_priority: "high_first"
 
+backend:
+  - task: "Final nomenclature migration"
+    implemented: true
+    working: "NA"
+    file: "backend/final_nomenclature_migration.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Executed comprehensive nomenclature cleanup based on user's final approved list. Changes: (1) Merged duplicate products: ID 108 'Бастурма з конини' and ID 178 'Конина' merged into ID 108, updated all references in packaging_recipes, stock_movements, stock_balances. (2) Renamed products: ID 108→'Конина', ID 233→'Індичка', ID 113→'Курхан', ID 109→'Конина 80г вакуум', ID 105→'Курка 40г вакуум'. (3) Deleted 23 obsolete/duplicate products that were not used in any recipes. (4) Created new product 'Курка вагова' (ID 227) and updated packaging_recipes to use it instead of raw material ID 6 'Курка філе'. Migration completed successfully with proper foreign key handling. Need to test: all recipes APIs, packaging APIs, stock operations to verify data integrity after migration."
+
 agent_communication:
   - agent: "main"
-    message: "PACKAGING MODULE UI IMPROVEMENTS: Redesigned output modal with horizontal SKU selector buttons. Added loading states, debug logging, and improved UX. Now testing complete workflow including creating session and adding all SKU types. Will fix all issues found during testing."
+    message: "✅ ФИНАЛЬНАЯ МИГРАЦИЯ НОМЕНКЛАТУРЫ ЗАВЕРШЕНА: Выполнена комплексная очистка номенклатуры по утвержденному списку пользователя. Основные изменения: (1) Объединены дубликаты (ID 108 и 178), (2) Переименовано 5 позиций, (3) Удалено 23 устаревших/дубликатных позиции, (4) Обновлены все связи в packaging_recipes, stock_movements, stock_balances. Текущее состояние: Сырое мясо - 13, Полуфабрикаты - 14, Готовая продукция - 37. Требуется backend testing для проверки: recipes APIs, packaging APIs, butchery APIs, stock operations."
   - agent: "testing"
     message: "🎉 PACKAGING MODULE COMPREHENSIVE UI TESTING COMPLETED SUCCESSFULLY: All 3 packaging screens tested thoroughly with excellent results. Key findings: (1) Session List Screen: Working perfectly with 3 existing sessions, all filter buttons functional (Всі, Нові, В процесі, Завершені), session cards display complete information (session numbers, status badges, source products, weights, outputs, dates), FAB button working, mobile-responsive. (2) Session Details Screen: Complete information display working - session header, product info, statistics (1 SKU, 50 шт packed, 1 remainder, 1 waste), outputs section showing 'Бастурма 50г скін', remainders section with 1.5 кг, waste section with 0.5 кг, action buttons correctly hidden for completed sessions. (3) New Session Screen: FAB navigation working, all form elements present (product selection, weight input, notes), bulk products available for selection, create button visible, mobile-optimized. The packaging module session-based UI is PRODUCTION-READY and fully implements the flexible one-session-to-many-SKU workflow as requested. All requirements from comprehensive review have been successfully verified."
   - agent: "testing"
