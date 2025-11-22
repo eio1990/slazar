@@ -22,7 +22,7 @@ export default function HamburgerMenu({ visible, onClose }: HamburgerMenuProps) 
 
   const menuItems = [
     {
-      title: 'Залишки',
+      title: 'Склад',
       icon: 'warehouse',
       route: '/stock',
     },
