@@ -331,8 +331,9 @@ def execute_migration():
             if len(to_delete) > 10:
                 print(f"    ... и еще {len(to_delete) - 10} позиций")
             
-            # Удалим stock_balances сначала
+            # Удалим связанные данные сначала
             for pid, pname in to_delete:
+                cursor.execute("DELETE FROM stock_movements WHERE nomenclature_id = ?", pid)
                 cursor.execute("DELETE FROM stock_balances WHERE nomenclature_id = ?", pid)
                 cursor.execute("DELETE FROM nomenclature WHERE id = ?", pid)
             
