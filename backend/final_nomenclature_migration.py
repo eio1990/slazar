@@ -101,6 +101,56 @@ def execute_migration():
         cursor = conn.cursor()
         
         # ========================================================================
+        # STEP 0: ОБЪЕДИНЕНИЕ ДУБЛИКАТОВ
+        # ========================================================================
+        print("\n[STEP 0] ОБЪЕДИНЕНИЕ ДУБЛИКАТОВ")
+        print("-" * 80)
+        
+        # ID 108 "Бастурма з конини" и ID 178 "Конина" - это дубликаты
+        # По финальному списку пользователя должен остаться ID 108
+        # ID 178 используется в packaging_recipes, нужно обновить ссылки
+        
+        print("\n  Обработка: ID 108 'Бастурма з конини' и ID 178 'Конина'")
+        
+        # Проверим существование
+        cursor.execute("SELECT id, name FROM nomenclature WHERE id IN (108, 178)")
+        existing = cursor.fetchall()
+        print(f"  Найдено: {len(existing)} записей")
+        for row in existing:
+            print(f"    ID {row[0]}: {row[1]}")
+        
+        if len(existing) == 2:
+            # Обновим packaging_recipes: 178 → 108
+            print("\n  Обновление packaging_recipes: source_product_id 178 → 108")
+            cursor.execute("""
+                UPDATE packaging_recipes
+                SET source_product_id = 108
+                WHERE source_product_id = 178
+            """)
+            affected = cursor.rowcount
+            print(f"    Обновлено записей: {affected}")
+            
+            # Удалим ID 178
+            print(f"  Удаление ID 178 'Конина'")
+            cursor.execute("DELETE FROM nomenclature WHERE id = 178")
+            print(f"    ✅ Удалено")
+            
+            conn.commit()
+        elif len(existing) == 1 and existing[0][0] == 108:
+            print("  ✅ ID 178 уже удален, ID 108 существует")
+        else:
+            print("  ⚠️  Неожиданная ситуация, пропускаем")
+        
+        # Аналогично для других возможных дубликатов
+        # Проверим ID 184 "Конина вагова" - может быть дубликатом
+        cursor.execute("SELECT id, name FROM nomenclature WHERE name LIKE 'Конина вагов%'")
+        konina_vagova = cursor.fetchone()
+        if konina_vagova:
+            kid = konina_vagova[0]
+            print(f"\n  Найден: ID {kid} 'Конина вагова'")
+            # Это packaging SKU, не production output, оставляем как есть
+        
+        # ========================================================================
         # STEP 1: ПЕРЕИМЕНОВАНИЯ
         # ========================================================================
         print("\n[STEP 1] ПЕРЕИМЕНОВАНИЯ")
@@ -120,9 +170,11 @@ def execute_migration():
             if current:
                 print(f"  ID {id}: '{current[0]}' → '{new_name}'")
                 cursor.execute("UPDATE nomenclature SET name = ? WHERE id = ?", new_name, id)
+            else:
+                print(f"  ⚠️  ID {id} не найден")
         
         conn.commit()
-        print(f"\n✅ Переименовано {len(renames)} позиций")
+        print(f"\n✅ Переименования завершены")
         
         # ========================================================================
         # STEP 2: СОЗДАНИЕ НОВЫХ ПРОДУКТОВ
