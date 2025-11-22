@@ -276,33 +276,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  filterContainer: {
-    flexDirection: 'row',
-    padding: 12,
+  filterScroll: {
     backgroundColor: '#fff',
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  filterButton: {
-    flex: 1,
-    paddingVertical: 8,
+  filterContainer: {
+    flexDirection: 'row',
     paddingHorizontal: 12,
-    marginHorizontal: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    gap: 8,
     alignItems: 'center',
   },
-  filterButtonActive: {
+  filterChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#fff',
+  },
+  filterChipActive: {
     backgroundColor: '#4CAF50',
     borderColor: '#4CAF50',
   },
-  filterButtonText: {
+  filterChipText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#666',
   },
-  filterButtonTextActive: {
+  filterChipTextActive: {
     color: '#fff',
   },
   listContent: {
