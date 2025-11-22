@@ -457,54 +457,40 @@ export default function OperationsScreen() {
           </View>
 
           {/* Category filters */}
-          <View style={styles.categoryFilterRow}>
-            {/* Priority filters - fixed */}
-            {filterCategories.map((category) => (
-              <TouchableOpacity
-                key={category}
-                style={[
-                  styles.categoryButton, 
-                  selectedCategories.includes(category) && styles.categoryButtonActive
-                ]}
-                onPress={() => toggleCategoryFilter(category)}
-              >
-                <Text style={[
-                  styles.categoryButtonText, 
-                  selectedCategories.includes(category) && styles.categoryButtonTextActive
-                ]}>
-                  {category === 'Сировина - М\'ясо' ? 'М\'ясо' : category}
-                </Text>
-              </TouchableOpacity>
-            ))}
-            
-            {/* Other filters - scrollable */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.scrollableFilters}
-              contentContainerStyle={styles.scrollableFiltersContent}
-            >
-              {categories
-                .filter(c => !filterCategories.includes(c))
-                .map((category) => (
-                  <TouchableOpacity
-                    key={category}
-                    style={[
-                      styles.categoryChip,
-                      selectedCategories.includes(category) && styles.categoryChipActive
-                    ]}
-                    onPress={() => toggleCategoryFilter(category)}
-                  >
-                    <Text style={[
-                      styles.categoryChipText,
-                      selectedCategories.includes(category) && styles.categoryChipTextActive
-                    ]}>
-                      {category}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-            </ScrollView>
-          </View>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryFilterScroll}
+            contentContainerStyle={styles.categoryFilterRow}
+          >
+            {filterCategories.map((category) => {
+              const shortName = category === 'Сировина - М\'ясо' ? 'М\'ясо' 
+                : category === 'Напівфабрикати' ? 'Напівфабрикати'
+                : category === 'Готова продукція' ? 'Продукція'
+                : category === 'Спеції' ? 'Спеції'
+                : category === 'Матеріали' ? 'Матеріали'
+                : category === 'Упаковка' ? 'Упаковка'
+                : category;
+              
+              return (
+                <TouchableOpacity
+                  key={category}
+                  style={[
+                    styles.categoryChip, 
+                    selectedCategories.includes(category) && styles.categoryChipActive
+                  ]}
+                  onPress={() => toggleCategoryFilter(category)}
+                >
+                  <Text style={[
+                    styles.categoryChipText, 
+                    selectedCategories.includes(category) && styles.categoryChipTextActive
+                  ]}>
+                    {shortName}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
 
           {loading ? (
             <View style={styles.modalLoading}>
