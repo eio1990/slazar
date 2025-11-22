@@ -45,15 +45,19 @@ export default function ProductionScreen() {
     queryKey: ['batches', statusFilter],
     queryFn: async () => {
       try {
-        const url = statusFilter === 'all' 
-          ? `${API_URL}/api/production/batches`
-          : `${API_URL}/api/production/batches?status=${statusFilter}`;
+        const url = `${API_URL}/api/production/batches?status=${statusFilter}`;
         console.log('[Production] Fetching from:', url);
         const response = await fetch(url);
         console.log('[Production] Response status:', response.status);
         if (!response.ok) {
           const errorText = await response.text();
           console.error('[Production] Error response:', errorText);
+          Toast.show({
+            type: 'error',
+            text1: 'Помилка завантаження',
+            text2: `Не вдалося завантажити партії: ${response.status}`,
+            position: 'bottom',
+          });
           throw new Error(`Failed to fetch batches: ${response.status}`);
         }
         const data = await response.json();
