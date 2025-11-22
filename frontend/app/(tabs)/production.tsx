@@ -34,7 +34,7 @@ interface Batch {
 
 export default function ProductionScreen() {
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('created');
   
   // Override header right button to add analytics
   React.useLayoutEffect(() => {
