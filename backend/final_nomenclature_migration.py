@@ -141,7 +141,7 @@ def execute_migration():
             
             print("\n  Обновление stock_balances: nomenclature_id 178 → 108")
             cursor.execute("""
-                SELECT id, nomenclature_id, balance 
+                SELECT nomenclature_id, quantity 
                 FROM stock_balances 
                 WHERE nomenclature_id IN (108, 178)
             """)
@@ -150,20 +150,20 @@ def execute_migration():
             
             if len(balances) == 2:
                 # Есть балансы для обоих ID, нужно объединить
-                bal_108 = next((b for b in balances if b[1] == 108), None)
-                bal_178 = next((b for b in balances if b[1] == 178), None)
+                bal_108 = next((b for b in balances if b[0] == 108), None)
+                bal_178 = next((b for b in balances if b[0] == 178), None)
                 if bal_108 and bal_178:
-                    new_balance = bal_108[2] + bal_178[2]
-                    print(f"    Объединение балансов: {bal_108[2]} + {bal_178[2]} = {new_balance}")
+                    new_balance = bal_108[1] + bal_178[1]
+                    print(f"    Объединение балансов: {bal_108[1]} + {bal_178[1]} = {new_balance}")
                     cursor.execute("""
                         UPDATE stock_balances
-                        SET balance = ?
-                        WHERE id = ?
-                    """, new_balance, bal_108[0])
+                        SET quantity = ?
+                        WHERE nomenclature_id = ?
+                    """, new_balance, 108)
                     cursor.execute("""
-                        DELETE FROM stock_balances WHERE id = ?
-                    """, bal_178[0])
-            elif len(balances) == 1 and balances[0][1] == 178:
+                        DELETE FROM stock_balances WHERE nomenclature_id = ?
+                    """, 178)
+            elif len(balances) == 1 and balances[0][0] == 178:
                 # Есть только баланс для 178, обновим на 108
                 cursor.execute("""
                     UPDATE stock_balances
