@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from database import get_db_connection, init_database
 from models import (
-    NomenclatureCreate, Nomenclature, StockOperation,
+    NomenclatureCreate, Nomenclature, StockOperation, OperationCreate,
     StockMovement, StockBalance, InventorySessionCreate,
     InventorySession, InventoryComplete, SyncBatch,
     BatchStockOperation, BatchResponse, BatchOperationResult
