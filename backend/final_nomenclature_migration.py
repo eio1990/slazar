@@ -244,35 +244,57 @@ def execute_migration():
         # ========================================================================
         # STEP 3: УДАЛЕНИЕ ДУБЛИКАТОВ И УСТАРЕВШИХ ПОЗИЦИЙ
         # ========================================================================
-        print("\n[STEP 3] АНАЛИЗ И УДАЛЕНИЕ ДУБЛИКАТОВ/УСТАРЕВШИХ")
+        print("\n[STEP 3] УДАЛЕНИЕ ДУБЛИКАТОВ И УСТАРЕВШИХ")
         print("-" * 80)
         
-        # Собираем все ID из финального списка
-        all_final_ids = set()
-        all_final_ids.update(RAW_MEAT_FINAL.keys())
-        all_final_ids.update(SEMIFABRICATES_FINAL.keys())
-        all_final_ids.update(PRODUCTION_OUTPUTS_FINAL.keys())
-        all_final_ids.update(PACKAGING_OUTPUTS_FINAL.keys())
+        # Конкретные ID для удаления (устаревшие дубликаты)
+        obsolete_ids = [
+            101,  # Свинина сиров'ялена (не в финальном списке)
+            106,  # Індичка сиров'ялена (заменен на 233 "Індичка")
+            175,  # Бастурма вагова (дубликат, фасовка)
+            176,  # Суджук ваговий (дубликат, фасовка)
+            177,  # Махан ваговий (дубликат, фасовка)
+            179,  # Банкетна вагова (дубликат, фасовка)
+            181,  # Бастурма весова фасована (дубликат)
+            184,  # Конина вагова (дубликат, фасовка)
+            # Packaging SKU дубликаты
+            119,  # Бастурма бенкетна 80 г вакуум
+            120,  # Бастурма бенкетна 50 г вакуум
+            121,  # Бастурма бенкетна скін 60г
+            107,  # Індичка сиров'ялена 80г вакуум
+            110,  # Пластина з конини 50г вакуум
+            112,  # Махан 80г вакуум
+            114,  # Курхан 80г вакуум
+            125,  # Бастурма з конини скін 50г
+            131,  # Індичка сиров'ялена скін 50 г
+            102,  # Свинина сиров'ялена 80г вакуум
+            103,  # Свинина сиров'ялена 50г вакуум
+            99,   # Пластина з бастурми 50г вакуум
+            117,  # Яловичина пластина вакуум 50г
+            118,  # Яловичина пластина запаяна 50г
+            124,  # Яловичина пластина скін 50г
+            126,  # Бастурма з яловичини скін 60г
+            130,  # Бастурма з яловичини скін 50г
+            97,   # Суджук 80г вакуум
+            94,   # Бастурма 80г вакуум
+            123,  # Махан скін 50г
+            122,  # Суджук скін 50г
+            # Semi-finished дубликат
+            205,  # Конина для махан пластина (дубликат)
+            221,  # Маринад конь (неиспользуемый)
+        ]
         
-        print(f"  Всего позиций в финальном списке: {len(all_final_ids)}")
+        print(f"  Планируется удалить {len(obsolete_ids)} устаревших/дубликатных позиций")
         
-        # Получим все текущие продукты категории "Готова продукція"
-        cursor.execute("""
-            SELECT id, name, category 
-            FROM nomenclature 
-            WHERE category = 'Готова продукція'
-            ORDER BY name
-        """)
-        
-        finished_products = cursor.fetchall()
-        print(f"  Текущих продуктов 'Готова продукція': {len(finished_products)}")
-        
-        # Найдем продукты для удаления
+        # Проверим каждый перед удалением
         to_delete = []
-        for product in finished_products:
-            pid, pname, pcat = product
-            if pid not in all_final_ids:
-                # Проверим, используется ли в рецептах
+        for pid in obsolete_ids:
+            cursor.execute("SELECT name FROM nomenclature WHERE id = ?", pid)
+            result = cursor.fetchone()
+            if result:
+                pname = result[0]
+                
+                # Проверим, используется ли
                 cursor.execute("""
                     SELECT COUNT(*) FROM recipe_ingredients WHERE nomenclature_id = ?
                 """, pid)
@@ -284,7 +306,8 @@ def execute_migration():
                 in_recipe_target = cursor.fetchone()[0]
                 
                 cursor.execute("""
-                    SELECT COUNT(*) FROM packaging_recipes WHERE source_product_id = ? OR target_product_id = ?
+                    SELECT COUNT(*) FROM packaging_recipes 
+                    WHERE (source_product_id = ? OR target_product_id = ?) AND is_active = 1
                 """, pid, pid)
                 in_packaging = cursor.fetchone()[0]
                 
@@ -293,24 +316,30 @@ def execute_migration():
                 """, pid)
                 in_butchery = cursor.fetchone()[0]
                 
-                if in_recipe_ing + in_recipe_target + in_packaging + in_butchery > 0:
-                    print(f"  ⚠️  ID {pid} '{pname}' не в финальном списке, но используется в рецептах")
+                total_usage = in_recipe_ing + in_recipe_target + in_packaging + in_butchery
+                
+                if total_usage > 0:
+                    print(f"  ⚠️  ID {pid} '{pname}' ИСПОЛЬЗУЕТСЯ, пропускаем")
                     print(f"       (recipe_ing: {in_recipe_ing}, recipe_target: {in_recipe_target}, packaging: {in_packaging}, butchery: {in_butchery})")
                 else:
                     to_delete.append((pid, pname))
         
         if to_delete:
-            print(f"\n  Будет удалено {len(to_delete)} неиспользуемых продуктов:")
-            for pid, pname in to_delete:
+            print(f"\n  Удаление {len(to_delete)} неиспользуемых позиций:")
+            for pid, pname in to_delete[:10]:  # Показываем первые 10
                 print(f"    - ID {pid}: {pname}")
+            if len(to_delete) > 10:
+                print(f"    ... и еще {len(to_delete) - 10} позиций")
             
+            # Удалим stock_balances сначала
             for pid, pname in to_delete:
+                cursor.execute("DELETE FROM stock_balances WHERE nomenclature_id = ?", pid)
                 cursor.execute("DELETE FROM nomenclature WHERE id = ?", pid)
             
             conn.commit()
             print(f"\n  ✅ Удалено {len(to_delete)} позиций")
         else:
-            print("  ✅ Неиспользуемых дубликатов не найдено")
+            print("  ⚠️  Нечего удалять (все позиции используются или не найдены)")
         
         # ========================================================================
         # STEP 4: ПРОВЕРКА И ИСПРАВЛЕНИЕ СВЯЗЕЙ В РЕЦЕПТАХ
