@@ -139,6 +139,9 @@ export default function ButcheryScreen() {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => router.push('/butchery/select-meat-type' as any)}
+        activeOpacity={0.8}
+        accessible={true}
+        accessibilityLabel="Створити нову операцію розділки"
       >
         <MaterialCommunityIcons name="plus" size={28} color="#fff" />
       </TouchableOpacity>
