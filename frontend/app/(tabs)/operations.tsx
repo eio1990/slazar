@@ -88,7 +88,14 @@ export default function OperationsScreen() {
   };
 
   // Define filter categories with priority order
-  const filterCategories = ['Сировина - М\'ясо', 'Спеції'];
+  const filterCategories = [
+    'Сировина - М\'ясо',
+    'Напівфабрикати',
+    'Готова продукція',
+    'Спеції',
+    'Матеріали',
+    'Упаковка'
+  ];
   
   // Get unique categories from nomenclature
   const categories = Array.from(new Set(nomenclature.map(item => item.category)));
