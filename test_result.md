@@ -353,7 +353,7 @@ metadata:
 
 test_plan:
   current_focus:
-    []
+    - "Production module - Basturma recipe full cycle UI test"
   stuck_tasks:
     []
   test_all: false
