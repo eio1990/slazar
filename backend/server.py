@@ -269,6 +269,17 @@ async def get_balances(category: Optional[str] = None):
             ]
     return await run_in_threadpool(_get)
 
+@app.post("/api/operations")
+async def create_operation(operation: StockOperation):
+    """Універсальний endpoint для операцій (прихід/розхід)"""
+    if operation.type == "receipt":
+        return await stock_receipt(operation)
+    elif operation.type == "expense" or operation.type == "withdrawal":
+        operation.type = "withdrawal"  # Normalize type
+        return await stock_withdrawal(operation)
+    else:
+        raise HTTPException(status_code=400, detail=f"Невідомий тип операції: {operation.type}")
+
 @app.post("/api/stock/receipt")
 async def stock_receipt(operation: StockOperation):
     """Прихід товару на склад"""
