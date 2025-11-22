@@ -35,7 +35,7 @@ with get_db_connection() as conn:
         
         # Перевірка інгредієнтів
         cursor.execute("""
-            SELECT ri.nomenclature_id, n.name, ri.quantity_per_kg, n.category
+            SELECT ri.nomenclature_id, n.name, ri.quantity_per_100kg, n.category
             FROM recipe_ingredients ri
             LEFT JOIN nomenclature n ON ri.nomenclature_id = n.id
             WHERE ri.recipe_id = ?
