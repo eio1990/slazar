@@ -48,7 +48,7 @@ with get_db_connection() as conn:
             print(f"  Інгредієнти ({len(ingredients)}):")
             for ing_id, ing_name, qty, category in ingredients:
                 if ing_name:
-                    print(f"    - ID {ing_id}: {ing_name} ({qty} г/кг) [{category}]")
+                    print(f"    - ID {ing_id}: {ing_name} ({qty} г/100кг) [{category}]")
                 else:
                     print(f"    - ❌ ID {ing_id}: НОМЕНКЛАТУРА НЕ ЗНАЙДЕНА!")
                     issues.append(f"Recipe {recipe_id}: ingredient ID {ing_id} not found")
