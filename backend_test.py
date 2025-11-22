@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 """
-Comprehensive Backend Testing for Packaging Module Session-Based API
-Testing all packaging endpoints systematically
+Backend API Testing Script - Post Nomenclature Migration
+Тестирование критических API endpoints после финальной миграции номенклатуры
 """
 
 import requests
 import json
-import time
-from datetime import datetime
+import sys
+from typing import Dict, List, Any
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv('/app/frontend/.env')
 
 # Get backend URL from environment
-BACKEND_URL = "https://meat-tracker-6.preview.emergentagent.com/api"
+BACKEND_URL = os.getenv('EXPO_PUBLIC_BACKEND_URL', 'http://localhost:8001')
+API_BASE = f"{BACKEND_URL}/api"
 
 def log_test(test_name, status, details=""):
     """Log test results"""
