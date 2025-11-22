@@ -42,13 +42,28 @@ export default function ProductionScreen() {
   const { data: batches, isLoading, error, refetch } = useQuery({
     queryKey: ['batches', statusFilter],
     queryFn: async () => {
-      const url = statusFilter === 'all' 
-        ? `${API_URL}/api/production/batches`
-        : `${API_URL}/api/production/batches?status=${statusFilter}`;
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch batches');
-      return response.json();
+      try {
+        const url = statusFilter === 'all' 
+          ? `${API_URL}/api/production/batches`
+          : `${API_URL}/api/production/batches?status=${statusFilter}`;
+        console.log('[Production] Fetching from:', url);
+        const response = await fetch(url);
+        console.log('[Production] Response status:', response.status);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[Production] Error response:', errorText);
+          throw new Error(`Failed to fetch batches: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log('[Production] Fetched batches:', data.length);
+        return data;
+      } catch (error) {
+        console.error('[Production] Query error:', error);
+        throw error;
+      }
     },
+    retry: 1,
+    retryDelay: 1000,
   });
 
   const getStatusColor = (status: string) => {
