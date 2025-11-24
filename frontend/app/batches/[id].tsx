@@ -312,7 +312,8 @@ export default function BatchDetailScreen() {
                             // Special handling for mix step
                             if (step.step_type === 'mix') {
                               const mixParams = step.parameters || {};
-                              const mixId = mixParams.mix_id || (batch.recipe_name?.includes('конини') ? 135 : 134);
+                              // Mix nomenclature ID: 39 for Chaman (универсальний мікс для всіх бастурм)
+                              const mixId = mixParams.mix_id || 39;
                               router.push(`/batches/mix-form?batchId=${id}&stepId=${step.id}&recipeId=${batch.recipe_id}&mixId=${mixId}` as any);
                             } else if (step.step_type === 'salt') {
                               // Special handling for salting step
