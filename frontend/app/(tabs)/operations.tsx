@@ -465,6 +465,23 @@ export default function OperationsScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Search input */}
+          <View style={styles.searchContainer}>
+            <MaterialCommunityIcons name="magnify" size={20} color="#999" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Пошук номенклатури..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <MaterialCommunityIcons name="close-circle" size={20} color="#999" />
+              </TouchableOpacity>
+            )}
+          </View>
+
           {/* Category filters */}
           <ScrollView 
             horizontal 
