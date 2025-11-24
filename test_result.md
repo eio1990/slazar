@@ -205,15 +205,18 @@ backend:
         comment: "NEW ENDPOINT ADDED: POST /api/production/batches/{batch_id}/salting for processing salting production step. Implementation includes: (1) Automatic calculation of required salt and water based on recipe parameters (salt_per_100kg, water_per_100kg) and batch initial_weight, (2) Stock availability checks for both salt (ID=28) and water (ID=136), (3) Automatic withdrawal from stock with proper stock_movements records (source_operation_type='production_salting'), (4) batch_operations record creation with step completion tracking, (5) Batch current_step update, (6) Full idempotency support. Needs comprehensive testing."
   - task: "Salting step implementation"
     implemented: true
-    working: "NA"
+    working: false
     file: "backend/production_api.py, frontend/app/batches/salting-form.tsx"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented complete salting step workflow: Backend endpoint POST /api/production/batches/{batch_id}/salting processes salt and water consumption with stock deduction. Frontend salting-form.tsx provides UI for entering actual quantities with recommended values display. Batch detail screen updated to recognize 'salt' step_type and route to salting form. Water added to nomenclature (ID=136) with 1000л initial stock. Ready for comprehensive testing."
+      - working: false
+        agent: "testing"
+        comment: "🧪 COMPREHENSIVE SALTING UI TESTING COMPLETED - PARTIAL SUCCESS WITH CRITICAL ISSUES: Conducted detailed testing of the complete salting workflow for Конина batch as requested in review. SUCCESSFUL COMPONENTS: (1) ✅ NAVIGATION WORKING: Successfully navigated to Production tab, found and opened Конина batch (BATCH-24112025-1, 30 кг), (2) ✅ BATCH INFORMATION CORRECT: Batch number, recipe name 'Конина', initial weight 30.00 кг, status 'Створена' all displayed correctly, (3) ✅ PRODUCTION PROGRESS SECTION: Found 'Прогрес виробництва' with all 9 production steps including unique 'Масажер з цукром' step for Конина recipe, (4) ✅ SALTING BUTTON FOUND: 'Засолити' button present and clickable on step 1 (current step), (5) ✅ SALTING FORM OPENS: Form opens successfully with correct title 'Засолка', shows batch info (BATCH-24112025-1, 30 кг), (6) ✅ RECOMMENDED VALUES: Form displays recommended quantities (6.20 кг salt, 20.00 л water) and stock availability (179.32 кг salt available), (7) ✅ FORM FILLING: Successfully filled all fields - salt: 10.34 кг, water: 33.34 л, notes: 'UI тест засолки', (8) ✅ BACKEND PROCESSING: API endpoint works perfectly - salting processed successfully, batch status updated to 'in_progress', current_step advanced to 1 (промивка), stock movements created correctly. CRITICAL ISSUES IDENTIFIED: (1) ❌ CONFIRMATION DIALOG MISSING: After clicking 'Виконати засолку', the confirmation dialog does NOT appear in UI, (2) ❌ TOAST MESSAGE MISSING: Success toast 'Засолку виконано!' does NOT show, (3) ❌ FORM DOESN'T CLOSE: Form remains open instead of automatically closing and redirecting to production page. DIAGNOSIS: Frontend form submission logic has issues - the backend processes the request correctly but the UI feedback mechanisms (confirmation dialog, toast notifications, form closure) are not working. This matches exactly the user's reported problem: 'При натисканні кнопки Виконати засолку: Не виводиться повідомлення про початок, Вікно не закривається, Засолка не починається'. The salting DOES happen (backend works) but the UI doesn't provide proper feedback to the user."
 
   - task: "Weight-based casing accounting for stuffing"
     implemented: true
