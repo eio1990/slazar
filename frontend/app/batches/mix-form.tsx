@@ -6,13 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Toast from 'react-native-toast-message';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
@@ -78,6 +79,12 @@ export default function MixFormScreen() {
     return stockBalances?.find((b: any) => b.nomenclature_id === nomenclatureId)?.quantity || 0;
   };
 
+  // Calculate recommended quantity for each spice based on batch weight
+  const getRecommendedQuantity = (quantityPer100kg: number) => {
+    if (!batch?.initial_weight) return 0;
+    return (batch.initial_weight * quantityPer100kg) / 100;
+  };
+
   const produceMixMutation = useMutation({
     mutationFn: async (mixData: any) => {
       // First, consume spices
@@ -100,52 +107,67 @@ export default function MixFormScreen() {
         });
       }
 
-      // Then produce mix
-      const response = await fetch(`${API_URL}/api/production/batches/${batchId}/mix`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mixData),
-      });
-      
+      // Then, record mix production
+      const response = await fetch(
+        `${API_URL}/api/production/batches/${batchId}/steps/${stepId}/mix`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(mixData),
+        }
+      );
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to produce mix');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to produce mix');
       }
+
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['batch', batchId] });
-      queryClient.invalidateQueries({ queryKey: ['batch-operations', batchId] });
-      Alert.alert('Успіх', 'Мікс виготовлено', [
-        { text: 'OK', onPress: () => router.push('/(tabs)/production' as any) }
-      ]);
+      queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Виробництво мікса завершено!',
+        text2: 'Чаман успішно виготовлено',
+        position: 'top',
+        visibilityTime: 3000,
+      });
+
+      setTimeout(() => {
+        router.push('/(tabs)/production' as any);
+      }, 500);
     },
     onError: (error: any) => {
-      Alert.alert('Помилка', error.message || 'Не вдалося виготовити мікс');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: error.message || 'Не вдалося виготовити мікс',
+        position: 'top',
+        visibilityTime: 4000,
+      });
     },
   });
 
-  const calculateProducedMix = () => {
-    let total = 0;
-    let fenugreekWeight = 0;
-
-    recipeData?.spices?.forEach((spice: Spice) => {
-      const quantity = parseFloat(spiceQuantities[spice.nomenclature_id] || '0');
-      if (spice.nomenclature_id === FENUGREEK_ID || spice.is_fenugreek) {
-        fenugreekWeight = quantity;
-      } else {
-        total += quantity;
-      }
-    });
-
-    // Add fenugreek and its water (1:4)
-    if (fenugreekWeight > 0) {
-      total += fenugreekWeight + (fenugreekWeight * WATER_RATIO);
-    }
-
-    return total;
+  // Calculate fenugreek quantity and required water
+  const calculateFenugreek = () => {
+    return parseFloat(spiceQuantities[FENUGREEK_ID] || '0');
   };
 
+  // Calculate total produced mix (with water)
+  const calculateProducedMix = () => {
+    const totalSpices = Object.values(spiceQuantities)
+      .reduce((sum, qty) => sum + parseFloat(qty || '0'), 0);
+    
+    const fenugreekQty = calculateFenugreek();
+    const waterQty = fenugreekQty * WATER_RATIO;
+    
+    return totalSpices + waterQty;
+  };
+
+  // Calculate used mix
   const calculateUsedMix = () => {
     const produced = calculateProducedMix();
     const leftoverQty = parseFloat(leftover || '0');
@@ -160,19 +182,64 @@ export default function MixFormScreen() {
     const warehouseQty = parseFloat(warehouseMixUsed || '0');
 
     if (producedMix === 0 && warehouseQty === 0) {
-      Alert.alert('Помилка', 'Введіть кількість специй або складського мікса');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: 'Введіть кількість специй або складського мікса',
+        position: 'top',
+        visibilityTime: 3000,
+      });
       return;
     }
 
     if (leftoverQty > producedMix) {
-      Alert.alert('Помилка', 'Залишок не може перевищувати вироблений мікс');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: 'Залишок не може перевищувати вироблений мікс',
+        position: 'top',
+        visibilityTime: 3000,
+      });
       return;
     }
 
     if (warehouseQty > (warehouseBalance || 0)) {
-      Alert.alert('Помилка', `На складі недостатньо мікса. Доступно: ${warehouseBalance?.toFixed(2) || 0} кг`);
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: `На складі недостатньо мікса. Доступно: ${warehouseBalance?.toFixed(2) || 0} кг`,
+        position: 'top',
+        visibilityTime: 4000,
+      });
       return;
     }
+
+    // Check if all spices are available in stock
+    for (const [nomenclatureId, qty] of Object.entries(spiceQuantities)) {
+      const neededQty = parseFloat(qty || '0');
+      if (neededQty > 0) {
+        const stockQty = getStock(parseInt(nomenclatureId));
+        if (stockQty < neededQty) {
+          const spice = recipeData?.spices?.find((s: Spice) => s.nomenclature_id === parseInt(nomenclatureId));
+          Toast.show({
+            type: 'error',
+            text1: 'Недостатньо специй на складі!',
+            text2: `${spice?.name}: потрібно ${neededQty.toFixed(2)} кг, на складі ${stockQty.toFixed(2)} кг`,
+            position: 'top',
+            visibilityTime: 4000,
+          });
+          return;
+        }
+      }
+    }
+
+    Toast.show({
+      type: 'info',
+      text1: 'Обробка...',
+      text2: 'Виготовлення мікса',
+      position: 'top',
+      visibilityTime: 2000,
+    });
 
     produceMixMutation.mutate({
       mix_nomenclature_id: parseInt(mixId as string),
@@ -194,143 +261,165 @@ export default function MixFormScreen() {
 
   const producedMix = calculateProducedMix();
   const usedMix = calculateUsedMix();
-  const fenugreekQuantity = parseFloat(spiceQuantities[FENUGREEK_ID] || '0');
+  const fenugreekQuantity = calculateFenugreek();
   const requiredWater = fenugreekQuantity * WATER_RATIO;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/production' as any)}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Виробництво мікса</Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      <ScrollView style={styles.content}>
-        {/* Batch Info */}
-        <View style={styles.infoCard}>
-          <Text style={styles.batchNumber}>Партія: {batch?.batch_number}</Text>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/production' as any)} style={styles.backButton}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Виробництво чаману</Text>
+          <View style={styles.backButton} />
         </View>
 
-        {/* Spices List */}
+        {/* Batch Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Специї</Text>
-          
-          {recipeData?.spices?.map((spice: Spice) => (
-            <View key={spice.id} style={styles.spiceCard}>
-              <View style={styles.spiceHeader}>
-                <MaterialCommunityIcons 
-                  name={spice.is_fenugreek ? "leaf" : "shaker-outline"} 
-                  size={24} 
-                  color={spice.is_fenugreek ? "#FF9800" : "#666"} 
-                />
-                <View style={styles.spiceInfo}>
-                  <Text style={styles.spiceName}>{spice.name}</Text>
+          <Text style={styles.sectionTitle}>Інформація про партію</Text>
+          <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Партія:</Text>
+              <Text style={styles.infoValue}>{batch?.batch_number}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Початкова вага:</Text>
+              <Text style={styles.infoValue}>{batch?.initial_weight?.toFixed(2)} кг</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Spices Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Специї для чаману</Text>
+          <View style={styles.formCard}>
+            {recipeData?.spices?.map((spice: Spice, index: number) => (
+              <View key={spice.id}>
+                {index > 0 && <View style={styles.divider} />}
+                
+                <View style={styles.spiceSection}>
+                  <View style={styles.labelRow}>
+                    <View style={styles.spiceLabelContainer}>
+                      <MaterialCommunityIcons 
+                        name={spice.is_fenugreek ? "leaf" : "shaker-outline"} 
+                        size={20} 
+                        color={spice.is_fenugreek ? "#FF9800" : "#666"} 
+                      />
+                      <Text style={styles.label}>{spice.name} (кг) *</Text>
+                    </View>
+                    <Text style={styles.recommendedText}>
+                      {getRecommendedQuantity(spice.quantity_per_100kg).toFixed(2)} кг
+                    </Text>
+                  </View>
+                  
                   {spice.is_fenugreek && (
                     <Text style={styles.fenugreekNote}>
-                      ⚠️ Додається вода 1:4
+                      ⚠️ До пажитника автоматично додається вода (1:4)
                     </Text>
                   )}
+                  
+                  <Text style={styles.stockHint}>
+                    На складі: {getStock(spice.nomenclature_id).toFixed(2)} кг
+                  </Text>
+                  
+                  <TextInput
+                    style={styles.input}
+                    value={spiceQuantities[spice.nomenclature_id] || ''}
+                    onChangeText={(text) => 
+                      setSpiceQuantities(prev => ({
+                        ...prev,
+                        [spice.nomenclature_id]: text
+                      }))
+                    }
+                    keyboardType="decimal-pad"
+                    placeholder="Введіть кількість"
+                    placeholderTextColor="#999"
+                  />
                 </View>
               </View>
-              
-              <TextInput
-                style={styles.input}
-                value={spiceQuantities[spice.nomenclature_id] || ''}
-                onChangeText={(text) => 
-                  setSpiceQuantities(prev => ({
-                    ...prev,
-                    [spice.nomenclature_id]: text
-                  }))
-                }
-                keyboardType="decimal-pad"
-                placeholder={
-                  getStock(spice.nomenclature_id) > 0 
-                    ? `На складі: ${getStock(spice.nomenclature_id).toFixed(2)} кг` 
-                    : "Введіть вагу (кг)"
-                }
-                placeholderTextColor="#999"
-              />
-            </View>
-          ))}
+            ))}
+          </View>
         </View>
 
         {/* Water Calculation */}
         {fenugreekQuantity > 0 && (
-          <View style={styles.waterCard}>
-            <MaterialCommunityIcons name="water" size={24} color="#2196F3" />
-            <View style={styles.waterInfo}>
-              <Text style={styles.waterTitle}>Автоматично додається вода</Text>
-              <Text style={styles.waterAmount}>{requiredWater.toFixed(2)} л</Text>
-              <Text style={styles.waterFormula}>
-                {fenugreekQuantity.toFixed(2)} кг пажитника × 4 = {requiredWater.toFixed(2)} л
-              </Text>
+          <View style={styles.section}>
+            <View style={styles.waterCard}>
+              <MaterialCommunityIcons name="water" size={32} color="#2196F3" />
+              <View style={styles.waterInfo}>
+                <Text style={styles.waterTitle}>Автоматично додається вода</Text>
+                <Text style={styles.waterAmount}>{requiredWater.toFixed(2)} л</Text>
+                <Text style={styles.waterFormula}>
+                  {fenugreekQuantity.toFixed(2)} кг пажитника × 4 = {requiredWater.toFixed(2)} л
+                </Text>
+              </View>
             </View>
           </View>
         )}
 
         {/* Mix Calculation */}
-        <View style={styles.calculationCard}>
-          <Text style={styles.calculationTitle}>Розрахунок мікса</Text>
-          
-          <View style={styles.calculationRow}>
-            <Text style={styles.calculationLabel}>Вироблено мікса:</Text>
-            <Text style={styles.calculationValue}>{producedMix.toFixed(2)} кг</Text>
-          </View>
-          
-          <View style={styles.divider} />
-          
-          <View style={styles.inputRow}>
-            <Text style={styles.label}>Залишок мікса (leftover):</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Розрахунок мікса</Text>
+          <View style={styles.calculationCard}>
+            <View style={styles.calculationRow}>
+              <Text style={styles.calculationLabel}>Вироблено мікса:</Text>
+              <Text style={styles.calculationValue}>{producedMix.toFixed(2)} кг</Text>
+            </View>
+            
+            <View style={styles.divider} />
+            
+            <Text style={styles.label}>Залишок мікса (кг)</Text>
+            <Text style={styles.hint}>Мікс що залишився після нанесення</Text>
             <TextInput
-              style={styles.smallInput}
+              style={styles.input}
               value={leftover}
               onChangeText={setLeftover}
               keyboardType="decimal-pad"
               placeholder="0"
+              placeholderTextColor="#999"
             />
-          </View>
-          
-          <View style={styles.checkboxContainer}>
-            <TouchableOpacity
-              style={styles.checkbox}
-              onPress={() => setUseWarehouseMix(!useWarehouseMix)}
-            >
-              <MaterialCommunityIcons
-                name={useWarehouseMix ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                size={24}
-                color="#4CAF50"
-              />
-              <Text style={styles.checkboxLabel}>
-                Використати складський мікс (доступно: {warehouseBalance?.toFixed(2) || 0} кг)
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          {useWarehouseMix && (
-            <View style={styles.inputRow}>
-              <Text style={styles.label}>Вага складського мікса:</Text>
-              <TextInput
-                style={styles.smallInput}
-                value={warehouseMixUsed}
-                onChangeText={setWarehouseMixUsed}
-                keyboardType="decimal-pad"
-                placeholder="0"
-              />
+
+            <View style={[styles.checkboxContainer, { marginTop: 16 }]}>
+              <TouchableOpacity
+                style={styles.checkbox}
+                onPress={() => setUseWarehouseMix(!useWarehouseMix)}
+              >
+                <MaterialCommunityIcons
+                  name={useWarehouseMix ? "checkbox-marked" : "checkbox-blank-outline"}
+                  size={24}
+                  color={useWarehouseMix ? "#4CAF50" : "#999"}
+                />
+              </TouchableOpacity>
+              <Text style={styles.checkboxLabel}>Використати мікс зі складу</Text>
             </View>
-          )}
-          
-          <View style={styles.divider} />
-          
-          <View style={styles.calculationRow}>
-            <Text style={styles.calculationLabelBold}>Використано мікса:</Text>
-            <Text style={styles.calculationValueBold}>{usedMix.toFixed(2)} кг</Text>
+
+            {useWarehouseMix && (
+              <>
+                <Text style={[styles.label, { marginTop: 12 }]}>Складський мікс (кг)</Text>
+                <Text style={styles.stockHint}>На складі: {warehouseBalance.toFixed(2)} кг</Text>
+                <TextInput
+                  style={styles.input}
+                  value={warehouseMixUsed}
+                  onChangeText={setWarehouseMixUsed}
+                  keyboardType="decimal-pad"
+                  placeholder="0"
+                  placeholderTextColor="#999"
+                />
+              </>
+            )}
+
+            <View style={[styles.divider, { marginVertical: 16 }]} />
+            
+            <View style={styles.calculationRow}>
+              <Text style={styles.totalLabel}>Використано мікса:</Text>
+              <Text style={styles.totalValue}>{usedMix.toFixed(2)} кг</Text>
+            </View>
           </View>
-          
-          <Text style={styles.formula}>
-            = ({producedMix.toFixed(2)} - {leftover || '0'}) + {warehouseMixUsed || '0'}
-          </Text>
         </View>
 
         {/* Submit Button */}
@@ -340,147 +429,161 @@ export default function MixFormScreen() {
           disabled={produceMixMutation.isPending}
         >
           {produceMixMutation.isPending ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color="#FFF" />
           ) : (
             <>
-              <MaterialCommunityIcons name="check-circle" size={20} color="#fff" />
-              <Text style={styles.submitButtonText}>Виготовити мікс</Text>
+              <MaterialCommunityIcons name="check-circle" size={20} color="#FFF" />
+              <Text style={styles.submitButtonText}>Виготовити чаман</Text>
             </>
           )}
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5F5F5',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#4CAF50',
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
+  scrollView: {
+    flex: 1,
   },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  placeholder: {
-    width: 32,
+  scrollContent: {
+    paddingBottom: 100,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  content: {
-    flex: 1,
-  },
-  infoCard: {
-    backgroundColor: '#fff',
-    margin: 16,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 16,
-    borderRadius: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      },
-    }),
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
-  batchNumber: {
-    fontSize: 16,
+  backButton: {
+    padding: 8,
+    width: 40,
+  },
+  headerTitle: {
+    fontSize: 18,
     fontWeight: '600',
     color: '#333',
   },
   section: {
-    marginHorizontal: 16,
-    marginBottom: 24,
+    marginTop: 16,
+    paddingHorizontal: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
-  },
-  spiceCard: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-      web: {
-        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-      },
-    }),
-  },
-  spiceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  spiceInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  spiceName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
+    marginBottom: 8,
+  },
+  infoCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  formCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  spiceSection: {
+    marginBottom: 8,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  spiceLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  recommendedText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f44336',
   },
   fenugreekNote: {
     fontSize: 12,
     color: '#FF9800',
-    marginTop: 2,
+    marginBottom: 6,
+    fontStyle: 'italic',
+  },
+  stockHint: {
+    fontSize: 12,
+    color: '#2196F3',
+    marginBottom: 6,
+    fontStyle: 'italic',
+  },
+  hint: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 6,
   },
   input: {
+    backgroundColor: '#F8F8F8',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#E0E0E0',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
+    color: '#333',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 12,
   },
   waterCard: {
-    flexDirection: 'row',
     backgroundColor: '#E3F2FD',
-    marginHorizontal: 16,
-    marginBottom: 24,
-    padding: 16,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#2196F3',
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   waterInfo: {
-    marginLeft: 12,
     flex: 1,
   },
   waterTitle: {
@@ -492,44 +595,27 @@ const styles = StyleSheet.create({
   waterAmount: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: '#0D47A1',
     marginBottom: 4,
   },
   waterFormula: {
     fontSize: 12,
     color: '#1976D2',
+    fontStyle: 'italic',
   },
   calculationCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginBottom: 24,
-    padding: 16,
+    backgroundColor: '#FFF',
     borderRadius: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      },
-    }),
-  },
-  calculationTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   calculationRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 8,
   },
   calculationLabel: {
@@ -537,79 +623,53 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   calculationValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  calculationLabelBold: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  calculationValueBold: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 12,
-  },
-  inputRow: {
-    marginBottom: 12,
-  },
-  label: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
   },
-  smallInput: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  totalLabel: {
     fontSize: 16,
-    backgroundColor: '#fff',
+    fontWeight: '600',
+    color: '#333',
+  },
+  totalValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#4CAF50',
   },
   checkboxContainer: {
-    marginBottom: 12,
-  },
-  checkbox: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  checkbox: {
+    marginRight: 8,
   },
   checkboxLabel: {
     fontSize: 14,
     color: '#333',
-    marginLeft: 8,
-    flex: 1,
-  },
-  formula: {
-    fontSize: 12,
-    color: '#999',
-    fontStyle: 'italic',
-    marginTop: 4,
   },
   submitButton: {
-    flexDirection: 'row',
     backgroundColor: '#4CAF50',
-    marginHorizontal: 16,
-    marginBottom: 32,
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 24,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   submitButtonDisabled: {
-    opacity: 0.6,
+    backgroundColor: '#9E9E9E',
   },
   submitButtonText: {
-    color: '#fff',
+    color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 8,
   },
 });
