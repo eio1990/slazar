@@ -33,9 +33,22 @@ export default function NewPackagingSessionScreen() {
       if (!response.ok) throw new Error('Failed to fetch products');
       const allNomenclature = await response.json();
       // Filter for bulk finished products (category "Готова продукція")
-      return allNomenclature.filter((n: any) => 
-        n.category === 'Готова продукція' && n.name.includes('вагова')
-      );
+      // Exclude packaged products (with gram measurements like "50г", "60г")
+      // Exclude products already marked as "вагова" (these are packaging results)
+      return allNomenclature.filter((n: any) => {
+        if (n.category !== 'Готова продукція') return false;
+        
+        // Exclude packaged products (contain gram measurements)
+        if (n.name.match(/\d+г/)) return false;
+        
+        // Exclude already packaged "вагова" products (these are packaging outputs)
+        if (n.name.includes('вагова')) return false;
+        
+        // Exclude vacuum/skin packaged
+        if (n.name.includes('вакуум') || n.name.includes('скін')) return false;
+        
+        return true;
+      });
     },
   });
 
