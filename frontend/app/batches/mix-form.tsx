@@ -109,7 +109,7 @@ export default function MixFormScreen() {
 
       // Then, record mix production
       const response = await fetch(
-        `${API_URL}/api/production/batches/${batchId}/steps/${stepId}/mix`,
+        `${API_URL}/api/production/batches/${batchId}/mix`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
