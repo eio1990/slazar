@@ -34,18 +34,24 @@ interface Batch {
 
 export default function ProductionScreen() {
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<string>('created');
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   
-  // Override header right button to add analytics
-  React.useLayoutEffect(() => {
-    // This will be handled by _layout.tsx
-  }, []);
+  // Toggle filter selection
+  const toggleFilter = (filterKey: string) => {
+    setSelectedFilters(prev => {
+      if (prev.includes(filterKey)) {
+        return prev.filter(f => f !== filterKey);
+      } else {
+        return [...prev, filterKey];
+      }
+    });
+  };
 
-  const { data: batches, isLoading, error, refetch } = useQuery({
-    queryKey: ['batches', statusFilter],
+  const { data: allBatches, isLoading, error, refetch } = useQuery({
+    queryKey: ['batches'],
     queryFn: async () => {
       try {
-        const url = `${API_URL}/api/production/batches?status=${statusFilter}`;
+        const url = `${API_URL}/api/production/batches`;
         console.log('[Production] Fetching from:', url);
         const response = await fetch(url);
         console.log('[Production] Response status:', response.status);
@@ -71,6 +77,14 @@ export default function ProductionScreen() {
     retry: 1,
     retryDelay: 1000,
   });
+
+  // Filter batches based on selected filters
+  const batches = allBatches?.filter((batch: Batch) => {
+    // If no filters selected, show all
+    if (selectedFilters.length === 0) return true;
+    // If filters selected, show only matching ones
+    return selectedFilters.includes(batch.status);
+  }) || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -100,6 +114,12 @@ export default function ProductionScreen() {
       minute: '2-digit'
     });
   };
+
+  const filters = [
+    { key: 'created', label: 'Нові' },
+    { key: 'in_progress', label: 'В процесі' },
+    { key: 'completed', label: 'Завершені' },
+  ];
 
   const renderBatch = ({ item }: { item: Batch }) => (
     <TouchableOpacity
@@ -184,32 +204,17 @@ export default function ProductionScreen() {
         style={styles.filterScroll}
         contentContainerStyle={styles.filterContainer}
       >
-        <TouchableOpacity
-          style={[styles.filterChip, statusFilter === 'created' && styles.filterChipActive]}
-          onPress={() => setStatusFilter('created')}
-        >
-          <Text style={[styles.filterChipText, statusFilter === 'created' && styles.filterChipTextActive]}>
-            Нові
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.filterChip, statusFilter === 'in_progress' && styles.filterChipActive]}
-          onPress={() => setStatusFilter('in_progress')}
-        >
-          <Text style={[styles.filterChipText, statusFilter === 'in_progress' && styles.filterChipTextActive]}>
-            В процесі
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.filterChip, statusFilter === 'completed' && styles.filterChipActive]}
-          onPress={() => setStatusFilter('completed')}
-        >
-          <Text style={[styles.filterChipText, statusFilter === 'completed' && styles.filterChipTextActive]}>
-            Завершені
-          </Text>
-        </TouchableOpacity>
+        {filters.map((f) => (
+          <TouchableOpacity
+            key={f.key}
+            style={[styles.filterChip, selectedFilters.includes(f.key) && styles.filterChipActive]}
+            onPress={() => toggleFilter(f.key)}
+          >
+            <Text style={[styles.filterChipText, selectedFilters.includes(f.key) && styles.filterChipTextActive]}>
+              {f.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
 
       <FlatList
@@ -289,19 +294,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterChip: {
-    paddingVertical: 8,
     paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
     borderRadius: 20,
+    backgroundColor: '#f0f0f0',
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    backgroundColor: '#fff',
   },
   filterChipActive: {
     backgroundColor: '#4CAF50',
     borderColor: '#4CAF50',
   },
   filterChipText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#666',
   },

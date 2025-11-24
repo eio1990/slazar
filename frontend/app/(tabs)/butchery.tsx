@@ -17,21 +17,37 @@ const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
 export default function ButcheryScreen() {
   const router = useRouter();
-  const [filter, setFilter] = useState<string>('in_progress');
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+
+  // Toggle filter selection
+  const toggleFilter = (filterKey: string) => {
+    setSelectedFilters(prev => {
+      if (prev.includes(filterKey)) {
+        return prev.filter(f => f !== filterKey);
+      } else {
+        return [...prev, filterKey];
+      }
+    });
+  };
 
   // Get butchery operations
-  const { data: operations, isLoading, refetch } = useQuery({
-    queryKey: ['butchery-operations', filter],
+  const { data: allOperations, isLoading, refetch } = useQuery({
+    queryKey: ['butchery-operations'],
     queryFn: async () => {
-      let url = `${API_URL}/api/butchery/operations`;
-      if (filter !== 'all') {
-        url += `?status=${filter}`;
-      }
+      const url = `${API_URL}/api/butchery/operations`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch operations');
       return response.json();
     },
   });
+
+  // Filter operations based on selected filters
+  const operations = allOperations?.filter((op: any) => {
+    // If no filters selected, show all
+    if (selectedFilters.length === 0) return true;
+    // If filters selected, show only matching ones
+    return selectedFilters.includes(op.status);
+  }) || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -66,10 +82,10 @@ export default function ButcheryScreen() {
         {filters.map((f) => (
           <TouchableOpacity
             key={f.key}
-            style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
-            onPress={() => setFilter(f.key)}
+            style={[styles.filterChip, selectedFilters.includes(f.key) && styles.filterChipActive]}
+            onPress={() => toggleFilter(f.key)}
           >
-            <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>
+            <Text style={[styles.filterChipText, selectedFilters.includes(f.key) && styles.filterChipTextActive]}>
               {f.label}
             </Text>
           </TouchableOpacity>

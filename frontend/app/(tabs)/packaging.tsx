@@ -17,21 +17,37 @@ const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
 export default function PackagingScreen() {
   const router = useRouter();
-  const [filter, setFilter] = useState<string>('created');
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+
+  // Toggle filter selection
+  const toggleFilter = (filterKey: string) => {
+    setSelectedFilters(prev => {
+      if (prev.includes(filterKey)) {
+        return prev.filter(f => f !== filterKey);
+      } else {
+        return [...prev, filterKey];
+      }
+    });
+  };
 
   // Get packaging sessions
-  const { data: sessions, isLoading, refetch } = useQuery({
-    queryKey: ['packaging-sessions', filter],
+  const { data: allSessions, isLoading, refetch } = useQuery({
+    queryKey: ['packaging-sessions'],
     queryFn: async () => {
-      let url = `${API_URL}/api/packaging/sessions`;
-      if (filter !== 'all') {
-        url += `?status=${filter}`;
-      }
+      const url = `${API_URL}/api/packaging/sessions`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch sessions');
       return response.json();
     },
   });
+
+  // Filter sessions based on selected filters
+  const sessions = allSessions?.filter((session: any) => {
+    // If no filters selected, show all
+    if (selectedFilters.length === 0) return true;
+    // If filters selected, show only matching ones
+    return selectedFilters.includes(session.status);
+  }) || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -69,10 +85,10 @@ export default function PackagingScreen() {
         {filters.map((f) => (
           <TouchableOpacity
             key={f.key}
-            style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
-            onPress={() => setFilter(f.key)}
+            style={[styles.filterChip, selectedFilters.includes(f.key) && styles.filterChipActive]}
+            onPress={() => toggleFilter(f.key)}
           >
-            <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>
+            <Text style={[styles.filterChipText, selectedFilters.includes(f.key) && styles.filterChipTextActive]}>
               {f.label}
             </Text>
           </TouchableOpacity>
