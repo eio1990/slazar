@@ -56,6 +56,7 @@ export default function SaltingFormScreen() {
 
   // Find salt stock (nomenclature_id = 28)
   const saltStock = stockBalances?.find((b: any) => b.nomenclature_id === 28)?.quantity || 0;
+  // Note: Water is from tap, no stock check needed
 
   const processSaltingMutation = useMutation({
     mutationFn: async (saltingData: any) => {
