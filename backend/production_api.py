@@ -715,9 +715,9 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
                 WHERE nomenclature_id = ?
             """, new_balance, spice_id)
         
-        # If leftover > 0, create stock receipt for mix
-        if mix_data.leftover_quantity > 0:
-            leftover_key = f"mix-leftover-{batch_id}-{mix_data.idempotency_key}"
+        # First, receipt all produced mix to stock
+        if mix_data.produced_quantity > 0:
+            produced_key = f"mix-produced-{batch_id}-{mix_data.idempotency_key}"
             
             cursor.execute("""
                 INSERT INTO stock_movements (
@@ -728,18 +728,18 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
                 SELECT 
                     ?, 'receipt', ?, 
                     COALESCE((SELECT quantity FROM stock_balances WHERE nomenclature_id = ?), 0) + ?,
-                    'production_leftover', ?,
+                    'production_mix', ?,
                     ?, DATEADD(HOUR, 2, GETDATE()), ?
-            """, mix_data.mix_nomenclature_id, mix_data.leftover_quantity,
-                mix_data.mix_nomenclature_id, mix_data.leftover_quantity,
-                batch.batch_number, leftover_key,
+            """, mix_data.mix_nomenclature_id, mix_data.produced_quantity,
+                mix_data.mix_nomenclature_id, mix_data.produced_quantity,
+                batch.batch_number, produced_key,
                 json.dumps({
                     'batch_id': batch_id,
                     'batch_number': batch.batch_number,
-                    'mix_type': 'leftover'
+                    'mix_type': 'produced'
                 }))
             
-            # Update stock balance
+            # Update stock balance - add produced mix
             cursor.execute("""
                 IF EXISTS (SELECT 1 FROM stock_balances WHERE nomenclature_id = ?)
                     UPDATE stock_balances
@@ -749,9 +749,47 @@ async def produce_mix(batch_id: int, mix_data: BatchMixProduction):
                 ELSE
                     INSERT INTO stock_balances (nomenclature_id, quantity, last_updated)
                     VALUES (?, ?, DATEADD(HOUR, 2, GETDATE()))
-            """, mix_data.mix_nomenclature_id, mix_data.leftover_quantity,
+            """, mix_data.mix_nomenclature_id, mix_data.produced_quantity,
                 mix_data.mix_nomenclature_id, mix_data.mix_nomenclature_id,
-                mix_data.leftover_quantity)
+                mix_data.produced_quantity)
+        
+        # Then, withdraw used mix from stock (mix applied to meat)
+        # Note: leftover stays in stock, so we withdraw (produced - leftover)
+        mix_used_for_application = mix_data.produced_quantity - mix_data.leftover_quantity
+        if mix_used_for_application > 0:
+            used_key = f"mix-used-{batch_id}-{mix_data.idempotency_key}"
+            
+            # Get current balance after production
+            cursor.execute(
+                "SELECT quantity FROM stock_balances WHERE nomenclature_id = ?",
+                mix_data.mix_nomenclature_id
+            )
+            result = cursor.fetchone()
+            current_balance = float(result[0]) if result else 0
+            new_balance = current_balance - mix_used_for_application
+            
+            cursor.execute("""
+                INSERT INTO stock_movements (
+                    nomenclature_id, operation_type, quantity, balance_after,
+                    source_operation_type, source_operation_id,
+                    idempotency_key, operation_date, metadata
+                )
+                VALUES (?, 'withdrawal', ?, ?, 'production_use', ?, ?, DATEADD(HOUR, 2, GETDATE()), ?)
+            """, mix_data.mix_nomenclature_id, mix_used_for_application,
+                new_balance, batch.batch_number, used_key,
+                json.dumps({
+                    'batch_id': batch_id,
+                    'batch_number': batch.batch_number,
+                    'mix_type': 'applied_to_meat'
+                }))
+            
+            # Update stock balance - deduct used mix
+            cursor.execute("""
+                UPDATE stock_balances
+                SET quantity = ?,
+                    last_updated = DATEADD(HOUR, 2, GETDATE())
+                WHERE nomenclature_id = ?
+            """, new_balance, mix_data.mix_nomenclature_id)
         
         # If warehouse mix used, create withdrawal
         if mix_data.warehouse_mix_used > 0:
