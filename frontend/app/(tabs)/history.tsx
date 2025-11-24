@@ -180,24 +180,37 @@ export default function HistoryScreen() {
 
   const renderMovement = ({ item }: { item: MovementWithName }) => {
     const operationColor = getOperationColor(item.operation_type);
-    const operationLabel = getOperationLabel(item.operation_type);
     const sign = item.operation_type === 'withdrawal' || item.operation_type.includes('withdrawal') ? '-' : '+';
+    
+    // Parse metadata to check if there are notes
+    let hasNotes = false;
+    let notesText = '';
+    if (item.metadata) {
+      try {
+        const metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+        if (metadata.notes) {
+          hasNotes = true;
+          notesText = metadata.notes;
+        }
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    }
     
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: operationColor + '20' }]}>
-            <MaterialCommunityIcons
-              name={getOperationIcon(item.operation_type)}
-              size={24}
-              color={operationColor}
-            />
-          </View>
+          {/* Icon without circle - just arrow */}
+          <MaterialCommunityIcons
+            name={getOperationIcon(item.operation_type)}
+            size={24}
+            color={operationColor}
+            style={styles.iconOnly}
+          />
           <View style={styles.cardContent}>
-            <Text style={styles.operationType}>{operationLabel}</Text>
             <Text style={styles.nomenclatureName}>{item.nomenclature_name}</Text>
             <Text style={styles.dateText}>
-              {format(new Date(item.operation_date), 'dd MMM yyyy, HH:mm', { locale: uk })}
+              {format(new Date(item.operation_date), 'dd.MM.yy, HH:mm', { locale: uk })}
             </Text>
           </View>
           <View style={styles.quantityContainer}>
@@ -208,11 +221,12 @@ export default function HistoryScreen() {
           </View>
         </View>
 
-        {item.metadata && (
+        {/* Only show metadata if there are actual notes */}
+        {hasNotes && (
           <View style={styles.metadataContainer}>
             <MaterialCommunityIcons name="information-outline" size={16} color="#666" />
             <Text style={styles.metadataText} numberOfLines={2}>
-              {typeof item.metadata === 'string' ? JSON.parse(item.metadata).notes || 'Додаткова інформація' : item.metadata.notes || 'Додаткова інформація'}
+              {notesText}
             </Text>
           </View>
         )}
