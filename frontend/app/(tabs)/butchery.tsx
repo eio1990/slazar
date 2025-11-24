@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -16,7 +17,7 @@ const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
 export default function ButcheryScreen() {
   const router = useRouter();
-  const [filter, setFilter] = useState<string>('all');
+  const [filter, setFilter] = useState<string>('in_progress');
 
   // Get butchery operations
   const { data: operations, isLoading, refetch } = useQuery({
@@ -49,27 +50,31 @@ export default function ButcheryScreen() {
   };
 
   const filters = [
-    { key: 'all', label: 'Всі' },
     { key: 'in_progress', label: 'В процесі' },
     { key: 'completed', label: 'Завершені' },
   ];
 
   return (
     <View style={styles.container}>
-      {/* Filters */}
-      <View style={styles.filterContainer}>
+      {/* Filter chips */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterScroll}
+        contentContainerStyle={styles.filterContainer}
+      >
         {filters.map((f) => (
           <TouchableOpacity
             key={f.key}
-            style={[styles.filterButton, filter === f.key && styles.filterButtonActive]}
+            style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
             onPress={() => setFilter(f.key)}
           >
-            <Text style={[styles.filterButtonText, filter === f.key && styles.filterButtonTextActive]}>
+            <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>
               {f.label}
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       {/* Content */}
       <FlatList
@@ -154,33 +159,37 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  filterContainer: {
-    flexDirection: 'row',
-    padding: 12,
+  filterScroll: {
     backgroundColor: '#fff',
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  filterButton: {
-    flex: 1,
-    paddingVertical: 8,
+  filterContainer: {
+    flexDirection: 'row',
     paddingHorizontal: 12,
-    marginHorizontal: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    gap: 8,
     alignItems: 'center',
   },
-  filterButtonActive: {
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  filterChipActive: {
     backgroundColor: '#4CAF50',
     borderColor: '#4CAF50',
   },
-  filterButtonText: {
-    fontSize: 14,
+  filterChipText: {
+    fontSize: 13,
     fontWeight: '600',
     color: '#666',
   },
-  filterButtonTextActive: {
+  filterChipTextActive: {
     color: '#fff',
   },
   listContent: {
