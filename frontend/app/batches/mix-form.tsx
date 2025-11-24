@@ -87,25 +87,33 @@ export default function MixFormScreen() {
 
   const produceMixMutation = useMutation({
     mutationFn: async (mixData: any) => {
-      // First, consume spices
-      const materials = Object.entries(spiceQuantities)
-        .filter(([_, qty]) => parseFloat(qty || '0') > 0)
-        .map(([id, qty]) => ({
-          nomenclature_id: parseInt(id),
-          quantity: parseFloat(qty),
-          type: 'spice'
-        }));
+      // Only consume spices if we're actually producing new mix (produced_quantity > 0)
+      // If only using warehouse mix (warehouse_mix_used > 0 but no spices entered), skip spice consumption
+      const totalSpices = Object.values(spiceQuantities)
+        .reduce((sum, qty) => sum + parseFloat(qty || '0'), 0);
+      
+      if (totalSpices > 0) {
+        // We're producing new mix, so consume the spices
+        const materials = Object.entries(spiceQuantities)
+          .filter(([_, qty]) => parseFloat(qty || '0') > 0)
+          .map(([id, qty]) => ({
+            nomenclature_id: parseInt(id),
+            quantity: parseFloat(qty),
+            type: 'spice'
+          }));
 
-      if (materials.length > 0) {
-        await fetch(`${API_URL}/api/production/batches/${batchId}/materials/consume`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            materials,
-            idempotency_key: `spices-${batchId}-${Date.now()}`
-          }),
-        });
+        if (materials.length > 0) {
+          await fetch(`${API_URL}/api/production/batches/${batchId}/materials/consume`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              materials,
+              idempotency_key: `spices-${batchId}-${Date.now()}`
+            }),
+          });
+        }
       }
+      // If totalSpices = 0, we're only using warehouse mix, so no spices to consume
 
       // Then, record mix production
       const response = await fetch(
