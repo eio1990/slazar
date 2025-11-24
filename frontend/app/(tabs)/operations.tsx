@@ -695,9 +695,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     fontSize: 16,
   },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    margin: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#333',
+  },
   categoryFilterScroll: {
     backgroundColor: '#fff',
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   categoryFilterRow: {
     flexDirection: 'row',
