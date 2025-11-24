@@ -138,24 +138,22 @@ export default function SaltingFormScreen() {
       return;
     }
 
-    Alert.alert(
-      'Підтвердження',
-      `Засолити партію?\n\nСіль: ${salt} кг\nВода: ${water} л\n\nЦі інгредієнти будуть списані зі складу.`,
-      [
-        { text: 'Скасувати', style: 'cancel' },
-        {
-          text: 'Підтвердити',
-          onPress: () => {
-            processSaltingMutation.mutate({
-              salt_quantity: salt,
-              water_quantity: water,
-              notes: notes || undefined,
-              idempotency_key: `salting-${batchId}-${Date.now()}`
-            });
-          }
-        }
-      ]
-    );
+    // Show loading toast immediately
+    Toast.show({
+      type: 'info',
+      text1: 'Обробка...',
+      text2: 'Виконується засолка партії',
+      position: 'top',
+      visibilityTime: 2000,
+    });
+
+    // Submit directly without Alert.alert (doesn't work in React Native Web)
+    processSaltingMutation.mutate({
+      salt_quantity: salt,
+      water_quantity: water,
+      notes: notes || undefined,
+      idempotency_key: `salting-${batchId}-${Date.now()}`
+    });
   };
 
   return (
