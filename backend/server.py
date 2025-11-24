@@ -424,7 +424,7 @@ async def get_movements(
                 query += " AND operation_date <= ?"
                 params.append(end_date)
             
-            query += " ORDER BY operation_date DESC"
+            query += " ORDER BY id DESC"
             query += f" OFFSET 0 ROWS FETCH NEXT {limit} ROWS ONLY"
             
             cursor.execute(query, params)
