@@ -34,8 +34,8 @@ export default function MixFormScreen() {
   const queryClient = useQueryClient();
   
   const [spiceQuantities, setSpiceQuantities] = useState<Record<number, string>>({});
-  const [leftover, setLeftover] = useState('0');
-  const [warehouseMixUsed, setWarehouseMixUsed] = useState('0');
+  const [leftover, setLeftover] = useState('');
+  const [warehouseMixUsed, setWarehouseMixUsed] = useState('');
   const [useWarehouseMix, setUseWarehouseMix] = useState(false);
 
   // Get batch details
