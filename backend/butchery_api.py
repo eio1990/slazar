@@ -473,6 +473,10 @@ async def complete_butchery_operation(operation_id: int, completion: ButcheryOpe
             if nomenclature_type == 'liquid-waste':
                 continue
             
+            # Пропустити виходи з нульовою вагою (не створювати записи в журналі)
+            if output.actual_weight <= 0:
+                continue
+            
             # Оприбуткувати на склад (всі інші виходи)
             cursor.execute("""
                 SELECT COALESCE(quantity, 0) FROM stock_balances 
