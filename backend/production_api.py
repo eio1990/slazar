@@ -887,19 +887,8 @@ async def process_salting(batch_id: int, salting_data: BatchSalting):
                 detail=f"Недостатньо солі на складі. Доступно: {salt_balance:.2f} кг, Потрібно: {salting_data.salt_quantity:.2f} кг"
             )
         
-        # Check stock availability for water
-        cursor.execute(
-            "SELECT quantity FROM stock_balances WHERE nomenclature_id = ?",
-            WATER_ID
-        )
-        result = cursor.fetchone()
-        water_balance = float(result[0]) if result else 0
-        
-        if water_balance < salting_data.water_quantity:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Недостатньо води на складі. Доступно: {water_balance:.2f} л, Потрібно: {salting_data.water_quantity:.2f} л"
-            )
+        # Water is taken from tap (not from stock), no need to check availability
+        # We only record water usage for analytics and cost calculation
         
         # Deduct salt from stock
         salt_key = f"salting-salt-{batch_id}-{salting_data.idempotency_key}"
