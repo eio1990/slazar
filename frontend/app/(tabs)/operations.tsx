@@ -115,6 +115,14 @@ export default function OperationsScreen() {
   // Filter and sort nomenclature
   const filteredNomenclature = nomenclature
     .filter(item => {
+      // Filter by search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        if (!item.name.toLowerCase().includes(query)) {
+          return false;
+        }
+      }
+      
       // If no categories selected, show all
       if (selectedCategories.length === 0) return true;
       
