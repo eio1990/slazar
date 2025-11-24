@@ -915,9 +915,9 @@ async def process_salting(batch_id: int, salting_data: BatchSalting):
             WHERE nomenclature_id = ?
         """, new_salt_balance, SALT_ID)
         
-        # Deduct water from stock
+        # Record water usage for analytics and cost calculation only
+        # Water is taken from tap, not from stock (balance_after = 0)
         water_key = f"salting-water-{batch_id}-{salting_data.idempotency_key}"
-        new_water_balance = water_balance - salting_data.water_quantity
         
         cursor.execute("""
             INSERT INTO stock_movements (
@@ -925,20 +925,16 @@ async def process_salting(batch_id: int, salting_data: BatchSalting):
                 source_operation_type, source_operation_id,
                 idempotency_key, operation_date, metadata
             )
-            VALUES (?, 'withdrawal', ?, ?, 'production_salting', ?, ?, DATEADD(HOUR, 2, GETDATE()), ?)
-        """, WATER_ID, salting_data.water_quantity, new_water_balance, batch.batch_number, water_key,
+            VALUES (?, 'withdrawal', ?, 0, 'production_salting', ?, ?, DATEADD(HOUR, 2, GETDATE()), ?)
+        """, WATER_ID, salting_data.water_quantity, batch.batch_number, water_key,
             json.dumps({
                 'batch_id': batch_id,
                 'batch_number': batch.batch_number,
-                'step_type': 'salting'
+                'step_type': 'salting',
+                'note': 'Water from tap - recorded for cost analytics only'
             }))
         
-        cursor.execute("""
-            UPDATE stock_balances
-            SET quantity = ?,
-                last_updated = DATEADD(HOUR, 2, GETDATE())
-            WHERE nomenclature_id = ?
-        """, new_water_balance, WATER_ID)
+        # Note: We don't update stock_balances for water as it's unlimited (from tap)
         
         # Find the salting step
         cursor.execute("""
