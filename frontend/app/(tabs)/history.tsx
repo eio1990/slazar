@@ -448,6 +448,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  iconOnly: {
+    marginRight: 4,
+  },
   cardContent: {
     flex: 1,
   },
