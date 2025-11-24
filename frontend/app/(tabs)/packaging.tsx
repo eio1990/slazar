@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   filterScroll: {
     backgroundColor: '#fff',
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
