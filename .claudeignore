@@ -1,0 +1,112 @@
+# Сборочные файлы и кеш
+build/
+dist/
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+
+# Backend специфичные
+*.egg-info/
+.eggs/
+*.egg
+venv/
+env/
+ENV/
+.venv/
+
+# Frontend сборка
+.expo/
+.expo-shared/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.jsbundle
+
+# IDE и редакторы
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Логи
+*.log
+logs/
+*.log.*
+
+# Временные файлы
+tmp/
+temp/
+cache/
+.cache/
+*.tmp
+
+# Тестовые файлы и покрытие
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+coverage/
+
+# База данных (если есть локальные копии)
+*.db
+*.sqlite
+*.sqlite3
+
+# Секреты и конфигурация
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+credentials.json
+
+# Большие файлы
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.apk
+*.aab
+*.ipa
+
+# Зависимости и библиотеки
+lib/
+libs/
+vendor/
+
+# Git
+.git/
+.gitignore
+
+# Документация сборки
+Documentation/
+docs/build/
+
+# Миграции (уже применённые)
+*migration*.py
+*migration*.sql
+
+# Анализ и отчёты (временные)
+analyze*.py
+show_full_chain.py
+test_*.py
+check_*.py
+mass_operations_test.py
+
+# Backup файлы
+*.bak
+*.backup
+*.old
+
+# OS специфичные
+Thumbs.db
+desktop.ini
+
+# React Native Metro
+.metro-health-check*
