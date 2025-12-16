@@ -35,14 +35,13 @@ jobs:
       working-directory: frontend
       run: npm ci
 
+    - name: Run Expo Prebuild
+      working-directory: frontend
+      run: npx expo prebuild --platform android --clean
+
     - name: Create local.properties
       working-directory: frontend/android
       run: echo "sdk.dir=$ANDROID_HOME" > local.properties
-
-    - name: Add usesCleartextTraffic to AndroidManifest
-      working-directory: frontend
-      run: |
-        sed -i 's/<application /<application android:usesCleartextTraffic="true" /' android/app/src/main/AndroidManifest.xml
 
     - name: Build Android Release
       working-directory: frontend/android
