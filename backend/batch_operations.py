@@ -102,10 +102,11 @@ def process_batch_receipt(conn, batch_operation, get_nomenclature_precision_func
     
     # If we're here and all_or_nothing=True, all operations succeeded
     # Create master record for the batch
-    if batch_operation.all_or_nothing and not failed:
+    if batch_operation.all_or_nothing and not failed and batch_operation.operations:
+        # Save batch operation record (use first operation's nomenclature_id as reference)
         cursor.execute(
-            """INSERT INTO stock_movements 
-               (nomenclature_id, operation_type, quantity, balance_after, 
+            """INSERT INTO stock_movements
+               (nomenclature_id, operation_type, quantity, balance_after,
                 source_operation_type, source_operation_id, idempotency_key, metadata)
                VALUES (?, 'batch_receipt', ?, ?, ?, ?, ?, ?)""",
             (batch_operation.operations[0].nomenclature_id, 0, 0,
@@ -227,9 +228,10 @@ def process_batch_withdrawal(conn, batch_operation, get_nomenclature_precision_f
     
     # If we're here and all_or_nothing=True, all operations succeeded
     # Create master record for the batch
-    if batch_operation.all_or_nothing and not failed:
+    if batch_operation.all_or_nothing and not failed and batch_operation.operations:
+        # Save batch operation record (use first operation's nomenclature_id as reference)
         cursor.execute(
-            """INSERT INTO stock_movements 
+            """INSERT INTO stock_movements
                (nomenclature_id, operation_type, quantity, balance_after,
                 source_operation_type, source_operation_id, idempotency_key, metadata)
                VALUES (?, 'batch_withdrawal', ?, ?, ?, ?, ?, ?)""",

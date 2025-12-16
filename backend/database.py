@@ -11,14 +11,22 @@ MSSQL_USER = os.getenv("MSSQL_USER")
 MSSQL_PASSWORD = os.getenv("MSSQL_PASSWORD")
 MSSQL_DRIVER = os.getenv("MSSQL_DRIVER", "ODBC Driver 18 for SQL Server")
 
+# Validate required environment variables
+if not all([MSSQL_SERVER, MSSQL_DATABASE, MSSQL_USER, MSSQL_PASSWORD]):
+    raise ValueError(
+        "Missing required database configuration. "
+        "Please check MSSQL_SERVER, MSSQL_DATABASE, MSSQL_USER, MSSQL_PASSWORD in .env file"
+    )
+
 # Connection string for MS SQL Server
+# NOTE: Encrypt=no для локальної/тестової БД. Для production використовуйте Encrypt=yes
 CONNECTION_STRING = (
     f"DRIVER={{{MSSQL_DRIVER}}};"
     f"SERVER={MSSQL_SERVER};"
     f"DATABASE={MSSQL_DATABASE};"
     f"UID={MSSQL_USER};"
     f"PWD={MSSQL_PASSWORD};"
-    f"Encrypt=no;"
+    f"Encrypt=no;"  # TODO: Change to 'yes' for production with valid SSL certificate
     f"TrustServerCertificate=yes;"
     f"LoginTimeout=30;"  # Increase timeout to 30 seconds
     f"Timeout=30;"

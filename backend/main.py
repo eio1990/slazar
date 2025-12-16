@@ -146,6 +146,9 @@ async def get_nomenclature_usage_stats():
                 GROUP BY nomenclature_id
             """)
             stats = {row.nomenclature_id: row.usage_count for row in cursor.fetchall()}
+            return stats
+
+    return await run_in_threadpool(_get_stats)
 
 @app.get("/api/stock/meat-type-products")
 async def get_meat_type_products():
