@@ -39,6 +39,13 @@ jobs:
       working-directory: frontend
       run: npx expo prebuild --platform android --clean
 
+    - name: Add usesCleartextTraffic to AndroidManifest
+      working-directory: frontend/android/app/src/main
+      run: |
+        sed -i 's/<application /<application android:usesCleartextTraffic="true" /' AndroidManifest.xml
+        echo "Added usesCleartextTraffic to AndroidManifest.xml"
+        grep usesCleartextTraffic AndroidManifest.xml || echo "WARNING: usesCleartextTraffic not found!"
+
     - name: Create local.properties
       working-directory: frontend/android
       run: echo "sdk.dir=$ANDROID_HOME" > local.properties
