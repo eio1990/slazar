@@ -74,7 +74,7 @@ export default function OperationsScreen() {
       setLoading(true);
       const [nomenclatureData, statsData] = await Promise.all([
         apiService.getNomenclature(),
-        fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001'}/api/nomenclature/usage-stats`)
+        fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL || 'http://85.238.112.232:8001'}/api/nomenclature/usage-stats`)
           .then(res => res.json())
           .catch(() => ({}))
       ]);
