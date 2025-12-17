@@ -18,7 +18,8 @@
         "backgroundColor": "#4CAF50"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.slazar.warehouse"
+      "package": "com.slazar.warehouse",
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",
