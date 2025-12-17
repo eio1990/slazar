@@ -143,8 +143,9 @@ async def create_packaging_session(session_data: PackagingSessionCreate):
             
             # Генерировать номер сессии
             today = datetime.now().strftime("%d%m%Y")
+            # CRITICAL: Use WITH (UPDLOCK, HOLDLOCK) to prevent race condition when generating session_number
             cursor.execute("""
-                SELECT COUNT(*) FROM packaging_sessions 
+                SELECT COUNT(*) FROM packaging_sessions WITH (UPDLOCK, HOLDLOCK)
                 WHERE session_number LIKE ?
             """, f"PKG-{today}-%")
             count = cursor.fetchone()[0]

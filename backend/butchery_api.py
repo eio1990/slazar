@@ -183,8 +183,9 @@ async def create_butchery_operation(operation: ButcheryOperationCreate):
         
         # Генерувати номер операції
         today = datetime.now().strftime("%y%m%d")
+        # CRITICAL: Use WITH (UPDLOCK, HOLDLOCK) to prevent race condition when generating operation_number
         cursor.execute("""
-            SELECT COUNT(*) FROM butchery_operations 
+            SELECT COUNT(*) FROM butchery_operations WITH (UPDLOCK, HOLDLOCK)
             WHERE CONVERT(date, started_at) = CONVERT(date, DATEADD(HOUR, 2, GETDATE()))
         """)
         count = cursor.fetchone()[0] + 1

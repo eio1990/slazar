@@ -324,12 +324,13 @@ async def create_batch(batch_data: BatchCreate):
                 break
         
         # Count existing batches for today with this product code
+        # CRITICAL: Use WITH (UPDLOCK, HOLDLOCK) to prevent race condition when generating batch_number
         cursor.execute("""
-            SELECT COUNT(*) FROM batches 
+            SELECT COUNT(*) FROM batches WITH (UPDLOCK, HOLDLOCK)
             WHERE batch_number LIKE ?
         """, f"{product_code}-{today}%")
         count = cursor.fetchone()[0] + 1
-        
+
         batch_number = f"{product_code}-{today}-{count}"
         
         # Create batch
