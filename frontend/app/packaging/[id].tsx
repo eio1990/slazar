@@ -14,7 +14,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://85.238.112.232:8001';
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
 export default function PackagingSessionDetailScreen() {
   const router = useRouter();
@@ -28,7 +28,8 @@ export default function PackagingSessionDetailScreen() {
   // Output form state
   const [selectedSKU, setSelectedSKU] = useState<any>(null);
   const [packedQty, setPackedQty] = useState('');
-  const [defectQty, setDefectQty] = useState('0');
+  const [defectQty, setDefectQty] = useState('0'); // DEPRECATED - залишаємо для сумісності
+  const [materialDefects, setMaterialDefects] = useState<{[key: string]: number}>({}); // {material_id: defect_count}
   const [outputNotes, setOutputNotes] = useState('');
 
   // Remainder form state
@@ -97,12 +98,13 @@ export default function PackagingSessionDetailScreen() {
       setSelectedSKU(null);
       setPackedQty('');
       setDefectQty('0');
+      setMaterialDefects({}); // Скидаємо брак матеріалів
       setOutputNotes('');
-      
+
       const materialsInfo = data.materials_used
         ?.map((m: any) => `${m.material_name}: ${m.quantity} ${m.unit}`)
         .join('\n');
-      
+
       Alert.alert('Успіх', `Вихід додано!\n\nЗафасовано: ${data.quantity_packed} шт\n\nМатеріали списано:\n${materialsInfo}`);
     },
     onError: (error: any) => {
@@ -201,16 +203,34 @@ export default function PackagingSessionDetailScreen() {
       return;
     }
 
-    const defect = parseInt(defectQty);
-    if (isNaN(defect) || defect < 0) {
-      Alert.alert('Помилка', 'Введіть коректну кількість браку');
-      return;
+    // Формуємо confirmed_materials з урахуванням браку
+    const confirmedMaterials: any = {};
+    let hasDefects = false;
+
+    if (selectedSKU.materials && selectedSKU.materials.length > 0) {
+      selectedSKU.materials.forEach((mat: any) => {
+        const materialId = mat.material_id.toString();
+        const calculatedQty = mat.quantity_per_unit * qty;
+        const defectCount = materialDefects[materialId] || 0;
+        const actualUsed = calculatedQty + (mat.quantity_per_unit * defectCount);
+
+        if (defectCount > 0) {
+          hasDefects = true;
+        }
+
+        confirmedMaterials[materialId] = {
+          calculated: calculatedQty,
+          actual_used: actualUsed,
+          defect: defectCount,
+        };
+      });
     }
 
     const outputData = {
       target_product_id: selectedSKU.target_product_id,
       quantity_packed: qty,
-      defect_quantity: defect,
+      defect_quantity: 0, // DEPRECATED - більше не використовується
+      confirmed_materials: hasDefects ? confirmedMaterials : null,
       notes: outputNotes || null,
     };
 
@@ -470,6 +490,7 @@ export default function PackagingSessionDetailScreen() {
                       setSelectedSKU(recipe);
                       setPackedQty('');
                       setDefectQty('0');
+                      setMaterialDefects({}); // Скидаємо брак при зміні SKU
                     }}
                   >
                     <Text style={[
@@ -509,16 +530,47 @@ export default function PackagingSessionDetailScreen() {
                   />
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Брак (шт)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={defectQty}
-                    onChangeText={setDefectQty}
-                    placeholder="0"
-                    keyboardType="number-pad"
-                  />
-                </View>
+                {/* Брак матеріалів */}
+                {selectedSKU.materials && selectedSKU.materials.length > 0 && (
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Брак матеріалів (за потреби)</Text>
+                    <View style={styles.defectMaterialsContainer}>
+                      {selectedSKU.materials.map((mat: any) => {
+                        const materialId = mat.material_id.toString();
+                        const currentDefect = materialDefects[materialId] || 0;
+
+                        return (
+                          <View key={materialId} style={styles.defectMaterialRow}>
+                            <View style={styles.defectMaterialInfo}>
+                              <Text style={styles.defectMaterialName}>{mat.material_name}</Text>
+                              <Text style={styles.defectMaterialUnit}>({mat.unit})</Text>
+                            </View>
+                            <View style={styles.defectInputContainer}>
+                              <TouchableOpacity
+                                style={styles.defectButton}
+                                onPress={() => {
+                                  const newValue = Math.max(0, currentDefect - 1);
+                                  setMaterialDefects(prev => ({...prev, [materialId]: newValue}));
+                                }}
+                              >
+                                <MaterialCommunityIcons name="minus" size={20} color="#666" />
+                              </TouchableOpacity>
+                              <Text style={styles.defectValue}>{currentDefect}</Text>
+                              <TouchableOpacity
+                                style={styles.defectButton}
+                                onPress={() => {
+                                  setMaterialDefects(prev => ({...prev, [materialId]: currentDefect + 1}));
+                                }}
+                              >
+                                <MaterialCommunityIcons name="plus" size={20} color="#666" />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Примітки</Text>
@@ -597,7 +649,7 @@ export default function PackagingSessionDetailScreen() {
 
               <Text style={styles.inputLabel}>Оберіть номенклатуру *</Text>
               <ScrollView style={styles.skuList} nestedScrollEnabled>
-                {nomenclature?.filter((n: any) => n.category === 'Спеції' || n.name.includes('Залишки')).map((nom: any) => (
+                {nomenclature?.filter((n: any) => n.id === session?.source_product_id).map((nom: any) => (
                   <TouchableOpacity
                     key={nom.id}
                     style={[
@@ -1118,5 +1170,77 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  modalBody: {
+    padding: 16,
+  },
+  skuList: {
+    maxHeight: 200,
+    marginBottom: 16,
+  },
+  defectMaterialsContainer: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  defectMaterialRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e8e8e8',
+  },
+  defectMaterialInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  defectMaterialName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  defectMaterialUnit: {
+    fontSize: 13,
+    color: '#666',
+  },
+  defectInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  defectButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#e8e8e8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  defectValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    minWidth: 30,
+    textAlign: 'center',
   },
 });

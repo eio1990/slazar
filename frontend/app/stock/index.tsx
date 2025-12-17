@@ -17,7 +17,7 @@ import { apiService, checkNetworkConnectivity } from '../../services/api';
 import NetInfo from '@react-native-community/netinfo';
 import Toast from 'react-native-toast-message';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://85.238.112.232:8001';
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
 export default function StockScreen() {
   const router = useRouter();
@@ -423,15 +423,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    minHeight: 60,
+    maxHeight: 60,
   },
   categoryButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#bbb',
     alignItems: 'center',
-    minWidth: 80,
+    minWidth: 90,
+    backgroundColor: '#e8e8e8',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   categoryButtonActive: {
     backgroundColor: '#4CAF50',
@@ -443,9 +451,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   categoryButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#666',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#333',
   },
   categoryButtonTextActive: {
     color: '#fff',
@@ -454,7 +462,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   scrollableFilters: {
-    flex: 1,
+    flexShrink: 1,
     maxHeight: 44,
   },
   scrollableFiltersContent: {
@@ -463,13 +471,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     marginRight: 8,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderRadius: 22,
+    backgroundColor: '#e8e8e8',
+    borderWidth: 2,
+    borderColor: '#bbb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   categoryChipActive: {
     backgroundColor: '#4CAF50',
@@ -481,9 +494,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   categoryChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#666',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#333',
   },
   categoryChipTextActive: {
     color: '#fff',
@@ -497,6 +510,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    minHeight: 70,
+    maxHeight: 70,
   },
   filterLabel: {
     fontSize: 14,
@@ -506,6 +521,7 @@ const styles = StyleSheet.create({
   },
   filterScroll: {
     flexGrow: 0,
+    maxHeight: 44,
   },
   filterChip: {
     paddingHorizontal: 16,

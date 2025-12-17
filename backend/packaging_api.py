@@ -448,10 +448,30 @@ async def add_packaging_output(session_id: int, output_data: PackagingSessionOut
                 })
             
             # Использовать confirmed_materials если оператор скорректировал (брак)
-            materials_to_use = calculated_materials
+            # confirmed_materials - это словарь {material_id: {"calculated": X, "actual_used": Y, "defect": Z}}
+            materials_to_use = []
+
             if output_data.confirmed_materials:
-                # TODO: здесь можно добавить логику корректировки
-                pass
+                # Оператор подтвердил/скорректировал материалы с учетом брака
+                for calc_mat in calculated_materials:
+                    mat_id_str = str(calc_mat['material_id'])
+                    if mat_id_str in output_data.confirmed_materials:
+                        confirmed = output_data.confirmed_materials[mat_id_str]
+                        # Используем actual_used (calculated + defect)
+                        actual_qty = confirmed.get('actual_used', calc_mat['quantity'])
+                        materials_to_use.append({
+                            'material_id': calc_mat['material_id'],
+                            'material_name': calc_mat['material_name'],
+                            'quantity': actual_qty,
+                            'unit': calc_mat['unit'],
+                            'material_type': calc_mat['material_type']
+                        })
+                    else:
+                        # Материал не был скорректирован, используем расчетное значение
+                        materials_to_use.append(calc_mat)
+            else:
+                # Нет корректировок, используем расчетные значения
+                materials_to_use = calculated_materials
             
             # Проверить доступность материалов
             for material in materials_to_use:

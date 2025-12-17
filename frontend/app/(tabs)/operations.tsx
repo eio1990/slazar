@@ -74,7 +74,7 @@ export default function OperationsScreen() {
       setLoading(true);
       const [nomenclatureData, statsData] = await Promise.all([
         apiService.getNomenclature(),
-        fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL || 'http://85.238.112.232:8001'}/api/nomenclature/usage-stats`)
+        fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001'}/api/nomenclature/usage-stats`)
           .then(res => res.json())
           .catch(() => ({}))
       ]);
@@ -714,6 +714,8 @@ const styles = StyleSheet.create({
   categoryFilterScroll: {
     backgroundColor: '#fff',
     paddingVertical: 8,
+    maxHeight: 60,
+    flexGrow: 0,
   },
   categoryFilterRow: {
     flexDirection: 'row',
@@ -752,22 +754,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     marginRight: 8,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderRadius: 22,
+    backgroundColor: '#e8e8e8',
+    borderWidth: 2,
+    borderColor: '#bbb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   categoryChipActive: {
     backgroundColor: '#4CAF50',
     borderColor: '#4CAF50',
   },
   categoryChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#666',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#333',
   },
   categoryChipTextActive: {
     color: '#fff',

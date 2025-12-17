@@ -5,31 +5,31 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Database connection settings
+# NOTE: To allow connections from other networks, ensure MS SQL Server is configured to:
+# 1. Accept remote connections (SQL Server Configuration Manager -> SQL Server Network Configuration -> TCP/IP enabled)
+# 2. Firewall allows port 14330 for incoming connections
+# 3. SQL Server Authentication is enabled (not just Windows Authentication)
+# 4. User llm_user has proper permissions
 MSSQL_SERVER = os.getenv("MSSQL_SERVER")
 MSSQL_DATABASE = os.getenv("MSSQL_DATABASE")
 MSSQL_USER = os.getenv("MSSQL_USER")
 MSSQL_PASSWORD = os.getenv("MSSQL_PASSWORD")
 MSSQL_DRIVER = os.getenv("MSSQL_DRIVER", "ODBC Driver 18 for SQL Server")
 
-# Validate required environment variables
-if not all([MSSQL_SERVER, MSSQL_DATABASE, MSSQL_USER, MSSQL_PASSWORD]):
-    raise ValueError(
-        "Missing required database configuration. "
-        "Please check MSSQL_SERVER, MSSQL_DATABASE, MSSQL_USER, MSSQL_PASSWORD in .env file"
-    )
-
 # Connection string for MS SQL Server
-# NOTE: Encrypt=no для локальної/тестової БД. Для production використовуйте Encrypt=yes
+# Added charset=UTF-8 to properly handle Cyrillic characters
 CONNECTION_STRING = (
     f"DRIVER={{{MSSQL_DRIVER}}};"
     f"SERVER={MSSQL_SERVER};"
     f"DATABASE={MSSQL_DATABASE};"
     f"UID={MSSQL_USER};"
     f"PWD={MSSQL_PASSWORD};"
-    f"Encrypt=no;"  # TODO: Change to 'yes' for production with valid SSL certificate
+    f"Encrypt=no;"
     f"TrustServerCertificate=yes;"
     f"LoginTimeout=30;"  # Increase timeout to 30 seconds
     f"Timeout=30;"
+    f"charset=UTF-8;"
 )
 
 @contextmanager
