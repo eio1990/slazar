@@ -15,17 +15,20 @@ export default function TabLayout() {
           tabBarInactiveTintColor: '#333',
           tabBarStyle: {
             backgroundColor: '#fff',
-        borderTopWidth: 2,
-        borderTopColor: '#4CAF50',
-            borderTopWidth: 1,
-            borderTopColor: '#e0e0e0',
-            height: Platform.OS === 'ios' ? 88 : 64,
-            paddingBottom: Platform.OS === 'ios' ? 32 : 8,
-            paddingTop: 8,
+            borderTopWidth: 2,
+            borderTopColor: '#4CAF50',
+            height: Platform.OS === 'ios' ? 88 : 70,
+            paddingBottom: Platform.OS === 'ios' ? 32 : 12,
+            paddingTop: 10,
+            elevation: 8,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
           },
           tabBarLabelStyle: {
-            fontSize: 12,
-            fontWeight: '600',
+            fontSize: 13,
+            fontWeight: '700',
           },
           headerStyle: {
             backgroundColor: '#4CAF50',
@@ -50,8 +53,8 @@ export default function TabLayout() {
           options={{
             title: 'Операції',
             href: '/(tabs)/operations',
-            tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="swap-horizontal" size={size} color={color} />
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons name="swap-horizontal" size={26} color={color} />
             ),
           }}
         />
@@ -60,8 +63,8 @@ export default function TabLayout() {
           options={{
             title: 'Обробка',
             href: '/(tabs)/butchery',
-            tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="knife" size={size} color={color} />
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons name="knife" size={26} color={color} />
             ),
           }}
         />
@@ -70,8 +73,8 @@ export default function TabLayout() {
           options={{
             title: 'Виробництво',
             href: '/(tabs)/production',
-            tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="factory" size={size} color={color} />
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons name="factory" size={26} color={color} />
             ),
           }}
         />
@@ -80,8 +83,8 @@ export default function TabLayout() {
           options={{
             title: 'Фасування',
             href: '/(tabs)/packaging',
-            tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="package-variant-closed" size={size} color={color} />
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons name="package-variant-closed" size={26} color={color} />
             ),
           }}
         />
