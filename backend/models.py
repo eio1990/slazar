@@ -284,3 +284,94 @@ class PackagingBatchComplete(BaseModel):
     final_waste: float
     notes: Optional[str] = None
     idempotency_key: str
+
+
+# ============================================================================
+# COSTING MODELS
+# ============================================================================
+
+class NomenclatureCost(BaseModel):
+    """Середньозважена собівартість номенклатури"""
+    nomenclature_id: int
+    weighted_avg_cost: float
+    last_purchase_cost: Optional[float] = None
+    total_quantity: float
+    total_value: float
+    last_updated: datetime
+
+class NomenclatureCostUpdate(BaseModel):
+    """Оновлення собівартості при приходу товару"""
+    nomenclature_id: int
+    quantity: float
+    purchase_cost: float
+
+class ButcheryOperationCost(BaseModel):
+    """Калькуляція розділки зі СТЕКОМ"""
+    id: int
+    operation_id: int
+
+    # Вхідна сировина
+    input_nomenclature_id: int
+    input_weight: float
+    input_cost_per_kg: float
+    input_total_cost: float
+
+    # Вихід
+    total_output_weight: float
+    semifinished_weight: float
+    waste_weight: float
+
+    # Стек (усушка/вихід води)
+    shrinkage_weight: float
+    shrinkage_percent: float
+
+    # Скоригована собівартість
+    adjusted_cost_per_kg: float
+
+    calculated_at: datetime
+
+class BatchCost(BaseModel):
+    """Калькуляція виробництва"""
+    batch_id: int
+
+    # Собівартість сировини та матеріалів
+    raw_materials_cost: float
+    salt_cost: float
+    spices_cost: float
+    casings_cost: float
+    other_materials_cost: float
+
+    # Підсумки
+    total_cost: float
+    final_weight: float
+    cost_per_kg: float
+
+    # Втрати
+    shrinkage_weight: float
+    shrinkage_percent: float
+
+    calculated_at: datetime
+    updated_at: datetime
+
+class PackagingBatchCost(BaseModel):
+    """Калькуляція фасування"""
+    packaging_batch_id: int
+
+    # Собівартість вагової продукції
+    source_product_cost: float
+    source_product_total: float
+
+    # Собівартість матеріалів
+    packaging_materials_cost: float
+
+    # Підсумки
+    total_cost: float
+    packed_quantity: int
+    cost_per_unit: float
+
+    # Втрати
+    waste_weight: float
+    waste_cost: float
+
+    calculated_at: datetime
+    updated_at: datetime

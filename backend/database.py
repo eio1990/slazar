@@ -495,6 +495,131 @@ def init_database():
             FOREIGN KEY (movement_id) REFERENCES stock_movements(id)
         )
         """)
-        
+
+        # ========== COSTING MODULE TABLES ==========
+
+        # Create nomenclature_costs table (середньозважена собівартість)
+        cursor.execute("""
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='nomenclature_costs' AND xtype='U')
+        CREATE TABLE nomenclature_costs (
+            nomenclature_id INT PRIMARY KEY,
+            weighted_avg_cost DECIMAL(18, 4) NOT NULL DEFAULT 0,
+            last_purchase_cost DECIMAL(18, 4),
+            total_quantity DECIMAL(18, 6) NOT NULL DEFAULT 0,
+            total_value DECIMAL(18, 4) NOT NULL DEFAULT 0,
+            last_updated DATETIME2 DEFAULT GETUTCDATE(),
+            FOREIGN KEY (nomenclature_id) REFERENCES nomenclature(id)
+        )
+        """)
+
+        # Create butchery_operation_costs table (калькуляція розділки зі стеком)
+        cursor.execute("""
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='butchery_operation_costs' AND xtype='U')
+        CREATE TABLE butchery_operation_costs (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            operation_id INT NOT NULL UNIQUE,
+
+            -- Вхідна сировина
+            input_nomenclature_id INT NOT NULL,
+            input_weight DECIMAL(18, 6) NOT NULL,
+            input_cost_per_kg DECIMAL(18, 4) NOT NULL,
+            input_total_cost DECIMAL(18, 4) NOT NULL,
+
+            -- Вихід
+            total_output_weight DECIMAL(18, 6) NOT NULL,      -- Сума полуфабрикатів + відходів
+            semifinished_weight DECIMAL(18, 6) NOT NULL,      -- Тільки полуфабрикати (без відходів)
+            waste_weight DECIMAL(18, 6) NOT NULL,             -- Відходи
+
+            -- Стек (усушка/вихід води)
+            shrinkage_weight DECIMAL(18, 6) NOT NULL,         -- input_weight - total_output_weight
+            shrinkage_percent DECIMAL(5, 2) NOT NULL,
+
+            -- Скоригована собівартість
+            adjusted_cost_per_kg DECIMAL(18, 4) NOT NULL,     -- З урахуванням стека
+
+            calculated_at DATETIME2 DEFAULT GETUTCDATE(),
+
+            FOREIGN KEY (input_nomenclature_id) REFERENCES nomenclature(id)
+        )
+        """)
+
+        # Create batch_costs table (калькуляція виробництва)
+        cursor.execute("""
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='batch_costs' AND xtype='U')
+        CREATE TABLE batch_costs (
+            batch_id INT NOT NULL UNIQUE,
+
+            -- Собівартість сировини та матеріалів
+            raw_materials_cost DECIMAL(18, 4) NOT NULL DEFAULT 0,
+            salt_cost DECIMAL(18, 4) NOT NULL DEFAULT 0,
+            spices_cost DECIMAL(18, 4) NOT NULL DEFAULT 0,
+            casings_cost DECIMAL(18, 4) NOT NULL DEFAULT 0,
+            other_materials_cost DECIMAL(18, 4) NOT NULL DEFAULT 0,
+
+            -- Підсумки
+            total_cost DECIMAL(18, 4) NOT NULL DEFAULT 0,
+            final_weight DECIMAL(18, 6) NOT NULL DEFAULT 0,
+            cost_per_kg DECIMAL(18, 4) NOT NULL DEFAULT 0,
+
+            -- Втрати
+            shrinkage_weight DECIMAL(18, 6) NOT NULL DEFAULT 0,
+            shrinkage_percent DECIMAL(5, 2) NOT NULL DEFAULT 0,
+
+            calculated_at DATETIME2 DEFAULT GETUTCDATE(),
+            updated_at DATETIME2 DEFAULT GETUTCDATE(),
+
+            FOREIGN KEY (batch_id) REFERENCES batches(id) ON DELETE CASCADE
+        )
+        """)
+
+        # Create packaging_batch_costs table (калькуляція фасування)
+        cursor.execute("""
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='packaging_batch_costs' AND xtype='U')
+        CREATE TABLE packaging_batch_costs (
+            packaging_batch_id INT NOT NULL UNIQUE,
+
+            -- Собівартість вагової продукції
+            source_product_cost DECIMAL(18, 4) NOT NULL DEFAULT 0,
+            source_product_total DECIMAL(18, 4) NOT NULL DEFAULT 0,
+
+            -- Собівартість матеріалів
+            packaging_materials_cost DECIMAL(18, 4) NOT NULL DEFAULT 0,
+
+            -- Підсумки
+            total_cost DECIMAL(18, 4) NOT NULL DEFAULT 0,
+            packed_quantity INT NOT NULL DEFAULT 0,
+            cost_per_unit DECIMAL(18, 4) NOT NULL DEFAULT 0,
+
+            -- Втрати
+            waste_weight DECIMAL(18, 6) NOT NULL DEFAULT 0,
+            waste_cost DECIMAL(18, 4) NOT NULL DEFAULT 0,
+
+            calculated_at DATETIME2 DEFAULT GETUTCDATE(),
+            updated_at DATETIME2 DEFAULT GETUTCDATE(),
+
+            FOREIGN KEY (packaging_batch_id) REFERENCES packaging_batches(id) ON DELETE CASCADE
+        )
+        """)
+
+        # Add cost columns to stock_movements if not exist
+        cursor.execute("""
+        IF EXISTS (SELECT * FROM sysobjects WHERE name='stock_movements' AND xtype='U')
+        BEGIN
+            IF NOT EXISTS (SELECT * FROM sys.columns
+                          WHERE object_id = OBJECT_ID('stock_movements')
+                          AND name = 'cost_per_unit')
+            BEGIN
+                ALTER TABLE stock_movements ADD cost_per_unit DECIMAL(18, 4)
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.columns
+                          WHERE object_id = OBJECT_ID('stock_movements')
+                          AND name = 'total_cost')
+            BEGIN
+                ALTER TABLE stock_movements ADD total_cost DECIMAL(18, 4)
+            END
+        END
+        """)
+
         conn.commit()
         print("Database schema initialized successfully")

@@ -18,6 +18,7 @@ from production_api import router as production_router
 from packaging_api import router as packaging_router
 from butchery_api import router as butchery_router
 from inventory_api import router as inventory_router
+from costing_api import router as costing_router
 
 load_dotenv()
 
@@ -28,6 +29,7 @@ app.include_router(production_router)
 app.include_router(packaging_router)
 app.include_router(butchery_router, prefix="/api")
 app.include_router(inventory_router)
+app.include_router(costing_router)
 
 # CORS middleware
 app.add_middleware(
