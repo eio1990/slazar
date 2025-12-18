@@ -290,6 +290,199 @@ http://[твій_публічний_IP]:8001/api/health
 
 2. Або використати локальний IP в налаштуваннях Expo
 
+### Проблема: Працює локально і з локальної мережі, але НЕ працює з інших мереж
+
+**Симптоми:**
+- ✅ `curl http://localhost:8001/api/health` працює
+- ✅ `curl http://10.100.0.60:8001/api/health` працює з локальної мережі
+- ❌ З мобільного інтернету або іншого WiFi не працює
+
+**Діагностика:**
+
+#### 1. Перевірити чи SQL Server приймає віддалені підключення
+
+Відкрити **SQL Server Configuration Manager**:
+
+```
+Start → SQL Server 2022 → SQL Server Configuration Manager
+```
+
+1. **SQL Server Network Configuration → Protocols for MSSQLSERVER**
+   - Перевірити що **TCP/IP** = **Enabled**
+   - Якщо Disabled - клікнути правою кнопкою → Enable → перезапустити SQL Server
+
+2. **TCP/IP Properties → IP Addresses → IPAll**
+   - TCP Dynamic Ports: **має бути ПУСТИМ**
+   - TCP Port: **14330**
+
+3. **SQL Server Services**
+   - Перевірити що **SQL Server (MSSQLSERVER)** = **Running**
+   - Перевірити що **SQL Server Browser** = **Running** (необов'язково для статичного порту)
+
+#### 2. Перевірити SQL Server Authentication Mode
+
+Відкрити **SQL Server Management Studio (SSMS)** та підключитися до сервера.
+
+Виконати:
+```sql
+-- Перевірити режим аутентифікації
+EXEC xp_instance_regread
+    N'HKEY_LOCAL_MACHINE',
+    N'Software\Microsoft\MSSQLServer\MSSQLServer',
+    N'LoginMode'
+```
+
+Повинно повернути **2** (Mixed Mode - Windows + SQL Server Authentication).
+
+Якщо повертає **1** - треба включити Mixed Mode:
+
+1. SSMS → Правою кнопкою на сервер → Properties
+2. Security → Server authentication → **SQL Server and Windows Authentication mode**
+3. OK → перезапустити SQL Server
+
+#### 3. Перевірити що llm_user має права для remote connections
+
+```sql
+-- Перевірити логін
+SELECT name, type_desc, is_disabled
+FROM sys.server_principals
+WHERE name = 'llm_user';
+
+-- Перевірити доступ до БД
+SELECT
+    dp.name as UserName,
+    dp.type_desc,
+    dp.default_schema_name
+FROM SLAZAR_DB.sys.database_principals dp
+WHERE dp.name = 'llm_user';
+
+-- Надати права (якщо потрібно)
+USE SLAZAR_DB;
+GRANT CONNECT TO llm_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::dbo TO llm_user;
+```
+
+#### 4. Перевірити Port Forwarding на роутері
+
+Проблема: **Firewall на Windows OK, але роутер блокує зовнішні підключення**
+
+**Крок 1: Дізнатися Gateway (IP роутера)**
+```bash
+ipconfig | findstr "Default Gateway"
+```
+
+Звичайно це `192.168.0.1`, `192.168.1.1` або `10.100.0.1`
+
+**Крок 2: Зайти в роутер**
+
+Відкрити браузер та ввести IP роутера. Логін/пароль зазвичай:
+- admin / admin
+- admin / password
+- admin / (пустий)
+
+**Крок 3: Знайти Port Forwarding**
+
+Різні роутери мають різні назви:
+- Port Forwarding
+- Virtual Server
+- NAT
+- Port Mapping
+- Applications & Gaming
+
+**Крок 4: Додати правила**
+
+| Service Name | External Port | Internal IP | Internal Port | Protocol |
+|--------------|---------------|-------------|---------------|----------|
+| SLAZAR Backend | 8001 | 10.100.0.60 | 8001 | TCP |
+| SQL Server | 14330 | 10.100.0.60 | 14330 | TCP |
+
+**Крок 5: Зберегти та перезавантажити роутер**
+
+#### 5. Перевірити публічний IP та провайдера
+
+**Отримати публічний IP:**
+```bash
+curl https://api.ipify.org
+```
+
+Або відкрити в браузері: https://whatismyip.com
+
+**⚠️ ВАЖЛИВО:**
+
+Деякі провайдери використовують **CGNAT (Carrier-Grade NAT)**:
+- Ваш "публічний" IP насправді спільний для багатьох користувачів
+- Port forwarding НЕ ПРАЦЮВАТИМЕ
+- Треба замовляти у провайдера **статичний публічний IP**
+
+Перевірити чи CGNAT:
+```bash
+# На Windows запустити
+ipconfig
+```
+
+Дивися на "Default Gateway". Якщо це починається з:
+- `100.64.0.0` - `100.127.255.255` → **CGNAT** (не працюватиме)
+- `10.0.0.0` - `10.255.255.255` → приватна мережа (нормально)
+- `192.168.0.0` - `192.168.255.255` → приватна мережа (нормально)
+
+#### 6. Тест підключення з зовнішньої мережі
+
+**Спосіб 1: З телефону (вимкнути WiFi, використати мобільний інтернет)**
+```
+http://[публічний_IP]:8001/api/health
+```
+
+**Спосіб 2: Використати онлайн сервіс перевірки портів**
+- https://www.yougetsignal.com/tools/open-ports/
+- Ввести публічний IP
+- Ввести порт 8001
+- Check → повинно показати "Open"
+
+**Спосіб 3: З іншого комп'ютера в іншій мережі**
+```bash
+telnet [публічний_IP] 8001
+```
+
+#### 7. Альтернативні рішення (якщо port forwarding не працює)
+
+**Варіант 1: Ngrok (швидке рішення для тестування)**
+```bash
+# Встановити ngrok
+choco install ngrok
+
+# Запустити тунель
+ngrok http 8001
+```
+
+Отримаєте публічний URL типу `https://abc123.ngrok.io` який можна використовувати замість IP.
+
+**Варіант 2: CloudFlare Tunnel (безкоштовно, безпечніше)**
+```bash
+# Встановити cloudflared
+choco install cloudflared
+
+# Створити тунель
+cloudflared tunnel --url http://localhost:8001
+```
+
+**Варіант 3: Tailscale VPN (найбезпечніше для production)**
+- Створити безкоштовний акаунт на https://tailscale.com
+- Встановити на сервер та на мобільний
+- Підключатися через приватну VPN мережу
+
+#### 8. Швидкий тест: Чи проблема в SQL Server чи в backend?
+
+**Запустити простий Python HTTP сервер на порту 8001:**
+```bash
+cd /c/slazar
+python -m http.server 8001
+```
+
+Спробувати підключитися з зовнішньої мережі до `http://[публічний_IP]:8001`
+
+- Якщо працює → проблема в backend або SQL Server
+- Якщо не працює → проблема в роутері або провайдері (port forwarding/CGNAT)
+
 ---
 
 ## 📝 Приклад повного процесу
