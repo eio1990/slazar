@@ -92,3 +92,4 @@ slazar-initial.tar.gz
 # Environment files
 *.env
 *.env.*
+frontend/.metro-cache/
