@@ -527,11 +527,40 @@ async def complete_butchery_operation(operation_id: int, completion: ButcheryOpe
         """, completion.notes, operation_id)
         
         conn.commit()
-        
-        return {
-            "message": "Розділку завершено успішно",
-            "operation_id": operation_id,
-            "operation_number": operation_number,
-            "outputs_count": len(completion.outputs),
-            "total_output_weight": total_output
-        }
+
+        # Розрахувати собівартість після завершення операції
+        from costing_api import calculate_butchery_cost
+        try:
+            costing_result = await calculate_butchery_cost(operation_id)
+
+            # Додати інформацію про собівартість до відповіді
+            return {
+                "message": "Розділку завершено успішно",
+                "operation_id": operation_id,
+                "operation_number": operation_number,
+                "outputs_count": len(completion.outputs),
+                "total_output_weight": total_output,
+                "costing": {
+                    "input_cost_per_kg": costing_result.input_cost_per_kg,
+                    "adjusted_cost_per_kg": costing_result.adjusted_cost_per_kg,
+                    "shrinkage_weight": costing_result.shrinkage_weight,
+                    "shrinkage_percent": costing_result.shrinkage_percent,
+                    "cost_increase_percent": (
+                        ((costing_result.adjusted_cost_per_kg - costing_result.input_cost_per_kg)
+                         / costing_result.input_cost_per_kg * 100)
+                        if costing_result.input_cost_per_kg > 0 else 0
+                    )
+                }
+            }
+        except Exception as e:
+            # Якщо калькуляція не вдалась, все одно повернути успіх операції
+            # але без інформації про собівартість
+            print(f"Помилка розрахунку собівартості: {str(e)}")
+            return {
+                "message": "Розділку завершено успішно",
+                "operation_id": operation_id,
+                "operation_number": operation_number,
+                "outputs_count": len(completion.outputs),
+                "total_output_weight": total_output,
+                "costing_error": str(e)
+            }
