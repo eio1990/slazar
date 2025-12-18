@@ -17,6 +17,7 @@ from models import (
 from production_api import router as production_router
 from packaging_api import router as packaging_router
 from butchery_api import router as butchery_router
+from inventory_api import router as inventory_router
 
 load_dotenv()
 
@@ -26,6 +27,7 @@ app = FastAPI(title="Склад API")
 app.include_router(production_router)
 app.include_router(packaging_router)
 app.include_router(butchery_router, prefix="/api")
+app.include_router(inventory_router)
 
 # CORS middleware
 app.add_middleware(
@@ -448,133 +450,6 @@ async def get_movements(
                 for row in rows
             ]
     return await run_in_threadpool(_get)
-
-@app.post("/api/stock/inventory/start", response_model=InventorySession)
-async def start_inventory(session: InventorySessionCreate):
-    """Почати інвентаризацію"""
-    def _start():
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Check idempotency
-            cursor.execute(
-                "SELECT id FROM inventory_sessions WHERE idempotency_key = ?",
-                (session.idempotency_key,)
-            )
-            existing = cursor.fetchone()
-            if existing:
-                cursor.execute(
-                    "SELECT id, session_type, status, started_at, completed_at, idempotency_key, metadata FROM inventory_sessions WHERE id = ?",
-                    (existing[0],)
-                )
-                row = cursor.fetchone()
-                return InventorySession(
-                    id=row[0],
-                    session_type=row[1],
-                    status=row[2],
-                    started_at=row[3],
-                    completed_at=row[4],
-                    idempotency_key=row[5],
-                    metadata=row[6]
-                )
-            
-            metadata_json = json.dumps(session.metadata) if session.metadata else None
-            cursor.execute(
-                """INSERT INTO inventory_sessions (session_type, status, idempotency_key, metadata)
-                   OUTPUT INSERTED.id VALUES (?, 'in_progress', ?, ?)""",
-                (session.session_type, session.idempotency_key, metadata_json)
-            )
-            new_id = cursor.fetchone()[0]
-            conn.commit()
-            
-            cursor.execute(
-                "SELECT id, session_type, status, started_at, completed_at, idempotency_key, metadata FROM inventory_sessions WHERE id = ?",
-                (new_id,)
-            )
-            row = cursor.fetchone()
-            return InventorySession(
-                id=row[0],
-                session_type=row[1],
-                status=row[2],
-                started_at=row[3],
-                completed_at=row[4],
-                idempotency_key=row[5],
-                metadata=row[6]
-            )
-    return await run_in_threadpool(_start)
-
-@app.post("/api/stock/inventory/complete")
-async def complete_inventory(inventory: InventoryComplete):
-    """Завершити інвентаризацію"""
-    def _complete():
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Check if session exists and is in progress
-            cursor.execute(
-                "SELECT status FROM inventory_sessions WHERE id = ?",
-                (inventory.session_id,)
-            )
-            session_row = cursor.fetchone()
-            if not session_row:
-                raise HTTPException(status_code=404, detail="Сесія інвентаризації не знайдена")
-            
-            if session_row[0] == 'completed':
-                return {"status": "already_completed", "message": "Інвентаризація вже завершена"}
-            
-            adjustments = []
-            
-            for item in inventory.items:
-                precision = get_nomenclature_precision(conn, item.nomenclature_id)
-                system_quantity = get_current_balance(conn, item.nomenclature_id)
-                actual_quantity = round_quantity(item.actual_quantity, precision)
-                difference = round_quantity(actual_quantity - system_quantity, precision)
-                
-                # Save inventory item
-                cursor.execute(
-                    """INSERT INTO inventory_items 
-                       (session_id, nomenclature_id, system_quantity, actual_quantity, difference)
-                       VALUES (?, ?, ?, ?, ?)""",
-                    (inventory.session_id, item.nomenclature_id, system_quantity, actual_quantity, difference)
-                )
-                
-                # If there's a difference, create adjustment movement
-                if difference != 0:
-                    operation_type = 'inventory_adjustment_receipt' if difference > 0 else 'inventory_adjustment_withdrawal'
-                    movement_key = f"{inventory.idempotency_key}_adj_{item.nomenclature_id}"
-                    
-                    cursor.execute(
-                        """INSERT INTO stock_movements 
-                           (nomenclature_id, operation_type, quantity, balance_after, idempotency_key, metadata)
-                           VALUES (?, ?, ?, ?, ?, ?)""",
-                        (item.nomenclature_id, abs(difference), actual_quantity, movement_key,
-                         json.dumps({"inventory_session_id": inventory.session_id}))
-                    )
-                    
-                    # Update balance
-                    update_balance(conn, item.nomenclature_id, actual_quantity)
-                    
-                    adjustments.append({
-                        "nomenclature_id": item.nomenclature_id,
-                        "difference": difference,
-                        "system_quantity": system_quantity,
-                        "actual_quantity": actual_quantity
-                    })
-            
-            # Mark session as completed
-            cursor.execute(
-                "UPDATE inventory_sessions SET status = 'completed', completed_at = DATEADD(HOUR, 2, GETDATE()) WHERE id = ?",
-                (inventory.session_id,)
-            )
-            
-            conn.commit()
-            return {
-                "status": "success",
-                "message": "Інвентаризацію завершено",
-                "adjustments_count": len(adjustments),
-                "adjustments": adjustments
-            }
-    return await run_in_threadpool(_complete)
 
 @app.post("/api/stock/receipt/bulk", response_model=BatchResponse)
 async def batch_receipt(batch_operation: BatchStockOperation):

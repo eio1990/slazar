@@ -143,22 +143,41 @@ def init_database():
         )
         """)
         
-        # Create inventory_sessions table
+        # ========== INVENTORY MODULE TABLES ==========
+
+        # Create inventory_sessions table (сесії інвентаризації)
         cursor.execute("""
         IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='inventory_sessions' AND xtype='U')
         CREATE TABLE inventory_sessions (
             id INT IDENTITY(1,1) PRIMARY KEY,
+            session_number NVARCHAR(50) NOT NULL,
             session_type NVARCHAR(50) NOT NULL,
             status NVARCHAR(50) NOT NULL DEFAULT 'in_progress',
             started_at DATETIME2 DEFAULT GETUTCDATE(),
             completed_at DATETIME2,
             idempotency_key NVARCHAR(255) NOT NULL,
             metadata NVARCHAR(MAX),
+            CONSTRAINT UQ_inventory_session_number UNIQUE(session_number),
             CONSTRAINT UQ_inventory_idempotency UNIQUE(idempotency_key)
         )
         """)
-        
-        # Create inventory_items table
+
+        # Create inventory_snapshot table (snapshot залишків на момент початку інвентаризації)
+        cursor.execute("""
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='inventory_snapshot' AND xtype='U')
+        CREATE TABLE inventory_snapshot (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            session_id INT NOT NULL,
+            nomenclature_id INT NOT NULL,
+            snapshot_quantity DECIMAL(18, 6) NOT NULL,
+            snapshot_at DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+            FOREIGN KEY (session_id) REFERENCES inventory_sessions(id) ON DELETE CASCADE,
+            FOREIGN KEY (nomenclature_id) REFERENCES nomenclature(id),
+            CONSTRAINT UQ_inventory_snapshot UNIQUE(session_id, nomenclature_id)
+        )
+        """)
+
+        # Create inventory_items table (підраховані позиції з різницями)
         cursor.execute("""
         IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='inventory_items' AND xtype='U')
         CREATE TABLE inventory_items (
@@ -166,12 +185,66 @@ def init_database():
             session_id INT NOT NULL,
             nomenclature_id INT NOT NULL,
             system_quantity DECIMAL(18, 6) NOT NULL,
-            actual_quantity DECIMAL(18, 6) NOT NULL,
-            difference DECIMAL(18, 6) NOT NULL,
+            actual_quantity DECIMAL(18, 6),
+            difference DECIMAL(18, 6),
+            difference_percent DECIMAL(18, 2),
+            status NVARCHAR(50) NOT NULL DEFAULT 'pending',
+            requires_verification BIT DEFAULT 0,
+            counted_at DATETIME2,
+            notes NVARCHAR(MAX),
             created_at DATETIME2 DEFAULT GETUTCDATE(),
-            FOREIGN KEY (session_id) REFERENCES inventory_sessions(id),
-            FOREIGN KEY (nomenclature_id) REFERENCES nomenclature(id)
+            FOREIGN KEY (session_id) REFERENCES inventory_sessions(id) ON DELETE CASCADE,
+            FOREIGN KEY (nomenclature_id) REFERENCES nomenclature(id),
+            CONSTRAINT UQ_inventory_item UNIQUE(session_id, nomenclature_id)
         )
+        """)
+
+        # Add session_number column if missing (для старих таблиць)
+        cursor.execute("""
+        IF EXISTS (SELECT * FROM sysobjects WHERE name='inventory_sessions' AND xtype='U')
+        BEGIN
+            IF NOT EXISTS (SELECT * FROM sys.columns
+                          WHERE object_id = OBJECT_ID('inventory_sessions')
+                          AND name = 'session_number')
+            BEGIN
+                ALTER TABLE inventory_sessions ADD session_number NVARCHAR(50)
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.columns
+                          WHERE object_id = OBJECT_ID('inventory_items')
+                          AND name = 'difference_percent')
+            BEGIN
+                ALTER TABLE inventory_items ADD difference_percent DECIMAL(18, 2)
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.columns
+                          WHERE object_id = OBJECT_ID('inventory_items')
+                          AND name = 'status')
+            BEGIN
+                ALTER TABLE inventory_items ADD status NVARCHAR(50) DEFAULT 'pending'
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.columns
+                          WHERE object_id = OBJECT_ID('inventory_items')
+                          AND name = 'requires_verification')
+            BEGIN
+                ALTER TABLE inventory_items ADD requires_verification BIT DEFAULT 0
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.columns
+                          WHERE object_id = OBJECT_ID('inventory_items')
+                          AND name = 'counted_at')
+            BEGIN
+                ALTER TABLE inventory_items ADD counted_at DATETIME2
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.columns
+                          WHERE object_id = OBJECT_ID('inventory_items')
+                          AND name = 'notes')
+            BEGIN
+                ALTER TABLE inventory_items ADD notes NVARCHAR(MAX)
+            END
+        END
         """)
         
         # Create recipes table

@@ -221,7 +221,7 @@ export const apiService = {
 
   // Inventory
   async startInventory(sessionType: 'full' | 'partial', metadata?: any): Promise<InventorySession> {
-    const response = await api.post('/stock/inventory/start', {
+    const response = await api.post('/inventory/sessions', {
       session_type: sessionType,
       idempotency_key: generateIdempotencyKey(),
       metadata,
@@ -229,12 +229,31 @@ export const apiService = {
     return response.data;
   },
 
+  async getInventorySession(sessionId: number): Promise<InventorySession> {
+    const response = await api.get(`/inventory/sessions/${sessionId}`);
+    return response.data;
+  },
+
+  async getInventoryItems(sessionId: number): Promise<any[]> {
+    const response = await api.get(`/inventory/sessions/${sessionId}/items`);
+    return response.data;
+  },
+
   async completeInventory(sessionId: number, items: InventoryItem[]) {
-    const response = await api.post('/stock/inventory/complete', {
-      session_id: sessionId,
+    const response = await api.post(`/inventory/sessions/${sessionId}/complete`, {
       items,
       idempotency_key: generateIdempotencyKey(),
     });
+    return response.data;
+  },
+
+  async listInventorySessions(limit?: number, offset?: number, status?: string): Promise<any[]> {
+    const params: any = {};
+    if (limit) params.limit = limit;
+    if (offset) params.offset = offset;
+    if (status) params.status = status;
+
+    const response = await api.get('/inventory/sessions', { params });
     return response.data;
   },
 
