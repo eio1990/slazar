@@ -734,10 +734,34 @@ async def complete_packaging_session(session_id: int, completion: PackagingSessi
             """, completion.notes, session_id)
             
             conn.commit()
-            
-            return {
-                "message": "Сесію фасування завершено",
-                "session_id": session_id
-            }
-    
+
+            # Розрахувати собівартість після завершення фасування
+            from costing_api import calculate_packaging_cost
+            try:
+                costing_result = await calculate_packaging_cost(session_id)
+
+                # Додати інформацію про собівартість до відповіді
+                return {
+                    "message": "Сесію фасування завершено",
+                    "session_id": session_id,
+                    "costing": {
+                        "total_cost": costing_result.total_cost,
+                        "cost_per_unit": costing_result.cost_per_unit,
+                        "source_product_cost": costing_result.source_product_cost,
+                        "packaging_materials_cost": costing_result.packaging_materials_cost,
+                        "packed_quantity": costing_result.packed_quantity,
+                        "waste_cost": costing_result.waste_cost,
+                        "source_weight": costing_result.source_weight,
+                        "waste_weight": costing_result.waste_weight
+                    }
+                }
+            except Exception as e:
+                # Якщо калькуляція не вдалась, це не повинно заважати завершенню операції
+                print(f"Помилка розрахунку собівартості фасування: {str(e)}")
+                return {
+                    "message": "Сесію фасування завершено",
+                    "session_id": session_id,
+                    "costing_error": str(e)
+                }
+
     return await run_in_threadpool(_complete)
