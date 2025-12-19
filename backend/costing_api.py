@@ -406,3 +406,481 @@ async def update_nomenclature_cost_endpoint(cost_update: NomenclatureCostUpdate)
             status_code=500,
             detail=f"Помилка оновлення собівартості: {str(e)}"
         )
+
+
+# ============================================================================
+# PRODUCTION BATCH COSTING
+# ============================================================================
+
+@router.post("/calculate-batch/{batch_id}", response_model=BatchCost)
+async def calculate_batch_cost(batch_id: int):
+    """
+    Розрахувати собівартість виробничої партії
+
+    Враховує:
+    - Сировину (на основі середньозваженої вартості)
+    - Сіль та воду
+    - Спеції (включаючи суміш зі складу)
+    - Оболонки
+    - Інші матеріали
+    - Усушку (втрати ваги при виробництві)
+    """
+    try:
+        conn = await run_in_threadpool(get_db_connection)
+        cursor = conn.cursor()
+
+        # Отримати інформацію про партію
+        cursor.execute("""
+            SELECT
+                b.recipe_id,
+                b.initial_weight,
+                b.final_weight,
+                b.status
+            FROM batches b
+            WHERE b.id = ?
+        """, (batch_id,))
+
+        batch_row = cursor.fetchone()
+        if not batch_row:
+            raise HTTPException(status_code=404, detail="Партію не знайдено")
+
+        recipe_id = batch_row[0]
+        initial_weight = float(batch_row[1]) if batch_row[1] else 0.0
+        final_weight = float(batch_row[2]) if batch_row[2] else 0.0
+        status = batch_row[3]
+
+        # Ініціалізація змінних собівартості
+        raw_materials_cost = 0.0
+        salt_cost = 0.0
+        spices_cost = 0.0
+        casings_cost = 0.0
+        other_materials_cost = 0.0
+
+        # 1. Розрахувати вартість сировини
+        cursor.execute("""
+            SELECT
+                bm.nomenclature_id,
+                bm.quantity_used,
+                n.category
+            FROM batch_materials bm
+            JOIN nomenclature n ON n.id = bm.nomenclature_id
+            WHERE bm.batch_id = ? AND bm.material_type = 'raw'
+        """, (batch_id,))
+
+        for row in cursor.fetchall():
+            nomenclature_id = row[0]
+            quantity = float(row[1])
+            category = row[2]
+
+            cost_per_unit = get_nomenclature_cost(cursor, nomenclature_id)
+            material_cost = quantity * cost_per_unit
+            raw_materials_cost += material_cost
+
+        # 2. Розрахувати вартість солі
+        cursor.execute("""
+            SELECT
+                bm.nomenclature_id,
+                bm.quantity_used
+            FROM batch_materials bm
+            JOIN nomenclature n ON n.id = bm.nomenclature_id
+            WHERE bm.batch_id = ? AND n.name LIKE '%сіль%'
+        """, (batch_id,))
+
+        for row in cursor.fetchall():
+            nomenclature_id = row[0]
+            quantity = float(row[1])
+
+            cost_per_unit = get_nomenclature_cost(cursor, nomenclature_id)
+            salt_cost += quantity * cost_per_unit
+
+        # 3. Розрахувати вартість спецій (включаючи суміш зі складу)
+        cursor.execute("""
+            SELECT
+                bm.nomenclature_id,
+                bm.quantity_used,
+                n.category
+            FROM batch_materials bm
+            JOIN nomenclature n ON n.id = bm.nomenclature_id
+            WHERE bm.batch_id = ?
+                AND (n.category = 'spice' OR n.name LIKE '%суміш%')
+                AND n.name NOT LIKE '%сіль%'
+        """, (batch_id,))
+
+        for row in cursor.fetchall():
+            nomenclature_id = row[0]
+            quantity = float(row[1])
+
+            cost_per_unit = get_nomenclature_cost(cursor, nomenclature_id)
+            spices_cost += quantity * cost_per_unit
+
+        # 4. Розрахувати вартість оболонок
+        cursor.execute("""
+            SELECT
+                bm.nomenclature_id,
+                bm.quantity_used
+            FROM batch_materials bm
+            JOIN nomenclature n ON n.id = bm.nomenclature_id
+            WHERE bm.batch_id = ?
+                AND (n.name LIKE '%оболон%' OR n.category = 'casing')
+        """, (batch_id,))
+
+        for row in cursor.fetchall():
+            nomenclature_id = row[0]
+            quantity = float(row[1])
+
+            cost_per_unit = get_nomenclature_cost(cursor, nomenclature_id)
+            casings_cost += quantity * cost_per_unit
+
+        # 5. Інші матеріали (нитки, крючки, тощо)
+        cursor.execute("""
+            SELECT
+                bm.nomenclature_id,
+                bm.quantity_used,
+                n.category
+            FROM batch_materials bm
+            JOIN nomenclature n ON n.id = bm.nomenclature_id
+            WHERE bm.batch_id = ?
+                AND bm.material_type = 'material'
+                AND n.category NOT IN ('spice', 'casing')
+                AND n.name NOT LIKE '%оболон%'
+                AND n.name NOT LIKE '%сіль%'
+                AND n.name NOT LIKE '%суміш%'
+        """, (batch_id,))
+
+        for row in cursor.fetchall():
+            nomenclature_id = row[0]
+            quantity = float(row[1])
+
+            cost_per_unit = get_nomenclature_cost(cursor, nomenclature_id)
+            other_materials_cost += quantity * cost_per_unit
+
+        # Загальна собівартість
+        total_cost = (
+            raw_materials_cost + salt_cost + spices_cost +
+            casings_cost + other_materials_cost
+        )
+
+        # Собівартість за кг
+        if final_weight > 0:
+            cost_per_kg = total_cost / final_weight
+        else:
+            cost_per_kg = 0.0
+
+        # Розрахувати усушку
+        shrinkage_weight = initial_weight - final_weight
+        shrinkage_percent = (shrinkage_weight / initial_weight * 100) if initial_weight > 0 else 0.0
+
+        # Зберегти калькуляцію
+        cursor.execute("""
+            IF EXISTS (SELECT 1 FROM batch_costs WHERE batch_id = ?)
+            BEGIN
+                UPDATE batch_costs
+                SET raw_materials_cost = ?,
+                    salt_cost = ?,
+                    spices_cost = ?,
+                    casings_cost = ?,
+                    other_materials_cost = ?,
+                    total_cost = ?,
+                    final_weight = ?,
+                    cost_per_kg = ?,
+                    shrinkage_weight = ?,
+                    shrinkage_percent = ?,
+                    updated_at = DATEADD(HOUR, 2, GETDATE())
+                WHERE batch_id = ?
+            END
+            ELSE
+            BEGIN
+                INSERT INTO batch_costs (
+                    batch_id, raw_materials_cost, salt_cost, spices_cost,
+                    casings_cost, other_materials_cost, total_cost,
+                    final_weight, cost_per_kg, shrinkage_weight, shrinkage_percent,
+                    calculated_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    DATEADD(HOUR, 2, GETDATE()), DATEADD(HOUR, 2, GETDATE()))
+            END
+        """, (
+            batch_id, raw_materials_cost, salt_cost, spices_cost, casings_cost,
+            other_materials_cost, total_cost, final_weight, cost_per_kg,
+            shrinkage_weight, shrinkage_percent, batch_id,
+            # Insert params
+            batch_id, raw_materials_cost, salt_cost, spices_cost, casings_cost,
+            other_materials_cost, total_cost, final_weight, cost_per_kg,
+            shrinkage_weight, shrinkage_percent
+        ))
+
+        # Оновити собівартість готової продукції
+        cursor.execute("""
+            SELECT target_product_id FROM recipes WHERE id = ?
+        """, (recipe_id,))
+
+        product_row = cursor.fetchone()
+        if product_row and final_weight > 0:
+            product_id = product_row[0]
+            update_nomenclature_cost(cursor, product_id, final_weight, cost_per_kg)
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return BatchCost(
+            batch_id=batch_id,
+            raw_materials_cost=raw_materials_cost,
+            salt_cost=salt_cost,
+            spices_cost=spices_cost,
+            casings_cost=casings_cost,
+            other_materials_cost=other_materials_cost,
+            total_cost=total_cost,
+            final_weight=final_weight,
+            cost_per_kg=cost_per_kg,
+            shrinkage_weight=shrinkage_weight,
+            shrinkage_percent=shrinkage_percent,
+            calculated_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Помилка розрахунку собівартості партії: {str(e)}"
+        )
+
+
+@router.get("/batch/{batch_id}", response_model=BatchCost)
+async def get_batch_cost(batch_id: int):
+    """Отримати збережену калькуляцію виробничої партії"""
+    try:
+        conn = await run_in_threadpool(get_db_connection)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT
+                batch_id, raw_materials_cost, salt_cost, spices_cost,
+                casings_cost, other_materials_cost, total_cost,
+                final_weight, cost_per_kg, shrinkage_weight, shrinkage_percent,
+                calculated_at, updated_at
+            FROM batch_costs
+            WHERE batch_id = ?
+        """, (batch_id,))
+
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Калькуляцію не знайдено")
+
+        return BatchCost(
+            batch_id=row[0],
+            raw_materials_cost=float(row[1]),
+            salt_cost=float(row[2]),
+            spices_cost=float(row[3]),
+            casings_cost=float(row[4]),
+            other_materials_cost=float(row[5]),
+            total_cost=float(row[6]),
+            final_weight=float(row[7]),
+            cost_per_kg=float(row[8]),
+            shrinkage_weight=float(row[9]),
+            shrinkage_percent=float(row[10]),
+            calculated_at=row[11],
+            updated_at=row[12]
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# PACKAGING BATCH COSTING
+# ============================================================================
+
+@router.post("/calculate-packaging/{packaging_batch_id}", response_model=PackagingBatchCost)
+async def calculate_packaging_cost(packaging_batch_id: int):
+    """
+    Розрахувати собівартість партії фасування
+
+    Враховує:
+    - Вартість вагової продукції (source product)
+    - Пакувальні матеріали (пакети, лотки, етикетки, плівка)
+    - Брак та втрати (waste)
+    """
+    try:
+        conn = await run_in_threadpool(get_db_connection)
+        cursor = conn.cursor()
+
+        # Отримати інформацію про партію фасування
+        cursor.execute("""
+            SELECT
+                pb.source_product_id,
+                pb.source_weight_taken,
+                pb.actual_packed_quantity,
+                pb.waste_quantity,
+                pb.status
+            FROM packaging_batches pb
+            WHERE pb.id = ?
+        """, (packaging_batch_id,))
+
+        batch_row = cursor.fetchone()
+        if not batch_row:
+            raise HTTPException(status_code=404, detail="Партію фасування не знайдено")
+
+        source_product_id = batch_row[0]
+        source_weight = float(batch_row[1])
+        packed_quantity = int(batch_row[2])
+        waste_quantity = float(batch_row[3])
+
+        # 1. Вартість вагової продукції
+        source_cost_per_kg = get_nomenclature_cost(cursor, source_product_id)
+        source_product_total = source_weight * source_cost_per_kg
+
+        # 2. Вартість пакувальних матеріалів
+        packaging_materials_cost = 0.0
+
+        cursor.execute("""
+            SELECT
+                pmc.material_id,
+                pmc.quantity_used
+            FROM packaging_material_consumption pmc
+            JOIN packaging_operations po ON po.id = pmc.operation_id
+            WHERE po.batch_id = ?
+        """, (packaging_batch_id,))
+
+        for row in cursor.fetchall():
+            material_id = row[0]
+            quantity = float(row[1])
+
+            cost_per_unit = get_nomenclature_cost(cursor, material_id)
+            packaging_materials_cost += quantity * cost_per_unit
+
+        # Загальна собівартість
+        total_cost = source_product_total + packaging_materials_cost
+
+        # Вартість відходів
+        waste_cost = waste_quantity * source_cost_per_kg
+
+        # Собівартість за одиницю
+        if packed_quantity > 0:
+            cost_per_unit = total_cost / packed_quantity
+        else:
+            cost_per_unit = 0.0
+
+        # Зберегти калькуляцію
+        cursor.execute("""
+            IF EXISTS (SELECT 1 FROM packaging_batch_costs WHERE packaging_batch_id = ?)
+            BEGIN
+                UPDATE packaging_batch_costs
+                SET source_product_cost = ?,
+                    source_product_total = ?,
+                    packaging_materials_cost = ?,
+                    total_cost = ?,
+                    packed_quantity = ?,
+                    cost_per_unit = ?,
+                    waste_weight = ?,
+                    waste_cost = ?,
+                    updated_at = DATEADD(HOUR, 2, GETDATE())
+                WHERE packaging_batch_id = ?
+            END
+            ELSE
+            BEGIN
+                INSERT INTO packaging_batch_costs (
+                    packaging_batch_id, source_product_cost, source_product_total,
+                    packaging_materials_cost, total_cost, packed_quantity,
+                    cost_per_unit, waste_weight, waste_cost,
+                    calculated_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    DATEADD(HOUR, 2, GETDATE()), DATEADD(HOUR, 2, GETDATE()))
+            END
+        """, (
+            packaging_batch_id, source_cost_per_kg, source_product_total,
+            packaging_materials_cost, total_cost, packed_quantity,
+            cost_per_unit, waste_quantity, waste_cost, packaging_batch_id,
+            # Insert params
+            packaging_batch_id, source_cost_per_kg, source_product_total,
+            packaging_materials_cost, total_cost, packed_quantity,
+            cost_per_unit, waste_quantity, waste_cost
+        ))
+
+        # Оновити собівартість SKU
+        cursor.execute("""
+            SELECT target_product_id FROM packaging_batches WHERE id = ?
+        """, (packaging_batch_id,))
+
+        target_row = cursor.fetchone()
+        if target_row and packed_quantity > 0:
+            target_product_id = target_row[0]
+            update_nomenclature_cost(cursor, target_product_id, packed_quantity, cost_per_unit)
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return PackagingBatchCost(
+            packaging_batch_id=packaging_batch_id,
+            source_product_cost=source_cost_per_kg,
+            source_product_total=source_product_total,
+            packaging_materials_cost=packaging_materials_cost,
+            total_cost=total_cost,
+            packed_quantity=packed_quantity,
+            cost_per_unit=cost_per_unit,
+            waste_weight=waste_quantity,
+            waste_cost=waste_cost,
+            calculated_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Помилка розрахунку собівартості фасування: {str(e)}"
+        )
+
+
+@router.get("/packaging/{packaging_batch_id}", response_model=PackagingBatchCost)
+async def get_packaging_cost(packaging_batch_id: int):
+    """Отримати збережену калькуляцію партії фасування"""
+    try:
+        conn = await run_in_threadpool(get_db_connection)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT
+                packaging_batch_id, source_product_cost, source_product_total,
+                packaging_materials_cost, total_cost, packed_quantity,
+                cost_per_unit, waste_weight, waste_cost,
+                calculated_at, updated_at
+            FROM packaging_batch_costs
+            WHERE packaging_batch_id = ?
+        """, (packaging_batch_id,))
+
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Калькуляцію не знайдено")
+
+        return PackagingBatchCost(
+            packaging_batch_id=row[0],
+            source_product_cost=float(row[1]),
+            source_product_total=float(row[2]),
+            packaging_materials_cost=float(row[3]),
+            total_cost=float(row[4]),
+            packed_quantity=int(row[5]),
+            cost_per_unit=float(row[6]),
+            waste_weight=float(row[7]),
+            waste_cost=float(row[8]),
+            calculated_at=row[9],
+            updated_at=row[10]
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
